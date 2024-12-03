@@ -1,0 +1,28 @@
+.sidebar {
+    width: 150px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    font-size: 15px;
+    background-color: #f39c12; /* เปลี่ยนสีพื้นหลัง */
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar a {
+    color: #ecf0f1; /* สีตัวอักษร */
+    text-decoration: none;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .sidebar a:hover {
+    color: #e67e22; /* สี hover */
+  }
+  
+  .sidebar a svg {
+    margin-right: 20px;
+  }

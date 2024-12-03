@@ -1,0 +1,44 @@
+import React, { useState } from 'react';
+import { addTable } from '../api';
+
+const Settings = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [tableName, setTableName] = useState('');
+  const [error, setError] = useState('');
+
+  const handleCreateTable = async (e) => {
+    e.preventDefault();
+    try {
+      await addTable(tableName);
+      setTableName('');
+      setShowForm(false);
+    } catch (err) {
+      setError('ไม่สามารถเพิ่มโต๊ะได้');
+    }
+  };
+
+  return (
+    <div>
+      <h1>ตั้งค่า</h1>
+      <button onClick={() => setShowForm(true)}>เพิ่มโต๊ะ</button>
+
+      {showForm && (
+        <form onSubmit={handleCreateTable}>
+          <label>
+            กรุณาใส่ตัวเลขที่จะเพิ่ม :
+            <input
+              type="number" min="1" max="50" step="1"
+              value={tableName}
+              onChange={(e) => setTableName(e.target.value)}
+            />
+          </label>
+          <button type="submit">เพิ่มโต๊ะ</button>
+        </form>
+      )}
+      
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+    </div>
+  );
+};
+
+export default Settings;

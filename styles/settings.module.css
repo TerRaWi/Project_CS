@@ -1,0 +1,34 @@
+.manage-tables-button {
+  background-color: #f39c12;
+  color: white;
+  padding: 10px 20px;
+  text-decoration: none;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-right: 10px;
+  display: inline-block;
+}
+
+
+.manage-menu-button {
+  background-color: #f39c12;
+  color: white;
+  padding: 10px 20px;
+  text-decoration: none;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  display: inline-block;
+}
+
+
+.manage-tables-button:hover {
+  background-color: #e67e22;
+}
+
+.manage-menu-button:hover {
+  background-color: #e67e22;
+}

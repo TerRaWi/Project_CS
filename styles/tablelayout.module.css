@@ -1,0 +1,83 @@
+.heading-background {
+    background-color: #f39c12;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 18px;
+    text-align: center;
+    display: inline-block;
+  }
+
+
+
+  .imageadd {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    position: absolute;
+    right: 150px;
+    top: 50px;
+  }
+  
+  .imageadd img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .imagedel {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    position: absolute;
+    right: 50px;
+    top: 50px;
+  }
+  
+  .imagedel img {
+    width: 40px;
+    height: 40px;
+  }
+  
+  
+  .card {
+    width: 40%;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+  
+  .closeButton {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .numberInput {
+    width: 98%;
+    padding: 8px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .submitButton {
+    background-color: #4fce2f;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  

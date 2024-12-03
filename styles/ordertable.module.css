@@ -1,0 +1,70 @@
+.sidebar {
+  width: 300px;
+  background-color: #f5f5f5;
+  padding: 20px;
+  border-left: 1px solid #ddd;
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.closeButton {
+  background-color: #ff4d4d;
+  color: white;
+  font-size: 16px;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  margin-left: auto; /* ย้ายปุ่มไปทางขวา */
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+
+.tableInfo {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.orderButton,
+.qrButton,
+.billButton,
+.editButton {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.orderButton {
+  background-color: #4caf50;
+  color: white;
+}
+
+.qrButton {
+  background-color: #2196f3;
+  color: white;
+}
+
+.billButton {
+  background-color: #ff9800;
+  color: white;
+}
+
+.editButton {
+  background-color: #9c27b0;
+  color: white;
+}
+
+.orderButton:hover,
+.qrButton:hover,
+.billButton:hover,
+.editButton:hover {
+  opacity: 0.8;
+}

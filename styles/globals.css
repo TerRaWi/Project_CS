@@ -1,0 +1,39 @@
+form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+form label {
+  margin-bottom: 10px;
+}
+
+form input {
+  padding: 5px;
+  margin-bottom: 10px;
+  width: 200px;
+}
+
+form button {
+  padding: 10px;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+form button:hover {
+  background-color: #005bb5;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+ul li {
+  background-color: #f4f4f4;
+  margin: 5px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+}

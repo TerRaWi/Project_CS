@@ -1,0 +1,98 @@
+.rectableContainer {
+  width: 350px;
+  height: auto;
+  background-color: #f9f9f9;
+  border-radius: 5%;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  display: flex; /* เพิ่ม Flexbox */
+  flex-direction: column; /* ทำให้มีการจัดเรียงในแนวตั้ง */
+}
+
+.rectableHeader {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: auto; /* ลดค่าของ margin-bottom เพื่อเลื่อนขึ้น */
+  margin-top: 0; /* หรือถ้าต้องการเลื่อนขึ้นมากขึ้นอาจจะลด margin-top */
+}
+
+.rectableContent {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.closeButton {
+  background-color: #ff4d4d;
+  color: white;
+  font-size: 16px;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  margin-left: auto;
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+
+.inputField {
+  width: 80px;
+  margin-left: 10px;
+  padding: 5px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+}
+
+
+.numpad {
+display: flex;
+flex-wrap: wrap;
+gap: 5px;
+margin-top: 10px;
+justify-content: center;
+}
+
+.numpadButton {
+width: 50px;
+height: 50px;
+font-size: 18px;
+cursor: pointer;
+border: 1px solid #ccc;
+border-radius: 4px;
+background-color: #f1f1f1;
+}
+
+.numpadDelete,
+.confirmButton {
+  width: 100px; /* ให้ขนาดปุ่มเท่ากัน */
+  height: 50px;
+  font-size: 18px; /* ขนาดตัวอักษรเท่ากัน */
+  color: white;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px; /* ให้ขอบโค้งมนเล็กน้อย */
+  transition: background-color 0.3s ease; /* เพิ่มการเปลี่ยนแปลงสีเมื่อ hover */
+}
+
+/* ปุ่มลบจะมีสีแดง */
+.numpadDelete {
+  background-color: #e74c3c;
+}
+
+/* ปุ่มตกลงจะมีสีเขียว */
+.confirmButton {
+  background-color:  green;
+}
+
+/* เพิ่มช่องว่างระหว่างปุ่ม */
+.actionButtons {
+  display: flex;
+  justify-content: center; /* จัดปุ่มให้อยู่ตรงกลาง */
+  gap: 20px; /* ระยะห่างระหว่างปุ่ม */
+  margin-top: 25px;
+}
+
+
