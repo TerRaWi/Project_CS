@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
-import AddProduct from '../components/Addproducts';
 import { getProduct } from "../api";
 
 const Products = () => {
@@ -40,13 +39,6 @@ const Products = () => {
         <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
       </button>
       
-      {isAddProductVisible && (
-        <AddProduct 
-          onClose={handleCloseAddProduct}
-          onProductAdded={fetchProducts}
-        />
-      )}
-
       <div className={styles["product-list"]}>
         {products.length > 0 ? (
           products.map((product) => (
@@ -61,6 +53,9 @@ const Products = () => {
               </p>
               <p>
                 <strong>ชื่อสินค้า:</strong> {product.name}
+              </p>
+              <p>
+                <strong>หมวดหมู่:</strong> {product.category_id}
               </p>
               <p>
                 <strong>ราคา:</strong>฿

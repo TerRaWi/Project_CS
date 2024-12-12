@@ -111,9 +111,9 @@ app.delete('/api/customer/:id', (req, res) => {
   });
 });
 
-//นำเมนูมาแสดงบน Page โต๊ะ
+//นำเมนูมาแสดงบน Page จัดการเมนู
 app.get('/api/product', (req, res) => {
-  db.query('SELECT id, name, price, image_url FROM product', (err, results) => {
+  db.query('SELECT id, name, price, category_id, image_url FROM product', (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า:', err);
       res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
@@ -126,4 +126,3 @@ app.get('/api/product', (req, res) => {
 app.listen(PORT, () => {
   console.log(`เซิร์ฟเวอร์ทำงานที่ http://localhost:${PORT}`);
 });
-

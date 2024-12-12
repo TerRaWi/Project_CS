@@ -59,3 +59,29 @@ export const saveCustomerData = async (id, adultCount, oldChildCount, childCount
     throw error;
   }
 };
+
+// เพิ่มฟังก์ชันเพิ่มสินค้าใหม่
+export const addProduct = async (productData) => {
+  try {
+    const response = await axios.post(`${API_URL}/product`, productData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', error);
+    throw error;
+  }
+};
+
+// เพิ่มฟังก์ชันลบสินค้า
+export const deleteProduct = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/product/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการลบสินค้า:', error);
+    throw error;
+  }
+};
