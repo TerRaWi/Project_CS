@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
 import { getProduct } from "../api";
+import Addproduct from "../components/Addproduct";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -20,11 +21,11 @@ const Products = () => {
     }
   };
 
-  const handleOpenAddProduct = () => {
+  const handleOpenAddproduct = () => {
     setIsAddProductVisible(true);
   };
 
-  const handleCloseAddProduct = () => {
+  const handleCloseAddproduct = () => {
     setIsAddProductVisible(false);
   };
 
@@ -33,12 +34,22 @@ const Products = () => {
       <h1 className={styles["heading-background"]}>จัดการเมนู</h1>
 
       <button
-        onClick={handleOpenAddProduct}
+        onClick={handleOpenAddproduct}
         className={styles["image-add-button"]}
       >
         <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
       </button>
-      
+
+      {/* แสดงฟอร์ม AddProduct เมื่อ isAddProductVisible เป็น true */}
+      {isAddProductVisible && (
+        <Addproduct
+          onClose={handleCloseAddproduct}
+          onAddProduct={(newProduct) => {
+            setProducts((prevProducts) => [...prevProducts, newProduct]);
+          }}
+        />
+      )}
+
       <div className={styles["product-list"]}>
         {products.length > 0 ? (
           products.map((product) => (
