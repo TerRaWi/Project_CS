@@ -61,7 +61,7 @@ export const saveCustomerData = async (id, adultCount, oldChildCount, childCount
 };
 
 // เพิ่มฟังก์ชันเพิ่มสินค้าใหม่
-export const addProduct = async (productData) => {
+export const addproducts = async (productData) => {
   try {
     const response = await axios.post(`${API_URL}/product`, productData, {
       headers: {

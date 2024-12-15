@@ -1,5 +1,6 @@
-import styles from "../styles/addproduct.module.css";
 import { useState } from "react";
+import styles from "../styles/addproduct.module.css";
+import { addproducts } from "../api";
 
 const Addproduct = ({ onClose, onAddProduct }) => {
   const [productId, setProductId] = useState("");
@@ -15,19 +16,30 @@ const Addproduct = ({ onClose, onAddProduct }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newProduct = {
-      id: productId,
-      name: productName,
-      price: parseFloat(productPrice),
-      category_id: productCategory,
-      image_url: productImage ? URL.createObjectURL(productImage) : "",
-    };
+    // สร้าง FormData เพื่อส่งข้อมูลและรูปภาพ
+    const formData = new FormData();
+    formData.append('id', productId);
+    formData.append('name', productName);
+    formData.append('price', parseFloat(productPrice));
+    formData.append('category_id', productCategory);
+    if (productImage) {
+      formData.append('image', productImage);
+    }
 
-    onAddProduct(newProduct);
-    onClose();
+    try {
+      // เรียกใช้ฟังก์ชัน addProduct จาก api.js
+      const newProduct = await addproducts(formData);
+      
+      // เรียก onAddProduct เพื่ออัปเดต state ของ Products component
+      onAddProduct(newProduct);
+      onClose();
+    } catch (error) {
+      console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', error);
+      // อาจเพิ่มการแสดงข้อผิดพลาดให้ผู้ใช้
+    }
   };
 
   return (

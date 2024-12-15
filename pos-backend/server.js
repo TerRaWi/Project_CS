@@ -1,6 +1,21 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+// เพิ่มการ import multer เพื่อจัดการกับ file upload
+const multer = require('multer');
+const path = require('path');
+
+// การตั้งค่า multer สำหรับการอัปโหลดรูปภาพ
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/') // สร้างโฟลเดอร์ uploads เพื่อเก็บรูปภาพ
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)) // ตั้งชื่อไฟล์แบบไม่ซ้ำกัน
+  }
+});
+
+const upload = multer({ storage: storage });
 
 const app = express();
 const PORT = 3001;
@@ -120,6 +135,29 @@ app.get('/api/product', (req, res) => {
       return;
     }
     res.json(results);
+  });
+});
+
+// เพิ่ม endpoint สำหรับเพิ่มสินค้าใหม่
+app.post('/api/product', upload.single('image'), (req, res) => {
+  const { id, name, price, category_id } = req.body;
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+  const query = 'INSERT INTO product (id, name, price, category_id, image_url) VALUES (?, ?, ?, ?, ?)';
+  
+  db.query(query, [id, name, price, category_id, image_url], (err, result) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
+      return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+    }
+    
+    res.status(201).json({ 
+      id, 
+      name, 
+      price, 
+      category_id, 
+      image_url 
+    });
   });
 });
 
