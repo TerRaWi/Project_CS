@@ -1,8 +1,10 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+
 // เพิ่มการ import multer เพื่อจัดการกับ file upload
 const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 
 // การตั้งค่า multer สำหรับการอัปโหลดรูปภาพ
@@ -141,25 +143,43 @@ app.get('/api/product', (req, res) => {
 // เพิ่ม endpoint สำหรับเพิ่มสินค้าใหม่
 app.post('/api/product', upload.single('image'), (req, res) => {
   const { id, name, price, category_id } = req.body;
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
-
-  const query = 'INSERT INTO product (id, name, price, category_id, image_url) VALUES (?, ?, ?, ?, ?)';
   
-  db.query(query, [id, name, price, category_id, image_url], (err, result) => {
-    if (err) {
-      console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
+  // ตรวจสอบ product id ก่อน
+  db.query('SELECT * FROM product WHERE id = ?', [id], (checkErr, checkResults) => {
+    if (checkErr) {
+      console.error('เกิดข้อผิดพลาดในการตรวจสอบสินค้า:', checkErr);
       return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
     }
+
+    // ถ้ามี product id ซ้ำ
+    if (checkResults.length > 0) {
+      return res.status(409).json({ 
+        error: 'รหัสสินค้านี้มีอยู่แล้ว',
+        duplicate: true
+      });
+    }
+
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+    const query = 'INSERT INTO product (id, name, price, category_id, image_url) VALUES (?, ?, ?, ?, ?)';
     
-    res.status(201).json({ 
-      id, 
-      name, 
-      price, 
-      category_id, 
-      image_url 
+    db.query(query, [id, name, price, category_id, image_url], (err, result) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
+        return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+      }
+      
+      res.status(201).json({ 
+        id, 
+        name, 
+        price, 
+        category_id, 
+        image_url 
+      });
     });
   });
 });
+
+app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, () => {
   console.log(`เซิร์ฟเวอร์ทำงานที่ http://localhost:${PORT}`);

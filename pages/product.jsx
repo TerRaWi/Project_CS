@@ -55,7 +55,7 @@ const Products = () => {
           products.map((product) => (
             <div key={product.id} className={styles["product-item"]}>
               <img
-                src={product.image_url}
+                src={`http://localhost:3001${product.image_url}`} // เพิ่ม base URL
                 className={styles["product-image"]}
                 alt={product.name}
               />

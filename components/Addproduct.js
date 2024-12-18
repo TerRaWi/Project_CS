@@ -18,8 +18,7 @@ const Addproduct = ({ onClose, onAddProduct }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // สร้าง FormData เพื่อส่งข้อมูลและรูปภาพ
+  
     const formData = new FormData();
     formData.append('id', productId);
     formData.append('name', productName);
@@ -28,17 +27,20 @@ const Addproduct = ({ onClose, onAddProduct }) => {
     if (productImage) {
       formData.append('image', productImage);
     }
-
+  
     try {
-      // เรียกใช้ฟังก์ชัน addProduct จาก api.js
       const newProduct = await addproducts(formData);
-      
-      // เรียก onAddProduct เพื่ออัปเดต state ของ Products component
       onAddProduct(newProduct);
       onClose();
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', error);
-      // อาจเพิ่มการแสดงข้อผิดพลาดให้ผู้ใช้
+      
+      // ตรวจสอบว่าเป็น error จาก product id ซ้ำ
+      if (error.response && error.response.data.duplicate) {
+        alert('รหัสสินค้านี้มีอยู่แล้ว กรุณาเลือกรหัสสินค้าอื่น');
+      } else {
+        alert('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
+      }
     }
   };
 
