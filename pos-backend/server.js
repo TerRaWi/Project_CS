@@ -2,6 +2,23 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 
+// เพิ่มการ import multer เพื่อจัดการกับ file upload
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+// การตั้งค่า multer สำหรับการอัปโหลดรูปภาพ
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/') // สร้างโฟลเดอร์ uploads เพื่อเก็บรูปภาพ
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)) // ตั้งชื่อไฟล์แบบไม่ซ้ำกัน
+  }
+});
+
+const upload = multer({ storage: storage });
+
 const app = express();
 const PORT = 3001;
 
@@ -111,9 +128,9 @@ app.delete('/api/customer/:id', (req, res) => {
   });
 });
 
-//นำเมนูมาแสดงบน Page โต๊ะ
+//นำเมนูมาแสดงบน Page จัดการเมนู
 app.get('/api/product', (req, res) => {
-  db.query('SELECT id, name, price, image_url FROM product', (err, results) => {
+  db.query('SELECT id, name, price, category_id, image_url FROM product', (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า:', err);
       res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
@@ -123,7 +140,47 @@ app.get('/api/product', (req, res) => {
   });
 });
 
+// เพิ่ม endpoint สำหรับเพิ่มสินค้าใหม่
+app.post('/api/product', upload.single('image'), (req, res) => {
+  const { id, name, price, category_id } = req.body;
+  
+  // ตรวจสอบ product id ก่อน
+  db.query('SELECT * FROM product WHERE id = ?', [id], (checkErr, checkResults) => {
+    if (checkErr) {
+      console.error('เกิดข้อผิดพลาดในการตรวจสอบสินค้า:', checkErr);
+      return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+    }
+
+    // ถ้ามี product id ซ้ำ
+    if (checkResults.length > 0) {
+      return res.status(409).json({ 
+        error: 'รหัสสินค้านี้มีอยู่แล้ว',
+        duplicate: true
+      });
+    }
+
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+    const query = 'INSERT INTO product (id, name, price, category_id, image_url) VALUES (?, ?, ?, ?, ?)';
+    
+    db.query(query, [id, name, price, category_id, image_url], (err, result) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
+        return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+      }
+      
+      res.status(201).json({ 
+        id, 
+        name, 
+        price, 
+        category_id, 
+        image_url 
+      });
+    });
+  });
+});
+
+app.use('/uploads', express.static('uploads'));
+
 app.listen(PORT, () => {
   console.log(`เซิร์ฟเวอร์ทำงานที่ http://localhost:${PORT}`);
 });
-

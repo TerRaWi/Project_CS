@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
-import AddProduct from '../components/Addproducts';
 import { getProduct } from "../api";
+import Addproduct from "../components/Addproduct";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -21,11 +21,11 @@ const Products = () => {
     }
   };
 
-  const handleOpenAddProduct = () => {
+  const handleOpenAddproduct = () => {
     setIsAddProductVisible(true);
   };
 
-  const handleCloseAddProduct = () => {
+  const handleCloseAddproduct = () => {
     setIsAddProductVisible(false);
   };
 
@@ -34,16 +34,19 @@ const Products = () => {
       <h1 className={styles["heading-background"]}>จัดการเมนู</h1>
 
       <button
-        onClick={handleOpenAddProduct}
+        onClick={handleOpenAddproduct}
         className={styles["image-add-button"]}
       >
         <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
       </button>
-      
+
+      {/* แสดงฟอร์ม AddProduct เมื่อ isAddProductVisible เป็น true */}
       {isAddProductVisible && (
-        <AddProduct 
-          onClose={handleCloseAddProduct}
-          onProductAdded={fetchProducts}
+        <Addproduct
+          onClose={handleCloseAddproduct}
+          onAddProduct={(newProduct) => {
+            setProducts((prevProducts) => [...prevProducts, newProduct]);
+          }}
         />
       )}
 
@@ -52,7 +55,7 @@ const Products = () => {
           products.map((product) => (
             <div key={product.id} className={styles["product-item"]}>
               <img
-                src={product.image_url}
+                src={`http://localhost:3001${product.image_url}`} // เพิ่ม base URL
                 className={styles["product-image"]}
                 alt={product.name}
               />
@@ -61,6 +64,9 @@ const Products = () => {
               </p>
               <p>
                 <strong>ชื่อสินค้า:</strong> {product.name}
+              </p>
+              <p>
+                <strong>หมวดหมู่:</strong> {product.category_id}
               </p>
               <p>
                 <strong>ราคา:</strong>฿
