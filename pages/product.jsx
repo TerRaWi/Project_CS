@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
 import { getProduct } from "../api";
 import Addproduct from "../components/Addproduct";
+import Delproduct from "../components/Delproduct";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState("");
   const [isAddProductVisible, setIsAddProductVisible] = useState(false);
+  const [isDeleteProductVisible, setIsDeleteProductVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -14,10 +17,14 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
+      setIsLoading(true);
       const data = await getProduct();
       setProducts(data);
+      setError("");
     } catch (err) {
       setError("ดึงข้อมูลไม่สำเร็จ");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -29,18 +36,71 @@ const Products = () => {
     setIsAddProductVisible(false);
   };
 
+  const handleOpenDeleteproduct = () => {
+    setIsDeleteProductVisible(true);
+  };
+
+  const handleCloseDeleteproduct = () => {
+    setIsDeleteProductVisible(false);
+  };
+
+  const handleOpenUpdateproduct = () => {
+    setIsUpdateProductVisible(true);
+  };
+
+  const handleCloseUpdateproduct = () => {
+    setIsUpdateProductVisible(false);
+  };
+
+  const handleDeleteSuccess = (deletedproductId) => {
+    // อัปเดต state หลังจากลบสินค้าสำเร็จ
+    setProducts((prevProducts) => 
+      prevProducts.filter(product => product.id !== deletedproductId)
+    );
+    // แสดง toast หรือข้อความแจ้งเตือน (ถ้าต้องการ)
+  };
+
+  if (isLoading) {
+    return <div className="text-center p-4">กำลังโหลด...</div>;
+  }
+
   return (
     <div>
       <h1 className={styles["heading-background"]}>จัดการเมนู</h1>
 
-      <button
-        onClick={handleOpenAddproduct}
-        className={styles["image-add-button"]}
-      >
-        <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
-      </button>
+      <div className={styles["button-container"]}>
+        <button
+          onClick={handleOpenAddproduct}
+          className={styles["image-add-button"]}
+          title="เพิ่มสินค้าใหม่"
+        >
+          <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
+        </button>
 
-      {/* แสดงฟอร์ม AddProduct เมื่อ isAddProductVisible เป็น true */}
+        <button
+          onClick={handleOpenDeleteproduct}
+          className={styles["image-del-button"]}
+          title="ลบสินค้า"
+        >
+          <img src="/images/-.png" alt="ลบสินค้า" />
+        </button>
+
+        <button
+          onClick={handleOpenUpdateproduct}
+          className={styles["image-up-button"]}
+          title="แก้ไขสินค้า"
+        >
+          <img src="/images/up.png" alt="แก้ไขสินค้า" />
+        </button>
+      </div>
+
+      {error && (
+        <div className="text-red-500 text-center p-4">
+          {error}
+        </div>
+      )}
+
+      {/* Modal สำหรับเพิ่มสินค้า */}
       {isAddProductVisible && (
         <Addproduct
           onClose={handleCloseAddproduct}
@@ -50,14 +110,25 @@ const Products = () => {
         />
       )}
 
+      {/* Modal สำหรับลบสินค้า */}
+      {isDeleteProductVisible && (
+        <Delproduct
+          onClose={handleCloseDeleteproduct}
+          onDeleteProduct={handleDeleteSuccess}
+        />
+      )}
+
       <div className={styles["product-list"]}>
         {products.length > 0 ? (
           products.map((product) => (
             <div key={product.id} className={styles["product-item"]}>
               <img
-                src={`http://localhost:3001${product.image_url}`} // เพิ่ม base URL
+                src={`http://localhost:3001${product.image_url}`}
                 className={styles["product-image"]}
                 alt={product.name}
+                onError={(e) => {
+                  e.target.src = "/images/default-product.png"; // ใส่รูป default ถ้าโหลดรูปไม่สำเร็จ
+                }}
               />
               <p>
                 <strong>รหัสสินค้า:</strong> {product.id}
@@ -77,7 +148,7 @@ const Products = () => {
             </div>
           ))
         ) : (
-          <p>ไม่มีข้อมูลสินค้า</p>
+          <p className="text-center p-4">ไม่มีข้อมูลสินค้า</p>
         )}
       </div>
     </div>

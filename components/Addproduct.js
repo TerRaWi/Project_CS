@@ -18,28 +18,28 @@ const Addproduct = ({ onClose, onAddProduct }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const formData = new FormData();
-    formData.append('id', productId);
-    formData.append('name', productName);
-    formData.append('price', parseFloat(productPrice));
-    formData.append('category_id', productCategory);
+    formData.append("id", productId);
+    formData.append("name", productName);
+    formData.append("price", parseFloat(productPrice));
+    formData.append("category_id", productCategory);
     if (productImage) {
-      formData.append('image', productImage);
+      formData.append("image", productImage);
     }
-  
+
     try {
       const newProduct = await addproducts(formData);
       onAddProduct(newProduct);
       onClose();
     } catch (error) {
-      console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', error);
-      
+      console.error("เกิดข้อผิดพลาดในการเพิ่มสินค้า:", error);
+
       // ตรวจสอบว่าเป็น error จาก product id ซ้ำ
       if (error.response && error.response.data.duplicate) {
-        alert('รหัสสินค้านี้มีอยู่แล้ว กรุณาเลือกรหัสสินค้าอื่น');
+        alert("รหัสสินค้านี้มีอยู่แล้ว กรุณาเลือกรหัสสินค้าอื่น");
       } else {
-        alert('เกิดข้อผิดพลาดในการเพิ่มสินค้า');
+        alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
       }
     }
   };
@@ -63,7 +63,12 @@ const Addproduct = ({ onClose, onAddProduct }) => {
             <input
               type="text"
               value={productName}
-              onChange={(e) => setProductName(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^[ก-๛a-zA-Z\s]*$/.test(value)) {
+                  setProductName(value);
+                }
+              }}
               required
             />
           </label>
@@ -71,7 +76,7 @@ const Addproduct = ({ onClose, onAddProduct }) => {
             ราคา:
             <input
               type="number"
-              step="0.01"
+              step="1.00"
               value={productPrice}
               onChange={(e) => setProductPrice(e.target.value)}
               required
@@ -96,7 +101,10 @@ const Addproduct = ({ onClose, onAddProduct }) => {
             />
           </label>
           <div className={styles["button-group"]}>
-            <button type="submit" className={`${styles["button"]} ${styles["submit"]}`}>
+            <button
+              type="submit"
+              className={`${styles["button"]} ${styles["submit"]}`}
+            >
               บันทึก
             </button>
             <button

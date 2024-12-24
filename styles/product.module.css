@@ -15,12 +15,44 @@
   padding: 0;
   cursor: pointer;
   position: absolute; /* ใช้ absolute position */
-  right: 20px;        /* กำหนดตำแหน่งทางขวา */
+  right: 190px;        /* กำหนดตำแหน่งทางขวา */
   top: 20px;          /* กำหนดตำแหน่งทางบน */
   z-index: 1000;      /* ทำให้ปุ่มอยู่ด้านหน้า */
 }
 
 .image-add-button img {
+  width: 50px;  /* ขนาดของรูปภาพ */
+  height: 50px;
+}
+
+.image-del-button {
+  background: none; /* ลบพื้นหลัง */
+  border: none;     /* ลบกรอบ */
+  padding: 0;
+  cursor: pointer;
+  position: absolute; /* ใช้ absolute position */
+  right: 110px;        /* กำหนดตำแหน่งทางขวา */
+  top: 20px;          /* กำหนดตำแหน่งทางบน */
+  z-index: 1000;      /* ทำให้ปุ่มอยู่ด้านหน้า */
+}
+
+.image-del-button img {
+  width: 50px;  /* ขนาดของรูปภาพ */
+  height: 50px;
+}
+
+.image-up-button {
+  background: none; /* ลบพื้นหลัง */
+  border: none;     /* ลบกรอบ */
+  padding: 0;
+  cursor: pointer;
+  position: absolute; /* ใช้ absolute position */
+  right: 30px;        /* กำหนดตำแหน่งทางขวา */
+  top: 20px;          /* กำหนดตำแหน่งทางบน */
+  z-index: 1000;      /* ทำให้ปุ่มอยู่ด้านหน้า */
+}
+
+.image-up-button img {
   width: 50px;  /* ขนาดของรูปภาพ */
   height: 50px;
 }
@@ -65,4 +97,3 @@
   object-fit: cover;
   border-radius: 5px;
 }
-

@@ -75,12 +75,22 @@ export const addproducts = async (productData) => {
   }
 };
 
-// เพิ่มฟังก์ชันลบสินค้า
-export const deleteProduct = async (id) => {
+ // เพิ่มฟังก์ชันลบสินค้า
+export const deleteproducts = async (id) => {
   try {
     const response = await axios.delete(`${API_URL}/product/${id}`);
     return response.data;
   } catch (error) {
+    if (error.response) {
+      switch (error.response.status) {
+        case 404:
+          throw new Error('ไม่พบสินค้าที่ต้องการลบ');
+        case 500:
+          throw new Error('เกิดข้อผิดพลาดในการลบสินค้า');
+        default:
+          throw new Error('เกิดข้อผิดพลาดในการดำเนินการ');
+      }
+    }
     console.error('เกิดข้อผิดพลาดในการลบสินค้า:', error);
     throw error;
   }
