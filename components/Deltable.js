@@ -1,3 +1,4 @@
+//ลบโต๊ะ
 import React, { useState } from 'react';
 import styles from '../styles/tablelayout.module.css';
 import { deleteTable } from '../api';

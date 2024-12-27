@@ -3,12 +3,15 @@ import styles from "../styles/product.module.css";
 import { getProduct } from "../api";
 import Addproduct from "../components/Addproduct";
 import Delproduct from "../components/Delproduct";
+import Updateproduct from "../components/Updateproduct";  // เพิ่มการ import
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState("");
   const [isAddProductVisible, setIsAddProductVisible] = useState(false);
   const [isDeleteProductVisible, setIsDeleteProductVisible] = useState(false);
+  const [isUpdateProductVisible, setIsUpdateProductVisible] = useState(false);  // เพิ่ม state
+  const [selectedProduct, setSelectedProduct] = useState(null);  // เพิ่ม state
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -44,20 +47,29 @@ const Products = () => {
     setIsDeleteProductVisible(false);
   };
 
-  const handleOpenUpdateproduct = () => {
+  // เพิ่มฟังก์ชันสำหรับจัดการการแก้ไขสินค้า
+  const handleOpenUpdateProduct = (product) => {
+    setSelectedProduct(product);
     setIsUpdateProductVisible(true);
   };
 
-  const handleCloseUpdateproduct = () => {
+  const handleCloseUpdateProduct = () => {
+    setSelectedProduct(null);
     setIsUpdateProductVisible(false);
   };
 
-  const handleDeleteSuccess = (deletedproductId) => {
-    // อัปเดต state หลังจากลบสินค้าสำเร็จ
-    setProducts((prevProducts) => 
-      prevProducts.filter(product => product.id !== deletedproductId)
+  const handleUpdateSuccess = (updatedProduct) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product
+      )
     );
-    // แสดง toast หรือข้อความแจ้งเตือน (ถ้าต้องการ)
+  };
+
+  const handleDeleteSuccess = (deletedproductId) => {
+    setProducts((prevProducts) =>
+      prevProducts.filter((product) => product.id !== deletedproductId)
+    );
   };
 
   if (isLoading) {
@@ -84,21 +96,9 @@ const Products = () => {
         >
           <img src="/images/-.png" alt="ลบสินค้า" />
         </button>
-
-        <button
-          onClick={handleOpenUpdateproduct}
-          className={styles["image-up-button"]}
-          title="แก้ไขสินค้า"
-        >
-          <img src="/images/up.png" alt="แก้ไขสินค้า" />
-        </button>
       </div>
 
-      {error && (
-        <div className="text-red-500 text-center p-4">
-          {error}
-        </div>
-      )}
+      {error && <div className="text-red-500 text-center p-4">{error}</div>}
 
       {/* Modal สำหรับเพิ่มสินค้า */}
       {isAddProductVisible && (
@@ -118,6 +118,15 @@ const Products = () => {
         />
       )}
 
+      {/* เพิ่ม Modal สำหรับแก้ไขสินค้า */}
+      {isUpdateProductVisible && selectedProduct && (
+        <Updateproduct
+          product={selectedProduct}
+          onClose={handleCloseUpdateProduct}
+          onUpdateSuccess={handleUpdateSuccess}
+        />
+      )}
+
       <div className={styles["product-list"]}>
         {products.length > 0 ? (
           products.map((product) => (
@@ -127,7 +136,7 @@ const Products = () => {
                 className={styles["product-image"]}
                 alt={product.name}
                 onError={(e) => {
-                  e.target.src = "/images/default-product.png"; // ใส่รูป default ถ้าโหลดรูปไม่สำเร็จ
+                  e.target.src = "/images/default-product.png";
                 }}
               />
               <p>
@@ -145,6 +154,13 @@ const Products = () => {
                   ? Number(product.price).toFixed(2)
                   : "N/A"}
               </p>
+              {/* เพิ่มปุ่มแก้ไข */}
+              <button
+                onClick={() => handleOpenUpdateProduct(product)}
+                className="bg-blue-500 text-white px-4 py-2 rounded mt-2 hover:bg-blue-600"
+              >
+                แก้ไข
+              </button>
             </div>
           ))
         ) : (

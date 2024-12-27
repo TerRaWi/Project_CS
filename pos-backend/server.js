@@ -225,6 +225,54 @@ app.delete('/api/product/:id', (req, res) => {
   });
 });
 
+// Add this endpoint in server.js
+app.put('/api/product/:id', upload.single('image'), (req, res) => {
+  const { id } = req.params;
+  const { name, price, category_id } = req.body;
+  
+  // Check if product exists
+  db.query('SELECT image_url FROM product WHERE id = ?', [id], (checkErr, checkResults) => {
+    if (checkErr) {
+      console.error('เกิดข้อผิดพลาดในการตรวจสอบสินค้า:', checkErr);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
+    }
+
+    if (checkResults.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบสินค้าที่ต้องการแก้ไข' });
+    }
+
+    const oldImageUrl = checkResults[0].image_url;
+    const image_url = req.file ? `/uploads/${req.file.filename}` : oldImageUrl;
+
+    // If new image is uploaded, delete old image
+    if (req.file && oldImageUrl) {
+      const oldImagePath = path.join(__dirname, oldImageUrl);
+      fs.unlink(oldImagePath, (unlinkErr) => {
+        if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+          console.error('เกิดข้อผิดพลาดในการลบรูปภาพเก่า:', unlinkErr);
+        }
+      });
+    }
+
+    // Update product in database
+    const query = 'UPDATE product SET name = ?, price = ?, category_id = ?, image_url = ? WHERE id = ?';
+    db.query(query, [name, price, category_id, image_url, id], (updateErr, result) => {
+      if (updateErr) {
+        console.error('เกิดข้อผิดพลาดในการอัปเดตสินค้า:', updateErr);
+        return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
+      }
+
+      res.json({
+        id,
+        name,
+        price,
+        category_id,
+        image_url
+      });
+    });
+  });
+});
+
 app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, () => {

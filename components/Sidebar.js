@@ -1,3 +1,4 @@
+//Sidebar หน้าต่างหลักด้านซ้าย
 import Link from 'next/link';
 import { FaHome, FaClipboardList, FaBell, FaChartLine, FaCog } from 'react-icons/fa';
 import { MdOutlineTableRestaurant } from "react-icons/md";

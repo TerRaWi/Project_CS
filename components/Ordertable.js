@@ -1,3 +1,4 @@
+//Sidebarคำสั่งของโต๊ะ
 import React from "react";
 import styles from "../styles/ordertable.module.css";
 

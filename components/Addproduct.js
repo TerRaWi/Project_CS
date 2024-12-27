@@ -1,3 +1,4 @@
+//สร้างสินค้า
 import { useState } from "react";
 import styles from "../styles/addproduct.module.css";
 import { addproducts } from "../api";

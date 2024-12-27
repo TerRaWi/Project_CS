@@ -1,3 +1,4 @@
+//ลบสินค้า//ยังไม่เสร็จ
 import React, { useState } from 'react';
 import { deleteproducts } from "../api";
 
