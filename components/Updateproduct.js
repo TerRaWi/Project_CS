@@ -151,5 +151,4 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
     </div>
   );
 };
-
 export default Updateproduct;

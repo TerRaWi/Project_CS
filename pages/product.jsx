@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
 import { getProduct } from "../api";
 import Addproduct from "../components/Addproduct";
+import Updateproduct from "../components/Updateproduct";
 import Delproduct from "../components/Delproduct";
-import Updateproduct from "../components/Updateproduct";  // เพิ่มการ import
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState("");
-  const [isAddProductVisible, setIsAddProductVisible] = useState(false);
-  const [isDeleteProductVisible, setIsDeleteProductVisible] = useState(false);
-  const [isUpdateProductVisible, setIsUpdateProductVisible] = useState(false);  // เพิ่ม state
-  const [selectedProduct, setSelectedProduct] = useState(null);  // เพิ่ม state
+  const [modalState, setModalState] = useState({
+    type: null,
+    isVisible: false,
+    selectedProduct: null,
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -31,31 +32,26 @@ const Products = () => {
     }
   };
 
-  const handleOpenAddproduct = () => {
-    setIsAddProductVisible(true);
+  const handleDeleteSuccess = (deletedProductId) => {
+    setProducts((prevProducts) =>
+      prevProducts.filter((product) => product.id !== deletedProductId)
+    );
   };
 
-  const handleCloseAddproduct = () => {
-    setIsAddProductVisible(false);
-  };
-
-  const handleOpenDeleteproduct = () => {
-    setIsDeleteProductVisible(true);
-  };
-
-  const handleCloseDeleteproduct = () => {
-    setIsDeleteProductVisible(false);
-  };
-
-  // เพิ่มฟังก์ชันสำหรับจัดการการแก้ไขสินค้า
   const handleOpenUpdateProduct = (product) => {
-    setSelectedProduct(product);
-    setIsUpdateProductVisible(true);
+    setModalState({
+      type: "update",
+      isVisible: true,
+      selectedProduct: product,
+    });
   };
 
-  const handleCloseUpdateProduct = () => {
-    setSelectedProduct(null);
-    setIsUpdateProductVisible(false);
+  const handleCloseModal = () => {
+    setModalState({
+      type: null,
+      isVisible: false,
+      selectedProduct: null,
+    });
   };
 
   const handleUpdateSuccess = (updatedProduct) => {
@@ -64,12 +60,7 @@ const Products = () => {
         product.id === updatedProduct.id ? updatedProduct : product
       )
     );
-  };
-
-  const handleDeleteSuccess = (deletedproductId) => {
-    setProducts((prevProducts) =>
-      prevProducts.filter((product) => product.id !== deletedproductId)
-    );
+    handleCloseModal();
   };
 
   if (isLoading) {
@@ -82,50 +73,42 @@ const Products = () => {
 
       <div className={styles["button-container"]}>
         <button
-          onClick={handleOpenAddproduct}
+          onClick={() =>
+            setModalState({
+              type: "add",
+              isVisible: true,
+              selectedProduct: null,
+            })
+          }
           className={styles["image-add-button"]}
           title="เพิ่มสินค้าใหม่"
         >
           <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
         </button>
-
-        <button
-          onClick={handleOpenDeleteproduct}
-          className={styles["image-del-button"]}
-          title="ลบสินค้า"
-        >
-          <img src="/images/-.png" alt="ลบสินค้า" />
-        </button>
       </div>
 
       {error && <div className="text-red-500 text-center p-4">{error}</div>}
 
-      {/* Modal สำหรับเพิ่มสินค้า */}
-      {isAddProductVisible && (
+      {/* Modals */}
+      {modalState.isVisible && modalState.type === "add" && (
         <Addproduct
-          onClose={handleCloseAddproduct}
+          onClose={handleCloseModal}
           onAddProduct={(newProduct) => {
             setProducts((prevProducts) => [...prevProducts, newProduct]);
+            handleCloseModal();
           }}
         />
       )}
 
-      {/* Modal สำหรับลบสินค้า */}
-      {isDeleteProductVisible && (
-        <Delproduct
-          onClose={handleCloseDeleteproduct}
-          onDeleteProduct={handleDeleteSuccess}
-        />
-      )}
-
-      {/* เพิ่ม Modal สำหรับแก้ไขสินค้า */}
-      {isUpdateProductVisible && selectedProduct && (
-        <Updateproduct
-          product={selectedProduct}
-          onClose={handleCloseUpdateProduct}
-          onUpdateSuccess={handleUpdateSuccess}
-        />
-      )}
+      {modalState.isVisible &&
+        modalState.type === "update" &&
+        modalState.selectedProduct && (
+          <Updateproduct
+            product={modalState.selectedProduct}
+            onClose={handleCloseModal}
+            onUpdateSuccess={handleUpdateSuccess}
+          />
+        )}
 
       <div className={styles["product-list"]}>
         {products.length > 0 ? (
@@ -135,9 +118,10 @@ const Products = () => {
                 src={`http://localhost:3001${product.image_url}`}
                 className={styles["product-image"]}
                 alt={product.name}
-                onError={(e) => {
-                  e.target.src = "/images/default-product.png";
-                }}
+              />
+              <Delproduct 
+                productId={product.id}
+                onDelete={handleDeleteSuccess}
               />
               <p>
                 <strong>รหัสสินค้า:</strong> {product.id}
@@ -154,10 +138,9 @@ const Products = () => {
                   ? Number(product.price).toFixed(2)
                   : "N/A"}
               </p>
-              {/* เพิ่มปุ่มแก้ไข */}
               <button
                 onClick={() => handleOpenUpdateProduct(product)}
-                className="bg-blue-500 text-white px-4 py-2 rounded mt-2 hover:bg-blue-600"
+                className="bg-blue-500 text-white px-4 py-2 rounded mt-2 hover:bg-blue-600 w-full"
               >
                 แก้ไข
               </button>
