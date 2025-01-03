@@ -2,11 +2,18 @@ import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
 import { getProduct } from "../api";
 import Addproduct from "../components/Addproduct";
+import Updateproduct from "../components/Updateproduct";
+import Delproduct from "../components/Delproduct";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState("");
-  const [isAddProductVisible, setIsAddProductVisible] = useState(false);
+  const [modalState, setModalState] = useState({
+    type: null,
+    isVisible: false,
+    selectedProduct: null,
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -14,50 +21,107 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
+      setIsLoading(true);
       const data = await getProduct();
       setProducts(data);
+      setError("");
     } catch (err) {
       setError("ดึงข้อมูลไม่สำเร็จ");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleOpenAddproduct = () => {
-    setIsAddProductVisible(true);
+  const handleDeleteSuccess = (deletedProductId) => {
+    setProducts((prevProducts) =>
+      prevProducts.filter((product) => product.id !== deletedProductId)
+    );
   };
 
-  const handleCloseAddproduct = () => {
-    setIsAddProductVisible(false);
+  const handleOpenUpdateProduct = (product) => {
+    setModalState({
+      type: "update",
+      isVisible: true,
+      selectedProduct: product,
+    });
   };
+
+  const handleCloseModal = () => {
+    setModalState({
+      type: null,
+      isVisible: false,
+      selectedProduct: null,
+    });
+  };
+
+  const handleUpdateSuccess = (updatedProduct) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product
+      )
+    );
+    handleCloseModal();
+  };
+
+  if (isLoading) {
+    return <div className="text-center p-4">กำลังโหลด...</div>;
+  }
 
   return (
     <div>
       <h1 className={styles["heading-background"]}>จัดการเมนู</h1>
 
-      <button
-        onClick={handleOpenAddproduct}
-        className={styles["image-add-button"]}
-      >
-        <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
-      </button>
+      <div className={styles["button-container"]}>
+        <button
+          onClick={() =>
+            setModalState({
+              type: "add",
+              isVisible: true,
+              selectedProduct: null,
+            })
+          }
+          className={styles["image-add-button"]}
+          title="เพิ่มสินค้าใหม่"
+        >
+          <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
+        </button>
+      </div>
 
-      {/* แสดงฟอร์ม AddProduct เมื่อ isAddProductVisible เป็น true */}
-      {isAddProductVisible && (
+      {error && <div className="text-red-500 text-center p-4">{error}</div>}
+
+      {/* Modals */}
+      {modalState.isVisible && modalState.type === "add" && (
         <Addproduct
-          onClose={handleCloseAddproduct}
+          onClose={handleCloseModal}
           onAddProduct={(newProduct) => {
             setProducts((prevProducts) => [...prevProducts, newProduct]);
+            handleCloseModal();
           }}
         />
       )}
+
+      {modalState.isVisible &&
+        modalState.type === "update" &&
+        modalState.selectedProduct && (
+          <Updateproduct
+            product={modalState.selectedProduct}
+            onClose={handleCloseModal}
+            onUpdateSuccess={handleUpdateSuccess}
+          />
+        )}
 
       <div className={styles["product-list"]}>
         {products.length > 0 ? (
           products.map((product) => (
             <div key={product.id} className={styles["product-item"]}>
               <img
-                src={`http://localhost:3001${product.image_url}`} // เพิ่ม base URL
+                src={`http://localhost:3001${product.image_url}`}
                 className={styles["product-image"]}
                 alt={product.name}
+              />
+              <Delproduct 
+                productId={product.id}
+                onDelete={handleDeleteSuccess}
               />
               <p>
                 <strong>รหัสสินค้า:</strong> {product.id}
@@ -74,10 +138,16 @@ const Products = () => {
                   ? Number(product.price).toFixed(2)
                   : "N/A"}
               </p>
+              <button
+                onClick={() => handleOpenUpdateProduct(product)}
+                className="bg-blue-500 text-white px-4 py-2 rounded mt-2 hover:bg-blue-600 w-full"
+              >
+                แก้ไข
+              </button>
             </div>
           ))
         ) : (
-          <p>ไม่มีข้อมูลสินค้า</p>
+          <p className="text-center p-4">ไม่มีข้อมูลสินค้า</p>
         )}
       </div>
     </div>

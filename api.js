@@ -75,13 +75,48 @@ export const addproducts = async (productData) => {
   }
 };
 
-// เพิ่มฟังก์ชันลบสินค้า
-export const deleteProduct = async (id) => {
+ // เพิ่มฟังก์ชันลบสินค้า
+export const deleteproducts = async (id) => {
   try {
     const response = await axios.delete(`${API_URL}/product/${id}`);
     return response.data;
   } catch (error) {
+    if (error.response) {
+      switch (error.response.status) {
+        case 404:
+          throw new Error('ไม่พบสินค้าที่ต้องการลบ');
+        case 500:
+          throw new Error('เกิดข้อผิดพลาดในการลบสินค้า');
+        default:
+          throw new Error('เกิดข้อผิดพลาดในการดำเนินการ');
+      }
+    }
     console.error('เกิดข้อผิดพลาดในการลบสินค้า:', error);
+    throw error;
+  }
+};
+
+// Add this function in api.js
+export const updateProduct = async (id, productData) => {
+  try {
+    const response = await axios.put(`${API_URL}/product/${id}`, productData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      switch (error.response.status) {
+        case 404:
+          throw new Error('ไม่พบสินค้าที่ต้องการแก้ไข');
+        case 500:
+          throw new Error('เกิดข้อผิดพลาดในการแก้ไขสินค้า');
+        default:
+          throw new Error('เกิดข้อผิดพลาดในการดำเนินการ');
+      }
+    }
+    console.error('เกิดข้อผิดพลาดในการแก้ไขสินค้า:', error);
     throw error;
   }
 };

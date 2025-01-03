@@ -1,3 +1,4 @@
+//บันทึกคนนั่งโต๊ะ
 import React, { useState, useEffect } from "react";
 import styles from "../styles/rectable.module.css";
 import { saveCustomerData } from "../api";

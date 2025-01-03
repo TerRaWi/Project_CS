@@ -179,6 +179,100 @@ app.post('/api/product', upload.single('image'), (req, res) => {
   });
 });
 
+ // เพิ่ม endpoint สำหรับลบสินค้า
+app.delete('/api/product/:id', (req, res) => {
+  const productId = req.params.id;  // ดึงค่า id จาก URL parameters
+
+  if (!productId) {
+    return res.status(400).json({ error: 'ไม่ได้ระบุรหัสสินค้า' });
+  }
+
+  // ตรวจสอบว่ามีสินค้าอยู่หรือไม่ และดึง image_url
+  db.query('SELECT image_url FROM product WHERE id = ?', [productId], (err, results) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการตรวจสอบสินค้า:', err);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการตรวจสอบสินค้า' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบสินค้าที่ต้องการลบ' });
+    }
+
+    const imageUrl = results[0].image_url;
+
+    // ลบสินค้าจากฐานข้อมูล
+    db.query('DELETE FROM product WHERE id = ?', [productId], (deleteErr, deleteResult) => {
+      if (deleteErr) {
+        console.error('เกิดข้อผิดพลาดในการลบสินค้า:', deleteErr);
+        return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการลบสินค้า' });
+      }
+
+      // ถ้ามีไฟล์รูปภาพ ให้ลบไฟล์ด้วย
+      if (imageUrl) {
+        const imagePath = path.join(__dirname, imageUrl);
+        fs.unlink(imagePath, (unlinkErr) => {
+          if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+            console.error('เกิดข้อผิดพลาดในการลบไฟล์รูปภาพ:', unlinkErr);
+          }
+        });
+      }
+
+      res.json({ 
+        message: 'ลบสินค้าสำเร็จ', 
+        id: productId 
+      });
+    });
+  });
+});
+
+// Add this endpoint in server.js
+app.put('/api/product/:id', upload.single('image'), (req, res) => {
+  const { id } = req.params;
+  const { name, price, category_id } = req.body;
+  
+  // Check if product exists
+  db.query('SELECT image_url FROM product WHERE id = ?', [id], (checkErr, checkResults) => {
+    if (checkErr) {
+      console.error('เกิดข้อผิดพลาดในการตรวจสอบสินค้า:', checkErr);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
+    }
+
+    if (checkResults.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบสินค้าที่ต้องการแก้ไข' });
+    }
+
+    const oldImageUrl = checkResults[0].image_url;
+    const image_url = req.file ? `/uploads/${req.file.filename}` : oldImageUrl;
+
+    // If new image is uploaded, delete old image
+    if (req.file && oldImageUrl) {
+      const oldImagePath = path.join(__dirname, oldImageUrl);
+      fs.unlink(oldImagePath, (unlinkErr) => {
+        if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+          console.error('เกิดข้อผิดพลาดในการลบรูปภาพเก่า:', unlinkErr);
+        }
+      });
+    }
+
+    // Update product in database
+    const query = 'UPDATE product SET name = ?, price = ?, category_id = ?, image_url = ? WHERE id = ?';
+    db.query(query, [name, price, category_id, image_url, id], (updateErr, result) => {
+      if (updateErr) {
+        console.error('เกิดข้อผิดพลาดในการอัปเดตสินค้า:', updateErr);
+        return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
+      }
+
+      res.json({
+        id,
+        name,
+        price,
+        category_id,
+        image_url
+      });
+    });
+  });
+});
+
 app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, () => {

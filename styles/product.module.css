@@ -15,7 +15,7 @@
   padding: 0;
   cursor: pointer;
   position: absolute; /* ใช้ absolute position */
-  right: 20px;        /* กำหนดตำแหน่งทางขวา */
+  right: 50px;        /* กำหนดตำแหน่งทางขวา */
   top: 20px;          /* กำหนดตำแหน่งทางบน */
   z-index: 1000;      /* ทำให้ปุ่มอยู่ด้านหน้า */
 }
@@ -26,6 +26,7 @@
 }
 
 .product-list {
+  /* กล่องสินค้า */
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
@@ -33,8 +34,9 @@
 }
 
 .product-item {
+  /* กรอบกล่องสินค้า */
   background-color: #f9f9f9;
-  border: 1px solid #ddd;
+  border: 1px solid #dddddd;
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -66,3 +68,12 @@
   border-radius: 5px;
 }
 
+.delete-button {
+  cursor: pointer;
+  background-color: #ff4d4d;
+  border: 1px solid #ddd;
+  border-radius: 15px; /* ปรับค่าตามความมนที่ต้องการ */
+  padding: 8px;
+  height: 30px;
+  width:  30px;
+}
