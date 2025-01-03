@@ -1,13 +1,13 @@
-//แก้ไขสินค้า//ยังไม่เสร็จ
 import { useState, useEffect } from "react";
 import { updateProduct } from "../api";
+import styles from "../styles/product.module.css";
 
 const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
     category_id: "",
-    image: null
+    image: null,
   });
   const [previewImage, setPreviewImage] = useState("");
   const [error, setError] = useState("");
@@ -19,26 +19,28 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
         name: product.name,
         price: product.price,
         category_id: product.category_id,
-        image: null
+        image: null,
       });
-      setPreviewImage(product.image_url ? `http://localhost:3001${product.image_url}` : "");
+      setPreviewImage(
+        product.image_url ? `http://localhost:3001${product.image_url}` : ""
+      );
     }
   }, [product]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        image: file
+        image: file,
       }));
       setPreviewImage(URL.createObjectURL(file));
     }
@@ -69,67 +71,69 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">แก้ไขสินค้า</h2>
-        
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 ${styles.modal}`}
+    >
+      <div className="bg-white p-4 rounded max-w-md w-full mx-4">
+        <h2 className="text-xl mb-4">แก้ไขสินค้า</h2>
+
         {error && <div className="text-red-500 mb-4">{error}</div>}
-        
+
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block mb-2">ชื่อสินค้า:</label>
+          <div className="mb-3">
+            <label className="block">ชื่อสินค้า:</label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              className="w-full border rounded p-2"
+              className="w-full border p-2 mb-2"
               required
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block mb-2">ราคา:</label>
+          <div className="mb-3">
+            <label className="block">ราคา:</label>
             <input
               type="number"
               name="price"
               value={formData.price}
               onChange={handleInputChange}
-              className="w-full border rounded p-2"
+              className="w-full border p-2 mb-2"
               required
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block mb-2">หมวดหมู่:</label>
+          <div className="mb-3">
+            <label className="block">หมวดหมู่:</label>
             <input
               type="text"
               name="category_id"
               value={formData.category_id}
               onChange={handleInputChange}
-              className="w-full border rounded p-2"
+              className="w-full border p-2 mb-2"
               required
             />
           </div>
 
           <div className="mb-4">
-            <label className="block mb-2">รูปภาพ:</label>
+            <label className="block">รูปภาพ:</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              className="w-full"
+              className="w-full mb-2"
             />
             {previewImage && (
               <img
                 src={previewImage}
                 alt="Preview"
-                className="mt-2 max-w-xs"
+                className="mt-2 max-w-[200px]"
               />
             )}
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end space-x-2">
             <button
               type="button"
               onClick={onClose}
@@ -151,4 +155,5 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
     </div>
   );
 };
+
 export default Updateproduct;
