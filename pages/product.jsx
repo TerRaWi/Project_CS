@@ -1,3 +1,4 @@
+//สินค้า
 import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
 import { getProduct } from "../api";
@@ -140,7 +141,7 @@ const Products = () => {
               </p>
               <button
                 onClick={() => handleOpenUpdateProduct(product)}
-                className="bg-blue-500 text-white px-4 py-2 rounded mt-2 hover:bg-blue-600 w-full"
+                className={styles["edit-product"]}
               >
                 แก้ไข
               </button>

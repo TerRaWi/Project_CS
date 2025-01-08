@@ -1,3 +1,4 @@
+//จัดการโต๊ะ
 import React, { useState } from 'react';
 import styles from '../styles/tablelayout.module.css';
 import Addtable from '../components/Addtable';

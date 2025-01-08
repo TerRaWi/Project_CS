@@ -9,7 +9,7 @@ const Tables = () => {
   const [tables, setTables] = useState([]);
   const [error, setError] = useState('');
   const [selectedTable, setSelectedTable] = useState(null);
-  const [orderTable, setOrderTable] = useState(null); // State for order table
+  const [orderTable, setOrderTable] = useState(null); 
 
   useEffect(() => {
     fetchTables();
@@ -26,20 +26,23 @@ const Tables = () => {
 
   const handleButtonClick = (table) => {
     if (table.status === 'A') {
-      // If table status is 'A', open OrderFood component
+      // Open OrderFood and reset selectedTable
       setOrderTable(table);
+      setSelectedTable(null); // Reset Rectable
     } else {
-      // Otherwise, open Rectable component
+      // Open Rectable and reset orderTable
       setSelectedTable(table);
+      setOrderTable(null); // Reset OrderFood
     }
   };
-
+  
   const handleSave = (updatedTable) => {
     setTables(prevTables => 
       prevTables.map(table => 
         table.id === updatedTable.id ? updatedTable : table
       )
     );
+    fetchTables(); // เพิ่มการเรียก fetchTables หลังจากการ save
   };
 
   return (

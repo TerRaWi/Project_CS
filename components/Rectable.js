@@ -1,4 +1,3 @@
-//บันทึกคนนั่งโต๊ะ
 import React, { useState, useEffect } from "react";
 import styles from "../styles/rectable.module.css";
 import { saveCustomerData } from "../api";
@@ -78,7 +77,6 @@ const Rectable = ({ table, onClose, onSave }) => {
     const totalCount = numSmallChildren + numChildren + numAdults;
 
     try {
-      // เรียกใช้งาน API เพื่อบันทึกข้อมูล
       const response = await saveCustomerData(
         table.id,
         numAdults,
@@ -96,7 +94,7 @@ const Rectable = ({ table, onClose, onSave }) => {
       console.log("Response received:", response);
 
       alert("บันทึกข้อมูลสำเร็จ");
-      onSave(response);
+      onSave(response);  // ส่งข้อมูลที่อัพเดทกลับไปยัง parent component
       onClose();
     } catch (error) {
       console.error("Error saving customer data:", error);
@@ -179,5 +177,4 @@ const Rectable = ({ table, onClose, onSave }) => {
     </div>
   );
 };
-
 export default Rectable;
