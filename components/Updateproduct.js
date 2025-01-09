@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { updateProduct } from "../api";
-import styles from "../styles/product.module.css";
+import styles from "../styles/updateproduct.module.css";
 
 const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
   const [formData, setFormData] = useState({
@@ -71,80 +71,92 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
   };
 
   return (
-    <div
-      className={`fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 ${styles.modal}`}
-    >
-      <div className="bg-white p-4 rounded max-w-md w-full mx-4">
-        <h2 className="text-xl mb-4">แก้ไขสินค้า</h2>
-
-        {error && <div className="text-red-500 mb-4">{error}</div>}
+    <div className={styles.modal}>
+      <div className={styles["modal-content"]}>
+        <h2 className={styles["modal-title"]}>แก้ไขสินค้า</h2>
+        
+        {error && <div className={styles.error}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="block">ชื่อสินค้า:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full border p-2 mb-2"
-              required
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="block">ราคา:</label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleInputChange}
-              className="w-full border p-2 mb-2"
-              required
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="block">หมวดหมู่:</label>
-            <input
-              type="text"
-              name="category_id"
-              value={formData.category_id}
-              onChange={handleInputChange}
-              className="w-full border p-2 mb-2"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block">รูปภาพ:</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full mb-2"
-            />
-            {previewImage && (
-              <img
-                src={previewImage}
-                alt="Preview"
-                className="mt-2 max-w-[200px]"
+          <div className={styles["form-group"]}>
+            <label className={styles["form-label"]}>
+              ชื่อสินค้า
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={styles["form-input"]}
+                required
               />
+            </label>
+          </div>
+
+          <div className={styles["form-group"]}>
+            <label className={styles["form-label"]}>
+              ราคา
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleInputChange}
+                className={styles["form-input"]}
+                min="0"
+                step="0.01"
+                required
+              />
+            </label>
+          </div>
+
+          <div className={styles["form-group"]}>
+            <label className={styles["form-label"]}>
+              หมวดหมู่
+              <input
+                type="text"
+                name="category_id"
+                value={formData.category_id}
+                onChange={handleInputChange}
+                className={styles["form-input"]}
+                required
+              />
+            </label>
+          </div>
+
+          <div className={styles["form-group"]}>
+            <label className={styles["form-label"]}>
+              รูปภาพ
+              <div className={styles["file-input-container"]}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className={styles["file-input"]}
+                />
+              </div>
+            </label>
+            {previewImage && (
+              <div className={styles["preview-container"]}>
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  className={styles["preview-image"]}
+                />
+              </div>
             )}
           </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className={styles["button-group"]}>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 rounded"
+              className={`${styles.button} ${styles.cancel}`}
               disabled={isLoading}
             >
               ยกเลิก
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded"
+              className={`${styles.button} ${styles.submit}`}
               disabled={isLoading}
             >
               {isLoading ? "กำลังบันทึก..." : "บันทึก"}
