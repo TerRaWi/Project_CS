@@ -120,3 +120,18 @@ export const updateProduct = async (id, productData) => {
     throw error;
   }
 };
+
+export const createOrder = async (tableId, items) => {
+  try {
+    console.log('Sending order data:', { tableId, items }); // เพิ่ม log
+    const response = await axios.post(`${API_URL}/order`, {
+      tableId,
+      items
+    });
+    console.log('Order API response:', response.data); // เพิ่ม log
+    return response.data;
+  } catch (error) {
+    console.error('Error details:', error.response?.data || error.message);
+    throw error;
+  }
+};

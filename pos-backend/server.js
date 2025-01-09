@@ -273,6 +273,82 @@ app.put('/api/product/:id', upload.single('image'), (req, res) => {
   });
 });
 
+// เพิ่ม endpoint สำหรับสร้าง order
+app.post('/api/order', (req, res) => {
+  const { tableId, items } = req.body;
+  
+  // เริ่ม transaction
+  db.beginTransaction(err => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการเริ่ม transaction:', err);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order' });
+    }
+
+    // สร้าง order ใหม่
+    const orderQuery = `
+      INSERT INTO \`order\` (customer_id, date, status)
+      VALUES (?, NOW(), 'A')
+    `;
+
+    db.query(orderQuery, [tableId], (orderErr, orderResult) => {
+      if (orderErr) {
+        return db.rollback(() => {
+          console.error('เกิดข้อผิดพลาดในการสร้าง order:', orderErr);
+          res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order' });
+        });
+      }
+
+      const orderId = orderResult.insertId;
+      const orderDetails = [];
+      let detailId = 1; // เริ่มต้น ID ที่ 1
+
+      // สร้างข้อมูลสำหรับ orderdetail
+      items.forEach(item => {
+        orderDetails.push([
+          detailId++, // ใช้ detailId และเพิ่มค่า
+          item.id,
+          orderId,
+          item.quantity,
+          Number(item.price)
+        ]);
+      });
+
+      // เพิ่ม orderdetail
+      const detailQuery = `
+        INSERT INTO orderdetail 
+        (id, product_id, order_id, qty, price) 
+        VALUES ?
+      `;
+
+      db.query(detailQuery, [orderDetails], (detailErr) => {
+        if (detailErr) {
+          return db.rollback(() => {
+            console.error('เกิดข้อผิดพลาดในการสร้าง order details:', detailErr);
+            res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order details' });
+          });
+        }
+
+        // Commit transaction
+        db.commit(commitErr => {
+          if (commitErr) {
+            return db.rollback(() => {
+              console.error('เกิดข้อผิดพลาดในการ commit transaction:', commitErr);
+              res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order' });
+            });
+          }
+
+          res.status(201).json({
+            orderId,
+            tableId,
+            items,
+            message: 'สั่งอาหารสำเร็จ'
+          });
+        });
+      });
+    });
+  });
+});
+
 app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, () => {
