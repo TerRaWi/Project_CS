@@ -1,3 +1,4 @@
+//ฟังก์ชั่นบันทึกลูกค้าเข้าโต๊ะ//ทำงานกับหน้า table.jsx
 import React, { useState, useEffect } from "react";
 import styles from "../styles/rectable.module.css";
 import { saveCustomerData } from "../api";

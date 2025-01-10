@@ -1,3 +1,4 @@
+//ฟังก์ชั่นดเพิ่มโต๊ะ //ทำงานกับหน้าtablelayout.jsx
 import React, { useState } from 'react';
 import styles from '../styles/tablelayout.module.css';
 import { addTable } from '../api';

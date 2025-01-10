@@ -1,3 +1,4 @@
+//ฟังก์ชั่นสั่งอาหาร //ทำงานกับหน้าtable.jsx
 import React, { useState, useEffect } from 'react';
 import { getProduct, createOrder } from '../api';
 import styles from '../styles/ordermenu.module.css';

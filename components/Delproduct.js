@@ -1,3 +1,4 @@
+//ฟังก์ชั่นลบสินค้า //ทำงานกับหน้าproduct.jsx
 import React, { useState } from 'react';
 import styles from "../styles/product.module.css";
 import { deleteproducts } from "../api"; // import ฟังก์ชัน deleteproducts

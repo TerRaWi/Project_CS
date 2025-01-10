@@ -1,3 +1,4 @@
+//ฟังก์ชั่นคำสั่งโต๊ะ //ทำงานกับหน้าtable.jsx
 import React, { useState } from "react";
 import styles from "../styles/ordertable.module.css";
 import OrderMenu from "./OrderMenu";

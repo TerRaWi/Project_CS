@@ -1,3 +1,4 @@
+//ฟังก์ชั่นแก้ไขข้อมูลสินค้า //ทำงานกับหน้าproduct.jsx
 import { useState, useEffect } from "react";
 import { updateProduct } from "../api";
 import styles from "../styles/updateproduct.module.css";

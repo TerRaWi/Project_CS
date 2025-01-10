@@ -41,10 +41,10 @@ const TableLayout = () => {
     if (showAddCard) setShowAddCard(false);
   };
 
-  // เพิ่มฟังก์ชั่นสำหรับจัดการการเพิ่มโต๊ะใหม่
+  // เพิ่มฟังก์ชั่นเพิ่มโต๊ะใหม่
   const handleTableAdded = async () => {
-    await fetchTables(); // โหลดข้อมูลโต๊ะใหม่
-    setShowAddCard(false); // ปิด modal หลังจากเพิ่มโต๊ะเสร็จ
+    await fetchTables(); 
+    setShowAddCard(false);
   };
 
   return (
@@ -88,7 +88,7 @@ const TableLayout = () => {
       {showAddCard && (
         <Addtable 
           onClose={() => setShowAddCard(false)} 
-          onTableAdded={handleTableAdded} // เปลี่ยนจาก onAdd เป็น onTableAdded
+          onTableAdded={handleTableAdded}
         />
       )}
     </div>

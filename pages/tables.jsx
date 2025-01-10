@@ -70,7 +70,6 @@ const Tables = () => {
         </div>
       </div>
 
-      {/* Show Rectable if selectedTable is set */}
       {selectedTable && (
         <Rectable 
           table={selectedTable} 
@@ -78,8 +77,7 @@ const Tables = () => {
           onSave={handleSave}
         />
       )}
-
-      {/* Show OrderFood if orderTable is set */}
+      
       {orderTable && (
         <OrderFood 
           table={orderTable} 

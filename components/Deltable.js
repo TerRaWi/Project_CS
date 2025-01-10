@@ -1,3 +1,4 @@
+//ฟังก์ชั่นลบโต๊ะ //ทำงานกับหน้าtablelayout.jsx
 import React, { useState } from 'react';
 import styles from '../styles/tablelayout.module.css';
 import { deleteTable } from '../api';
