@@ -1,25 +1,34 @@
 //ฟังก์ชั่นสั่งอาหาร //ทำงานกับหน้าtable.jsx
 import React, { useState, useEffect } from 'react';
-import { getProduct, createOrder } from '../api';
+import { getProduct, getCategories, createOrder } from '../api';
 import styles from '../styles/ordermenu.module.css';
 
 const OrderMenu = ({ table, onClose }) => {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
-    fetchProducts();
+    fetchInitialData();
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchInitialData = async () => {
     try {
-      const data = await getProduct();
-      setProducts(data);
+      const [productsData, categoriesData] = await Promise.all([
+        getProduct(),
+        getCategories()
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
+      if (categoriesData.length > 0) {
+        setSelectedCategory(categoriesData[0].id);
+      }
       setError('');
     } catch (err) {
-      setError('ไม่สามารถดึงข้อมูลรายการอาหารได้');
+      setError('ไม่สามารถดึงข้อมูลได้');
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +87,6 @@ const OrderMenu = ({ table, onClose }) => {
     }
 
     try {
-      // แปลงข้อมูลให้ถูกต้องก่อนส่ง
       const orderItems = selectedItems.map(item => ({
         id: item.id,
         quantity: item.quantity,
@@ -90,8 +98,6 @@ const OrderMenu = ({ table, onClose }) => {
         table.id,
         orderItems
       );
-
-      console.log('Order response:', response); // เพิ่ม log เพื่อดูการตอบกลับ
       
       if (response && response.orderId) {
         alert('สั่งอาหารสำเร็จ');
@@ -123,21 +129,37 @@ const OrderMenu = ({ table, onClose }) => {
           {/* รายการอาหาร */}
           <div className={styles.menuSection}>
             <h3>รายการอาหาร</h3>
-            <div className={styles.menuGrid}>
-              {products.map(product => (
-                <div 
-                  key={product.id} 
-                  className={styles.menuItem}
-                  onClick={() => addToOrder(product)}
+            
+            {/* Category Tabs */}
+            <div className={styles.categoryTabs}>
+              {categories.map(category => (
+                <button
+                  key={category.id}
+                  className={`${styles.categoryTab} ${selectedCategory === category.id ? styles.active : ''}`}
+                  onClick={() => setSelectedCategory(category.id)}
                 >
-                  <img 
-                    src={`http://localhost:3001${product.image_url}`}
-                    alt={product.name}
-                    className={styles.menuImage}
-                  />
-                  <div className={styles.menuName}>{product.name}</div>
-                  <div className={styles.menuPrice}>฿{formatPrice(product.price)}</div>
-                </div>
+                  {category.name}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.menuGrid}>
+              {products
+                .filter(product => product.category_id === selectedCategory)
+                .map(product => (
+                  <div 
+                    key={product.id} 
+                    className={styles.menuItem}
+                    onClick={() => addToOrder(product)}
+                  >
+                    <img 
+                      src={`http://localhost:3001${product.image_url}`}
+                      alt={product.name}
+                      className={styles.menuImage}
+                    />
+                    <div className={styles.menuName}>{product.name}</div>
+                    <div className={styles.menuPrice}>฿{formatPrice(product.price)}</div>
+                  </div>
               ))}
             </div>
           </div>

@@ -84,7 +84,7 @@
   }
   
   .menuImage {
-    width: 120px;
+    width: 150px;
     height: 120px;
     object-fit: cover;
     border-radius: 4px;
@@ -172,4 +172,30 @@
   .confirmButton:disabled {
     background-color: #9ca3af;
     cursor: not-allowed;
+  }
+
+  .categoryTabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .categoryTab {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .categoryTab:hover {
+    background: #f3f4f6;
+  }
+  
+  .categoryTab.active {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
   }

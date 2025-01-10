@@ -356,6 +356,18 @@ app.post('/api/order', (req, res) => {
   });
 });
 
+// endpoint สำหรับดึงข้อมูล category
+app.get('/api/category', (req, res) => {
+  db.query('SELECT * FROM category ORDER BY id', (err, results) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
+      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+      return;
+    }
+    res.json(results);
+  });
+});
+
 app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, () => {
