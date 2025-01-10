@@ -107,6 +107,7 @@ app.delete('/api/customer/:id', (req, res) => {
     return res.status(400).json({ error: 'ต้องระบุ ID ของโต๊ะ' });
   }
 
+  // ตรวจสอบสถานะโต๊ะก่อนลบ
   db.query('SELECT * FROM customer WHERE id = ?', [id], (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการตรวจสอบโต๊ะ:', err);
@@ -117,9 +118,15 @@ app.delete('/api/customer/:id', (req, res) => {
       return res.status(404).json({ error: 'ไม่พบโต๊ะที่ต้องการลบ' });
     }
 
-    db.query('DELETE FROM customer WHERE id = ?', [id], (err, result) => {
-      if (err) {
-        console.error('เกิดข้อผิดพลาดในการลบโต๊ะ:', err);
+    // ตรวจสอบว่าโต๊ะมีคนนั่งอยู่หรือไม่
+    if (results[0].status === 'A') {
+      return res.status(400).json({ error: 'ไม่สามารถลบโต๊ะที่มีคนนั่งอยู่ได้' });
+    }
+
+    // ถ้าไม่มีคนนั่ง ดำเนินการลบโต๊ะ
+    db.query('DELETE FROM customer WHERE id = ?', [id], (deleteErr, result) => {
+      if (deleteErr) {
+        console.error('เกิดข้อผิดพลาดในการลบโต๊ะ:', deleteErr);
         return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
       }
 

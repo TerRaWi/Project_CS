@@ -96,6 +96,7 @@ const Products = () => {
           onClose={handleCloseModal}
           onAddProduct={(newProduct) => {
             setProducts((prevProducts) => [...prevProducts, newProduct]);
+            fetchProducts();
             handleCloseModal();
           }}
         />

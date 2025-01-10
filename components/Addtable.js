@@ -1,15 +1,13 @@
-//สร้างโต๊ะ
 import React, { useState } from 'react';
 import styles from '../styles/tablelayout.module.css';
 import { addTable } from '../api';
 
-const Addtable = ({ onClose }) => {
+const Addtable = ({ onClose, onTableAdded }) => {  // เพิ่ม onTableAdded prop
   const [number, setNumber] = useState('');
   const [error, setError] = useState(null);
 
   const handleNumberChange = (e) => {
     const value = e.target.value;
-
     if (value === '' || (parseInt(value, 10) >= 1 && parseInt(value, 10) <= 50)) {
       setNumber(value);
     }
@@ -22,8 +20,11 @@ const Addtable = ({ onClose }) => {
     }
 
     try {
-      await addTable(number);
+      const result = await addTable(number);
       alert(`เพิ่มโต๊ะเบอร์: ${number} สำเร็จ`);
+      if (onTableAdded) {
+        onTableAdded(result);  // เรียก callback function หลังจากเพิ่มโต๊ะสำเร็จ
+      }
       onClose();
     } catch (error) {
       console.error('Error adding table:', error);
@@ -45,7 +46,7 @@ const Addtable = ({ onClose }) => {
         max="50"
       />
       <button className={styles.submitButton} onClick={handleSubmit}>ตกลง</button>
-      {error && <p className={styles.error}>{error}</p>} {}
+      {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 };
