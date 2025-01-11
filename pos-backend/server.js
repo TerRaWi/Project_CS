@@ -107,6 +107,7 @@ app.delete('/api/customer/:id', (req, res) => {
     return res.status(400).json({ error: 'ต้องระบุ ID ของโต๊ะ' });
   }
 
+  // ตรวจสอบสถานะโต๊ะก่อนลบ
   db.query('SELECT * FROM customer WHERE id = ?', [id], (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการตรวจสอบโต๊ะ:', err);
@@ -117,9 +118,15 @@ app.delete('/api/customer/:id', (req, res) => {
       return res.status(404).json({ error: 'ไม่พบโต๊ะที่ต้องการลบ' });
     }
 
-    db.query('DELETE FROM customer WHERE id = ?', [id], (err, result) => {
-      if (err) {
-        console.error('เกิดข้อผิดพลาดในการลบโต๊ะ:', err);
+    // ตรวจสอบว่าโต๊ะมีคนนั่งอยู่หรือไม่
+    if (results[0].status === 'A') {
+      return res.status(400).json({ error: 'ไม่สามารถลบโต๊ะที่มีคนนั่งอยู่ได้' });
+    }
+
+    // ถ้าไม่มีคนนั่ง ดำเนินการลบโต๊ะ
+    db.query('DELETE FROM customer WHERE id = ?', [id], (deleteErr, result) => {
+      if (deleteErr) {
+        console.error('เกิดข้อผิดพลาดในการลบโต๊ะ:', deleteErr);
         return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
       }
 
@@ -270,6 +277,94 @@ app.put('/api/product/:id', upload.single('image'), (req, res) => {
         image_url
       });
     });
+  });
+});
+
+// เพิ่ม endpoint สำหรับสร้าง order
+app.post('/api/order', (req, res) => {
+  const { tableId, items } = req.body;
+  
+  // เริ่ม transaction
+  db.beginTransaction(err => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการเริ่ม transaction:', err);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order' });
+    }
+
+    // สร้าง order ใหม่
+    const orderQuery = `
+      INSERT INTO \`order\` (customer_id, date, status)
+      VALUES (?, NOW(), 'A')
+    `;
+
+    db.query(orderQuery, [tableId], (orderErr, orderResult) => {
+      if (orderErr) {
+        return db.rollback(() => {
+          console.error('เกิดข้อผิดพลาดในการสร้าง order:', orderErr);
+          res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order' });
+        });
+      }
+
+      const orderId = orderResult.insertId;
+      const orderDetails = [];
+      let detailId = 1; // เริ่มต้น ID ที่ 1
+
+      // สร้างข้อมูลสำหรับ orderdetail
+      items.forEach(item => {
+        orderDetails.push([
+          detailId++, // ใช้ detailId และเพิ่มค่า
+          item.id,
+          orderId,
+          item.quantity,
+          Number(item.price)
+        ]);
+      });
+
+      // เพิ่ม orderdetail
+      const detailQuery = `
+        INSERT INTO orderdetail 
+        (id, product_id, order_id, qty, price) 
+        VALUES ?
+      `;
+
+      db.query(detailQuery, [orderDetails], (detailErr) => {
+        if (detailErr) {
+          return db.rollback(() => {
+            console.error('เกิดข้อผิดพลาดในการสร้าง order details:', detailErr);
+            res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order details' });
+          });
+        }
+
+        // Commit transaction
+        db.commit(commitErr => {
+          if (commitErr) {
+            return db.rollback(() => {
+              console.error('เกิดข้อผิดพลาดในการ commit transaction:', commitErr);
+              res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order' });
+            });
+          }
+
+          res.status(201).json({
+            orderId,
+            tableId,
+            items,
+            message: 'สั่งอาหารสำเร็จ'
+          });
+        });
+      });
+    });
+  });
+});
+
+// endpoint สำหรับดึงข้อมูล category
+app.get('/api/category', (req, res) => {
+  db.query('SELECT * FROM category ORDER BY id', (err, results) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
+      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+      return;
+    }
+    res.json(results);
   });
 });
 

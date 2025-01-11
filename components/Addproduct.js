@@ -1,4 +1,4 @@
-//สร้างสินค้า
+//ฟังก์ชั่นสร้างสินค้า //ทำงานกับหน้า product.jsx
 import { useState } from "react";
 import styles from "../styles/addproduct.module.css";
 import { addproducts } from "../api";

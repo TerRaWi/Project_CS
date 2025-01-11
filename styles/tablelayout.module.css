@@ -79,3 +79,109 @@
   border-radius: 5px;
   cursor: pointer;
 }
+
+.container {
+  padding: 20px;
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tablesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  padding: 20px;
+  margin-top: 60px;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.table {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 30px;
+  cursor: pointer;
+}
+
+/* สร้างส่วนของโต๊ะ (ตรงกลาง) */
+.table::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background-color: #fff;
+  border: 2px solid #666;
+  border-radius: 8px;
+}
+
+/* สร้างเก้าอี้ด้านบนและล่าง */
+.table::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 20px;
+  background-color: #fff;
+  border: 2px solid #666;
+  border-radius: 10px;
+  box-shadow: 0 100px 0 0 #fff, 0 100px 0 2px #666;
+}
+
+/* สร้างเก้าอี้ด้านซ้ายและขวา */
+.table > div:first-child {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 30px;
+  background-color: #fff;
+  border: 2px solid #666;
+  border-radius: 10px;
+  box-shadow: 100px 0 0 0 #fff, 100px 0 0 2px #666;
+}
+
+.tableNumber {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  z-index: 1;
+}
+
+.deleteMode.table::before {
+  border-color: #ff4444;
+}
+
+.deleteMode:hover::before {
+  background-color: #ffebeb;
+}
+
+.deleteIcon {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 24px;
+  height: 24px;
+  background-color: #ff4444;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  z-index: 2;
+}
