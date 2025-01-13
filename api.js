@@ -138,3 +138,15 @@ export const getCategories = async () => {
     throw error;
   }
 };
+
+// Add this function to api.js
+
+export const getOrdersByTable = async (tableId) => {
+  try {
+    const response = await axios.get(`${API_URL}/orders/${tableId}`);
+    return response.data;
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์:', error);
+    throw error;
+  }
+};

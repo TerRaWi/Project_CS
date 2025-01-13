@@ -1,7 +1,7 @@
-//ฟังก์ชั่นสั่งอาหาร //ทำงานกับหน้าtable.jsx
 import React, { useState, useEffect } from 'react';
-import { getProduct, getCategories, createOrder } from '../api';
+import { getProduct, getCategories, createOrder, getOrdersByTable } from '../api';
 import styles from '../styles/ordermenu.module.css';
+import OrderView from './OrderView'; // Make sure this import path is correct
 
 const OrderMenu = ({ table, onClose }) => {
   const [products, setProducts] = useState([]);
@@ -9,7 +9,8 @@ const OrderMenu = ({ table, onClose }) => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('order'); // 'order' or 'history'
 
   useEffect(() => {
     fetchInitialData();
@@ -22,10 +23,10 @@ const OrderMenu = ({ table, onClose }) => {
         getCategories()
       ]);
       setProducts(productsData);
-      setCategories(categoriesData);
-      if (categoriesData.length > 0) {
-        setSelectedCategory(categoriesData[0].id);
-      }
+      setCategories([
+        { id: 'all', name: 'ทั้งหมด' },
+        ...categoriesData
+      ]);
       setError('');
     } catch (err) {
       setError('ไม่สามารถดึงข้อมูลได้');
@@ -101,7 +102,8 @@ const OrderMenu = ({ table, onClose }) => {
       
       if (response && response.orderId) {
         alert('สั่งอาหารสำเร็จ');
-        onClose();
+        setSelectedItems([]);
+        setActiveTab('history');
       } else {
         throw new Error('ไม่ได้รับ order ID จากเซิร์ฟเวอร์');
       }
@@ -109,6 +111,13 @@ const OrderMenu = ({ table, onClose }) => {
       console.error('เกิดข้อผิดพลาดในการสั่งอาหาร:', error);
       alert(error.response?.data?.error || 'เกิดข้อผิดพลาดในการสั่งอาหาร กรุณาลองใหม่อีกครั้ง');
     }
+  };
+
+  const getFilteredProducts = () => {
+    if (selectedCategory === 'all') {
+      return products;
+    }
+    return products.filter(product => product.category_id === selectedCategory);
   };
 
   if (isLoading) {
@@ -125,28 +134,46 @@ const OrderMenu = ({ table, onClose }) => {
           <button className={styles.closeButton} onClick={onClose}>✕</button>
         </div>
 
-        <div className={styles.content}>
-          {/* รายการอาหาร */}
-          <div className={styles.menuSection}>
-            <h3>รายการอาหาร</h3>
-            
-            {/* Category Tabs */}
-            <div className={styles.categoryTabs}>
-              {categories.map(category => (
-                <button
-                  key={category.id}
-                  className={`${styles.categoryTab} ${selectedCategory === category.id ? styles.active : ''}`}
-                  onClick={() => setSelectedCategory(category.id)}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
+        <div className="mb-4 border-b">
+          <div className="flex space-x-4">
+            <button
+              className={`px-4 py-2 ${activeTab === 'order' 
+                ? 'border-b-2 border-green-500 text-green-600' 
+                : 'text-gray-500'}`}
+              onClick={() => setActiveTab('order')}
+            >
+              สั่งอาหาร
+            </button>
+            <button
+              className={`px-4 py-2 ${activeTab === 'history' 
+                ? 'border-b-2 border-green-500 text-green-600' 
+                : 'text-gray-500'}`}
+              onClick={() => setActiveTab('history')}
+            >
+              ประวัติการสั่ง
+            </button>
+          </div>
+        </div>
 
-            <div className={styles.menuGrid}>
-              {products
-                .filter(product => product.category_id === selectedCategory)
-                .map(product => (
+        {activeTab === 'order' ? (
+          <div className={styles.content}>
+            <div className={styles.menuSection}>
+              <h3>รายการอาหาร</h3>
+              
+              <div className={styles.categoryTabs}>
+                {categories.map(category => (
+                  <button
+                    key={category.id}
+                    className={`${styles.categoryTab} ${selectedCategory === category.id ? styles.active : ''}`}
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.menuGrid}>
+                {getFilteredProducts().map(product => (
                   <div 
                     key={product.id} 
                     className={styles.menuItem}
@@ -160,57 +187,61 @@ const OrderMenu = ({ table, onClose }) => {
                     <div className={styles.menuName}>{product.name}</div>
                     <div className={styles.menuPrice}>฿{formatPrice(product.price)}</div>
                   </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* รายการที่สั่ง */}
-          <div className={styles.orderSection}>
-            <h3>รายการที่สั่ง</h3>
-            <div className={styles.orderList}>
-              {selectedItems.length === 0 ? (
-                <p>ยังไม่มีรายการที่สั่ง</p>
-              ) : (
-                <>
-                  {selectedItems.map(item => (
-                    <div key={item.id} className={styles.orderItem}>
-                      <div>
-                        <div>{item.name}</div>
-                        <div>฿{formatPrice(item.price)}</div>
+            <div className={styles.orderSection}>
+              <h3>รายการที่สั่ง</h3>
+              <div className={styles.orderList}>
+                {selectedItems.length === 0 ? (
+                  <p>ยังไม่มีรายการที่สั่ง</p>
+                ) : (
+                  <>
+                    {selectedItems.map(item => (
+                      <div key={item.id} className={styles.orderItem}>
+                        <div>
+                          <div>{item.name}</div>
+                          <div>฿{formatPrice(item.price)}</div>
+                        </div>
+                        <div className={styles.quantityControl}>
+                          <button 
+                            className={styles.quantityButton}
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          >
+                            -
+                          </button>
+                          <span>{item.quantity}</span>
+                          <button 
+                            className={styles.quantityButton}
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
-                      <div className={styles.quantityControl}>
-                        <button 
-                          className={styles.quantityButton}
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          -
-                        </button>
-                        <span>{item.quantity}</span>
-                        <button 
-                          className={styles.quantityButton}
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
+                    ))}
+                    <div className={styles.total}>
+                      <span>รวมทั้งหมด</span>
+                      <span>฿{formatPrice(calculateTotal())}</span>
                     </div>
-                  ))}
-                  <div className={styles.total}>
-                    <span>รวมทั้งหมด</span>
-                    <span>฿{formatPrice(calculateTotal())}</span>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+              </div>
+              <button 
+                className={styles.confirmButton}
+                onClick={handleConfirmOrder}
+                disabled={selectedItems.length === 0}
+              >
+                ยืนยันการสั่งอาหาร
+              </button>
             </div>
-            <button 
-              className={styles.confirmButton}
-              onClick={handleConfirmOrder}
-              disabled={selectedItems.length === 0}
-            >
-              ยืนยันการสั่งอาหาร
-            </button>
           </div>
-        </div>
+        ) : (
+          <div className="mt-4">
+            <OrderView tableId={table.id} />
+          </div>
+        )}
       </div>
     </div>
   );
