@@ -3,6 +3,7 @@ import { useState } from "react";
 import styles from "../styles/addproduct.module.css";
 import { addproducts } from "../api";
 
+// state สำหรับเก็บข้อมูล
 const Addproduct = ({ onClose, onAddProduct }) => {
   const [productId, setProductId] = useState("");
   const [productName, setProductName] = useState("");

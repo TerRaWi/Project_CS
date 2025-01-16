@@ -368,6 +368,52 @@ app.get('/api/category', (req, res) => {
   });
 });
 
+// Endpoint to get orders by table ID
+app.get('/api/orders/:tableId', (req, res) => {
+  const { tableId } = req.params;
+  
+  const query = `
+    SELECT o.id as order_id, o.date, o.status,
+           od.id, od.product_id, od.qty, od.price,
+           p.name as product_name
+    FROM \`order\` o
+    JOIN orderdetail od ON o.id = od.order_id
+    JOIN product p ON od.product_id = p.id
+    WHERE o.customer_id = ?
+    ORDER BY o.date DESC, od.id ASC
+  `;
+
+  db.query(query, [tableId], (err, results) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์:', err);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
+
+    // Group results by order
+    const orders = results.reduce((acc, curr) => {
+      const order = acc[curr.order_id] || {
+        orderId: curr.order_id,
+        date: curr.date,
+        status: curr.status,
+        items: []
+      };
+
+      order.items.push({
+        id: curr.id,
+        productId: curr.product_id,
+        productName: curr.product_name,
+        quantity: curr.qty,
+        price: curr.price
+      });
+
+      acc[curr.order_id] = order;
+      return acc;
+    }, {});
+
+    res.json(Object.values(orders));
+  });
+});
+
 app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, () => {

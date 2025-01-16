@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../styles/tablelayout.module.css';
-import { getTables, deleteTable } from '../api';
+import { getTables } from '../api';
 import Addtable from '../components/Addtable';
+import Deltable from '../components/Deltable';
 
 const TableLayout = () => {
   const [tables, setTables] = useState([]);
@@ -21,27 +22,6 @@ const TableLayout = () => {
     fetchTables();
   }, []);
 
-  const handleDeleteTable = async (tableId) => {
-    if (!window.confirm(`ยืนยันการลบโต๊ะเบอร์ ${tableId}?`)) {
-      return;
-    }
-    
-    try {
-      await deleteTable(tableId);
-      await fetchTables();
-      setIsDeleteMode(false);
-    } catch (error) {
-      console.error('Error deleting table:', error);
-      alert('เกิดข้อผิดพลาดในการลบโต๊ะ');
-    }
-  };
-
-  const toggleDeleteMode = () => {
-    setIsDeleteMode(!isDeleteMode);
-    if (showAddCard) setShowAddCard(false);
-  };
-
-  // เพิ่มฟังก์ชั่นเพิ่มโต๊ะใหม่
   const handleTableAdded = async () => {
     await fetchTables(); 
     setShowAddCard(false);
@@ -61,28 +41,13 @@ const TableLayout = () => {
         >
           <img src='/images/+.png' alt="ปุ่มเพิ่มโต๊ะ" />
         </button>
-        <button 
-          onClick={toggleDeleteMode} 
-          className={`${styles.imagedel} ${isDeleteMode ? styles.active : ''}`}
-        >
-          <img src='/images/-.png' alt="ปุ่มลบโต๊ะ" />
-        </button>
-      </div>
-
-      <div className={styles.tablesGrid}>
-        {tables.map((table) => (
-          <div
-            key={table.id}
-            className={`${styles.table} ${isDeleteMode ? styles.deleteMode : ''}`}
-            onClick={() => isDeleteMode && handleDeleteTable(table.id)}
-          >
-            <div></div>
-            <span className={styles.tableNumber}>{table.id}</span>
-            {isDeleteMode && (
-              <div className={styles.deleteIcon}>×</div>
-            )}
-          </div>
-        ))}
+        
+        <Deltable
+          tables={tables}
+          isDeleteMode={isDeleteMode}
+          onTableDelete={fetchTables}
+          onDeleteModeToggle={setIsDeleteMode}
+        />
       </div>
 
       {showAddCard && (
