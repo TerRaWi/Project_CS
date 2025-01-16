@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import styles from '../styles/tablelayout.module.css';
 import { addTable } from '../api';
 
-const Addtable = ({ onClose, onTableAdded }) => {  // เพิ่ม onTableAdded prop
+const Addtable = ({ onClose, onTableAdded }) => {
   const [number, setNumber] = useState('');
   const [error, setError] = useState(null);
 

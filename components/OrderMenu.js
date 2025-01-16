@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getProduct, getCategories, createOrder, getOrdersByTable } from '../api';
 import styles from '../styles/ordermenu.module.css';
-import OrderView from './OrderView'; // Make sure this import path is correct
+import OrderView from './OrderView';
 
 const OrderMenu = ({ table, onClose }) => {
   const [products, setProducts] = useState([]);
@@ -10,7 +10,7 @@ const OrderMenu = ({ table, onClose }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('order'); // 'order' or 'history'
+  const [activeTab, setActiveTab] = useState('order'); 
 
   useEffect(() => {
     fetchInitialData();

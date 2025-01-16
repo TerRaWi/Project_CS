@@ -76,7 +76,7 @@ const OrderView = ({ tableId }) => {
               <div className={`${styles.statusBadge} ${
                 order.status === 'A' ? styles.statusActive : styles.statusComplete
               }`}>
-                {order.status === 'A' ? 'กำลังดำเนินการ' : 'เสร็จสิ้น'}
+                {order.status === 'A' ? 'กำลังจัดเตรียม' : 'เสร็จสิ้น'}
               </div>
             </div>
             
