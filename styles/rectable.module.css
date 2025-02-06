@@ -1,38 +1,40 @@
 .rectableContainer {
   width: 350px;
   height: auto;
+  min-height: 450px; /* เพิ่มความสูงขั้นต่ำ */
   background-color: #f9f9f9;
   border-radius: 5%;
   padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   position: relative;
-  display: flex; /* เพิ่ม Flexbox */
-  flex-direction: column; /* ทำให้มีการจัดเรียงในแนวตั้ง */
+  display: flex;
+  flex-direction: column;
 }
 
 .rectableHeader {
   font-size: 24px;
   font-weight: bold;
-  margin-bottom: auto; /* ลดค่าของ margin-bottom เพื่อเลื่อนขึ้น */
-  margin-top: 0; /* หรือถ้าต้องการเลื่อนขึ้นมากขึ้นอาจจะลด margin-top */
+  margin-bottom: 40px; /* ปรับ margin ให้คงที่ */
+  margin-top: 10px;
 }
 
 .rectableContent {
   font-size: 16px;
   line-height: 1.5;
   color: #333;
-  margin-bottom: 10px;
+  margin-bottom: 30px; /* เพิ่ม margin-bottom ให้มีระยะห่างที่สม่ำเสมอ */
 }
 
 .closeButton {
+  position: absolute; /* ทำให้ปุ่มลอยอยู่ที่มุมบนขวา */
+  top: 10px;
+  right: 10px;
   background-color: #ff4d4d;
   color: white;
   font-size: 16px;
   border: none;
   padding: 10px;
   cursor: pointer;
-  margin-left: auto;
-  margin-bottom: 20px;
   border-radius: 5px;
 }
 
@@ -46,13 +48,12 @@
   text-align: center;
 }
 
-
 .numpad {
-display: flex;
-flex-wrap: wrap;
-gap: 5px;
-margin-top: 10px;
-justify-content: center;
+  margin-top: auto; /* ทำให้ numpad อยู่ด้านล่างเสมอ */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
 }
 
 .numpadButton {

@@ -149,39 +149,23 @@ app.get('/api/product', (req, res) => {
 
 // เพิ่ม endpoint สำหรับเพิ่มสินค้าใหม่
 app.post('/api/product', upload.single('image'), (req, res) => {
-  const { id, name, price, category_id } = req.body;
+  const { name, price, category_id } = req.body;
   
-  // ตรวจสอบ product id ก่อน
-  db.query('SELECT * FROM product WHERE id = ?', [id], (checkErr, checkResults) => {
-    if (checkErr) {
-      console.error('เกิดข้อผิดพลาดในการตรวจสอบสินค้า:', checkErr);
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  const query = 'INSERT INTO product (name, price, category_id, image_url) VALUES (?, ?, ?, ?)';
+  
+  db.query(query, [name, price, category_id, image_url], (err, result) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
       return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
     }
-
-    // ถ้ามี product id ซ้ำ
-    if (checkResults.length > 0) {
-      return res.status(409).json({ 
-        error: 'รหัสสินค้านี้มีอยู่แล้ว',
-        duplicate: true
-      });
-    }
-
-    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
-    const query = 'INSERT INTO product (id, name, price, category_id, image_url) VALUES (?, ?, ?, ?, ?)';
     
-    db.query(query, [id, name, price, category_id, image_url], (err, result) => {
-      if (err) {
-        console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
-        return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-      }
-      
-      res.status(201).json({ 
-        id, 
-        name, 
-        price, 
-        category_id, 
-        image_url 
-      });
+    res.status(201).json({ 
+      id: result.insertId,
+      name, 
+      price, 
+      category_id, 
+      image_url 
     });
   });
 });

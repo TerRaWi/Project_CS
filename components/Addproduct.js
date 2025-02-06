@@ -3,9 +3,7 @@ import { useState } from "react";
 import styles from "../styles/addproduct.module.css";
 import { addproducts } from "../api";
 
-// state สำหรับเก็บข้อมูล
 const Addproduct = ({ onClose, onAddProduct }) => {
-  const [productId, setProductId] = useState("");
   const [productName, setProductName] = useState("");
   const [productPrice, setProductPrice] = useState("");
   const [productCategory, setProductCategory] = useState("");
@@ -22,7 +20,6 @@ const Addproduct = ({ onClose, onAddProduct }) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("id", productId);
     formData.append("name", productName);
     formData.append("price", parseFloat(productPrice));
     formData.append("category_id", productCategory);
@@ -36,13 +33,7 @@ const Addproduct = ({ onClose, onAddProduct }) => {
       onClose();
     } catch (error) {
       console.error("เกิดข้อผิดพลาดในการเพิ่มสินค้า:", error);
-
-      // ตรวจสอบว่าเป็น error จาก product id ซ้ำ
-      if (error.response && error.response.data.duplicate) {
-        alert("รหัสสินค้านี้มีอยู่แล้ว กรุณาเลือกรหัสสินค้าอื่น");
-      } else {
-        alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
-      }
+      alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
     }
   };
 
@@ -51,15 +42,6 @@ const Addproduct = ({ onClose, onAddProduct }) => {
       <div className={styles["modal-content"]}>
         <h2>เพิ่มสินค้าใหม่</h2>
         <form onSubmit={handleSubmit}>
-          <label>
-            รหัสสินค้า:
-            <input
-              type="text"
-              value={productId}
-              onChange={(e) => setProductId(e.target.value)}
-              required
-            />
-          </label>
           <label>
             ชื่อสินค้า:
             <input
