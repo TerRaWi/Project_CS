@@ -174,7 +174,7 @@ app.post('/api/product', upload.single('image'), (req, res) => {
 app.delete('/api/product/:id', (req, res) => {
   const productId = req.params.id;  // ดึงค่า id จาก URL parameters
 
-  if (!productId) {
+  if (!productId) {ไ
     return res.status(400).json({ error: 'ไม่ได้ระบุรหัสสินค้า' });
   }
 

@@ -1,13 +1,25 @@
-//ฟังก์ชั่นสร้างสินค้า //ทำงานกับหน้า product.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "../styles/addproduct.module.css";
-import { addproducts } from "../api";
+import { addproducts, getCategories } from "../api";
 
 const Addproduct = ({ onClose, onAddProduct }) => {
   const [productName, setProductName] = useState("");
   const [productPrice, setProductPrice] = useState("");
   const [productCategory, setProductCategory] = useState("");
   const [productImage, setProductImage] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -68,12 +80,18 @@ const Addproduct = ({ onClose, onAddProduct }) => {
           </label>
           <label>
             หมวดหมู่:
-            <input
-              type="text"
+            <select
               value={productCategory}
               onChange={(e) => setProductCategory(e.target.value)}
               required
-            />
+            >
+              <option value="">เลือกหมวดหมู่</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             รูปภาพ:

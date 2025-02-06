@@ -1,13 +1,13 @@
-//สินค้า
 import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
-import { getProduct } from "../api";
+import { getProduct, getCategories } from "../api";
 import Addproduct from "../components/Addproduct";
 import Updateproduct from "../components/Updateproduct";
 import Delproduct from "../components/Delproduct";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState({});
   const [error, setError] = useState("");
   const [modalState, setModalState] = useState({
     type: null,
@@ -18,6 +18,7 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -30,6 +31,19 @@ const Products = () => {
       setError("ดึงข้อมูลไม่สำเร็จ");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const categoriesData = await getCategories();
+      const categoryMap = {};
+      categoriesData.forEach(cat => {
+        categoryMap[cat.id] = cat.name;
+      });
+      setCategories(categoryMap);
+    } catch (err) {
+      console.error("ไม่สามารถดึงข้อมูลหมวดหมู่ได้:", err);
     }
   };
 
@@ -90,7 +104,6 @@ const Products = () => {
 
       {error && <div className="text-red-500 text-center p-4">{error}</div>}
 
-      {/* Modals */}
       {modalState.isVisible && modalState.type === "add" && (
         <Addproduct
           onClose={handleCloseModal}
@@ -132,7 +145,7 @@ const Products = () => {
                 <strong>ชื่อสินค้า:</strong> {product.name}
               </p>
               <p>
-                <strong>หมวดหมู่:</strong> {product.category_id}
+                <strong>หมวดหมู่:</strong> {categories[product.category_id] || 'ไม่ระบุ'}
               </p>
               <p>
                 <strong>ราคา:</strong>฿
