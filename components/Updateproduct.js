@@ -72,7 +72,14 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
       }
 
       const updatedProduct = await updateProduct(product.id, formDataToSend);
-      onUpdateSuccess(updatedProduct);
+      // Make sure we have all the necessary data
+      const completeUpdatedProduct = {
+        ...updatedProduct,
+        id: product.id,
+        image_url: updatedProduct.image_url || product.image_url,
+        category_id: updatedProduct.category_id || product.category_id
+      };
+      onUpdateSuccess(completeUpdatedProduct);
       onClose();
     } catch (err) {
       setError(err.message || "เกิดข้อผิดพลาดในการแก้ไขสินค้า");

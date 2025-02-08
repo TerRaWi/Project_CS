@@ -89,7 +89,6 @@ export const addproducts = async (productData) => {
   }
 };
 
-// Add this function in api.js
 export const updateProduct = async (id, productData) => {
   try {
     const response = await axios.put(`${API_URL}/product/${id}`, productData, {
@@ -97,7 +96,15 @@ export const updateProduct = async (id, productData) => {
         'Content-Type': 'multipart/form-data'
       }
     });
-    return response.data;
+
+    return {
+      ...response.data,
+      id: response.data.id,
+      name: response.data.name,
+      price: response.data.price,
+      category_id: response.data.category_id,
+      image_url: response.data.image_url
+    };
   } catch (error) {
     if (error.response) {
       switch (error.response.status) {
@@ -138,8 +145,6 @@ export const getCategories = async () => {
     throw error;
   }
 };
-
-// Add this function to api.js
 
 export const getOrdersByTable = async (tableId) => {
   try {

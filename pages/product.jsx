@@ -72,7 +72,16 @@ const Products = () => {
   const handleUpdateSuccess = (updatedProduct) => {
     setProducts((prevProducts) =>
       prevProducts.map((product) =>
-        product.id === updatedProduct.id ? updatedProduct : product
+        product.id === updatedProduct.id
+          ? {
+              ...product,
+              ...updatedProduct,
+              name: updatedProduct.name,
+              price: updatedProduct.price,
+              category_id: updatedProduct.category_id,
+              image_url: updatedProduct.image_url || product.image_url
+            }
+          : product
       )
     );
     handleCloseModal();
