@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
-import { getProduct, getCategories } from "../api";
+import { getProduct, getCategories, updateProductStatus } from "../api";
 import Addproduct from "../components/Addproduct";
 import Updateproduct from "../components/Updateproduct";
 import Delproduct from "../components/Delproduct";
@@ -47,6 +47,26 @@ const Products = () => {
     }
   };
 
+  const handleToggleStatus = async (product) => {
+    try {
+      setIsLoading(true);
+      const newStatus = product.status === 'A' ? 'I' : 'A';
+      const updatedProduct = await updateProductStatus(product.id, newStatus);
+      
+      setProducts(prevProducts =>
+        prevProducts.map(p =>
+          p.id === product.id ? { ...p, status: updatedProduct.status } : p
+        )
+      );
+    } catch (err) {
+      setError('ไม่สามารถอัพเดทสถานะสินค้าได้');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // เพิ่มฟังก์ชันที่หายไป
   const handleDeleteSuccess = (deletedProductId) => {
     setProducts((prevProducts) =>
       prevProducts.filter((product) => product.id !== deletedProductId)
@@ -137,37 +157,56 @@ const Products = () => {
       <div className={styles["product-list"]}>
         {products.length > 0 ? (
           products.map((product) => (
-            <div key={product.id} className={styles["product-item"]}>
+            <div 
+              key={product.id} 
+              className={`${styles["product-item"]} ${
+                product.status === 'I' ? styles["product-inactive"] : ''
+              }`}
+            >
+              <div 
+                className={styles["status-badge"]} 
+                style={{ display: product.status === 'I' ? 'block' : 'none' }}
+              >
+                ระงับการขายชั่วคราว
+              </div>
+              
               <img
                 src={`http://localhost:3001${product.image_url}`}
                 className={styles["product-image"]}
                 alt={product.name}
               />
+              
               <Delproduct 
                 productId={product.id}
                 onDelete={handleDeleteSuccess}
               />
-              <p>
-                <strong>รหัสสินค้า:</strong> {product.id}
-              </p>
-              <p>
-                <strong>ชื่อสินค้า:</strong> {product.name}
-              </p>
-              <p>
-                <strong>หมวดหมู่:</strong> {categories[product.category_id] || 'ไม่ระบุ'}
-              </p>
+              
+              <p><strong>รหัสสินค้า:</strong> {product.id}</p>
+              <p><strong>ชื่อสินค้า:</strong> {product.name}</p>
+              <p><strong>หมวดหมู่:</strong> {categories[product.category_id] || 'ไม่ระบุ'}</p>
               <p>
                 <strong>ราคา:</strong>฿
                 {product.price !== null && !isNaN(product.price)
                   ? Number(product.price).toFixed(2)
                   : "N/A"}
               </p>
-              <button
-                onClick={() => handleOpenUpdateProduct(product)}
-                className={styles["edit-product"]}
-              >
-                แก้ไข
-              </button>
+              
+              <div className={styles["button-container"]}>
+                <button
+                  onClick={() => handleToggleStatus(product)}
+                  className={`${styles["status-button"]} ${
+                    product.status === 'I' ? styles["status-inactive"] : ''
+                  }`}
+                >
+                  {product.status === 'A' ? 'ระงับการขาย' : 'เปิดการขาย'}
+                </button>
+                <button
+                  onClick={() => handleOpenUpdateProduct(product)}
+                  className={styles["edit-product"]}
+                >
+                  แก้ไข
+                </button>
+              </div>
             </div>
           ))
         ) : (

@@ -1,8 +1,6 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-
-// เพิ่มการ import multer เพื่อจัดการกับ file upload
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -10,10 +8,10 @@ const path = require('path');
 // การตั้งค่า multer สำหรับการอัปโหลดรูปภาพ
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/') // สร้างโฟลเดอร์ uploads เพื่อเก็บรูปภาพ
+    cb(null, 'uploads/')
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)) // ตั้งชื่อไฟล์แบบไม่ซ้ำกัน
+    cb(null, Date.now() + path.extname(file.originalname))
   }
 });
 
@@ -137,13 +135,41 @@ app.delete('/api/customer/:id', (req, res) => {
 
 //นำเมนูมาแสดงบน Page จัดการเมนู
 app.get('/api/product', (req, res) => {
-  db.query('SELECT id, name, price, category_id, image_url FROM product', (err, results) => {
+  db.query('SELECT id, name, price, category_id, image_url, status FROM product', (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า:', err);
       res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
       return;
     }
     res.json(results);
+  });
+});
+
+// เพิ่ม endpoint สำหรับอัพเดทสถานะสินค้า
+app.patch('/api/product/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['A', 'I'].includes(status)) {
+    return res.status(400).json({ error: 'สถานะไม่ถูกต้อง' });
+  }
+
+  const query = 'UPDATE product SET status = ? WHERE id = ?';
+  db.query(query, [status, id], (err, result) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการอัพเดทสถานะสินค้า:', err);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
+    }
+
+    db.query(
+      'SELECT id, name, price, category_id, image_url, status FROM product WHERE id = ?', 
+      [id], 
+      (selectErr, selectResults) => {
+        if (selectErr) {
+          return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า' });
+        }
+        res.json(selectResults[0]);
+    });
   });
 });
 

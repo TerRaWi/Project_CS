@@ -155,3 +155,15 @@ export const getOrdersByTable = async (tableId) => {
     throw error;
   }
 };
+
+export const updateProductStatus = async (id, newStatus) => {
+  try {
+    const response = await axios.patch(`${API_URL}/product/${id}/status`, { 
+      status: newStatus 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการอัพเดทสถานะสินค้า:', error);
+    throw error;
+  }
+};

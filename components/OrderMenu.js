@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProduct, getCategories, createOrder, getOrdersByTable } from '../api';
+import { getProduct, getCategories, createOrder } from '../api';
 import styles from '../styles/ordermenu.module.css';
 import OrderView from './OrderView';
 
@@ -114,10 +114,12 @@ const OrderMenu = ({ table, onClose }) => {
   };
 
   const getFilteredProducts = () => {
+    let filteredProducts = products.filter(product => product.status === 'A');
+    
     if (selectedCategory === 'all') {
-      return products;
+      return filteredProducts;
     }
-    return products.filter(product => product.category_id === selectedCategory);
+    return filteredProducts.filter(product => product.category_id === selectedCategory);
   };
 
   if (isLoading) {
