@@ -1,8 +1,9 @@
+//ฟังก์ชั่นดูประัติการสั่ง //ทำงานกับหน้าtable.jsx
 import React, { useState, useEffect } from 'react';
 import { getOrdersByTable } from '../api';
 import styles from '../styles/ordermenu.module.css';
 
-const OrderView = ({ tableId }) => {
+const Orderview = ({ tableId }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -115,4 +116,4 @@ const OrderView = ({ tableId }) => {
   );
 };
 
-export default OrderView;
+export default Orderview;

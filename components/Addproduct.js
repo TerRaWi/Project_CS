@@ -1,3 +1,4 @@
+//ฟังก์ชั่นเพิ่มสินค้า //ทำงานกับหน้าproduct.jsx
 import { useState, useEffect } from "react";
 import styles from "../styles/addproduct.module.css";
 import { addproducts, getCategories } from "../api";

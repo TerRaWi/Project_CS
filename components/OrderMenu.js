@@ -1,9 +1,10 @@
+//ฟังก์ชั่นสั่งอาหาร //ทำงานกับหน้าtables.jsx
 import React, { useState, useEffect } from 'react';
 import { getProduct, getCategories, createOrder } from '../api';
 import styles from '../styles/ordermenu.module.css';
-import OrderView from './OrderView';
+import Orderview from './OrderView';
 
-const OrderMenu = ({ table, onClose }) => {
+const Ordermenu = ({ table, onClose }) => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -241,7 +242,7 @@ const OrderMenu = ({ table, onClose }) => {
           </div>
         ) : (
           <div className="mt-4">
-            <OrderView tableId={table.id} />
+            <Orderview tableId={table.id} />
           </div>
         )}
       </div>
@@ -249,4 +250,4 @@ const OrderMenu = ({ table, onClose }) => {
   );
 };
 
-export default OrderMenu;
+export default Ordermenu;

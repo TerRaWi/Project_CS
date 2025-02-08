@@ -145,7 +145,7 @@ app.get('/api/product', (req, res) => {
   });
 });
 
-// เพิ่ม endpoint สำหรับอัพเดทสถานะสินค้า
+// อัพเดทสถานะสินค้า (A,I)
 app.patch('/api/product/:id/status', (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -173,7 +173,7 @@ app.patch('/api/product/:id/status', (req, res) => {
   });
 });
 
-// เพิ่ม endpoint สำหรับเพิ่มสินค้าใหม่
+//เพิ่มสินค้าใหม่
 app.post('/api/product', upload.single('image'), (req, res) => {
   const { name, price, category_id } = req.body;
   
@@ -196,7 +196,7 @@ app.post('/api/product', upload.single('image'), (req, res) => {
   });
 });
 
- // เพิ่ม endpoint สำหรับลบสินค้า
+ //สำหรับลบสินค้า
 app.delete('/api/product/:id', (req, res) => {
   const productId = req.params.id;  // ดึงค่า id จาก URL parameters
 
@@ -242,12 +242,10 @@ app.delete('/api/product/:id', (req, res) => {
   });
 });
 
-// Add this endpoint in server.js
 app.put('/api/product/:id', upload.single('image'), (req, res) => {
   const { id } = req.params;
   const { name, price, category_id } = req.body;
-  
-  // Check if product exists
+
   db.query('SELECT image_url FROM product WHERE id = ?', [id], (checkErr, checkResults) => {
     if (checkErr) {
       console.error('เกิดข้อผิดพลาดในการตรวจสอบสินค้า:', checkErr);
@@ -261,7 +259,6 @@ app.put('/api/product/:id', upload.single('image'), (req, res) => {
     const oldImageUrl = checkResults[0].image_url;
     const image_url = req.file ? `/uploads/${req.file.filename}` : oldImageUrl;
 
-    // If new image is uploaded, delete old image
     if (req.file && oldImageUrl) {
       const oldImagePath = path.join(__dirname, oldImageUrl);
       fs.unlink(oldImagePath, (unlinkErr) => {
@@ -271,7 +268,6 @@ app.put('/api/product/:id', upload.single('image'), (req, res) => {
       });
     }
 
-    // Update product in database
     const query = 'UPDATE product SET name = ?, price = ?, category_id = ?, image_url = ? WHERE id = ?';
     db.query(query, [name, price, category_id, image_url, id], (updateErr, result) => {
       if (updateErr) {
@@ -290,18 +286,16 @@ app.put('/api/product/:id', upload.single('image'), (req, res) => {
   });
 });
 
-// เพิ่ม endpoint สำหรับสร้าง order
+//สำหรับสร้าง order
 app.post('/api/order', (req, res) => {
   const { tableId, items } = req.body;
-  
-  // เริ่ม transaction
+
   db.beginTransaction(err => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการเริ่ม transaction:', err);
       return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้าง order' });
     }
-
-    // สร้าง order ใหม่
+    
     const orderQuery = `
       INSERT INTO \`order\` (customer_id, date, status)
       VALUES (?, NOW(), 'A')
@@ -330,7 +324,6 @@ app.post('/api/order', (req, res) => {
         ]);
       });
 
-      // เพิ่ม orderdetail
       const detailQuery = `
         INSERT INTO orderdetail 
         (id, product_id, order_id, qty, price) 
@@ -345,7 +338,6 @@ app.post('/api/order', (req, res) => {
           });
         }
 
-        // Commit transaction
         db.commit(commitErr => {
           if (commitErr) {
             return db.rollback(() => {
@@ -366,7 +358,7 @@ app.post('/api/order', (req, res) => {
   });
 });
 
-// endpoint สำหรับดึงข้อมูล category
+//ดึงข้อมูล category
 app.get('/api/category', (req, res) => {
   db.query('SELECT * FROM category ORDER BY id', (err, results) => {
     if (err) {
@@ -378,7 +370,6 @@ app.get('/api/category', (req, res) => {
   });
 });
 
-// Endpoint to get orders by table ID
 app.get('/api/orders/:tableId', (req, res) => {
   const { tableId } = req.params;
   
@@ -398,8 +389,7 @@ app.get('/api/orders/:tableId', (req, res) => {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์:', err);
       return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     }
-
-    // Group results by order
+    
     const orders = results.reduce((acc, curr) => {
       const order = acc[curr.order_id] || {
         orderId: curr.order_id,
