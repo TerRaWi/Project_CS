@@ -3,13 +3,13 @@ import { getTables } from '../api';
 import Image from 'next/image';
 import styles from '../styles/table.module.css';
 import Rectable from '../components/Rectable';
-import OrderFood from '../components/Ordertable.js';
+import OrderFood from '../components/Ordertable';
 
 const Tables = () => {
   const [tables, setTables] = useState([]);
   const [error, setError] = useState('');
   const [selectedTable, setSelectedTable] = useState(null);
-  const [orderTable, setOrderTable] = useState(null); 
+  const [orderTable, setOrderTable] = useState(null);
 
   useEffect(() => {
     fetchTables();
@@ -25,24 +25,24 @@ const Tables = () => {
   };
 
   const handleButtonClick = (table) => {
-    if (table.status === 'A') {
+    if (table.status === '2') {
       // Open OrderFood and reset selectedTable
       setOrderTable(table);
-      setSelectedTable(null); // Reset Rectable
+      setSelectedTable(null);
     } else {
       // Open Rectable and reset orderTable
       setSelectedTable(table);
-      setOrderTable(null); // Reset OrderFood
+      setOrderTable(null);
     }
   };
-  
+
   const handleSave = (updatedTable) => {
     setTables(prevTables => 
       prevTables.map(table => 
         table.id === updatedTable.id ? updatedTable : table
       )
     );
-    fetchTables(); // เพิ่มการเรียก fetchTables หลังจากการ save
+    fetchTables(); // Refresh table data after save
   };
 
   return (
@@ -58,13 +58,13 @@ const Tables = () => {
               onClick={() => handleButtonClick(table)}
             >
               <Image
-                src={table.status === 'A' ? '/images/tA.png' : '/images/tB.png'} // tA = table available, tB = table empty
-                alt={`Table ${table.id}`}
+                src={table.status === '1' ? '/images/t2.png' : '/images/t1.png'}
+                alt={`Table ${table.table_number}`}
                 className={styles.image}
                 width={150}
                 height={150}
               />
-              <div className={styles.tableNumber}>{table.id}</div>
+              <div className={styles.tableNumber}>{table.table_number}</div>
             </button>
           ))}
         </div>

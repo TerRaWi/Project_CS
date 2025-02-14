@@ -110,7 +110,7 @@ const Rectable = ({ table, onClose, onSave }) => {
       <button className={styles.closeButton} onClick={onClose}>
         X
       </button>
-      <h2 className={styles.rectableHeader}>โต๊ะ {table.id}</h2>
+      <h2 className={styles.rectableHeader}>โต๊ะ {table.table_number}</h2>
 
       {/* Input เด็ก(เล็ก) */}
       <h3

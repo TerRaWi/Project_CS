@@ -28,7 +28,7 @@ const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '6101',
-  database: 'posdb',
+  database: 'newtestdb',
 });
 
 db.connect((err) => {
@@ -40,8 +40,15 @@ db.connect((err) => {
 });
 
 //นำโต๊ะมาแสดงบน Page โต๊ะ
-app.get('/api/customer', (req, res) => {
-  db.query('SELECT * FROM customer', (err, results) => {
+app.get('/api/tables', (req, res) => {
+  const query = `
+    SELECT dt.*, ts.name as status_name 
+    FROM dining_table dt 
+    JOIN table_status ts ON dt.status_id = ts.id 
+    ORDER BY CAST(table_number AS SIGNED)
+  `;
+  
+  db.query(query, (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลโต๊ะ:', err);
       res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
@@ -52,19 +59,45 @@ app.get('/api/customer', (req, res) => {
 });
 
 //สร้างโต๊ะ
-app.post('/api/customer', (req, res) => {
-  const { id } = req.body;
-  if (!id) {
-    return res.status(400).json({ error: 'ต้องระบุ ID ของโต๊ะ' });
+app.post('/api/tables', (req, res) => {
+  const { table_number, status_id } = req.body;
+  
+  if (!table_number) {
+    return res.status(400).json({ error: 'ต้องระบุเบอร์โต๊ะ' });
   }
 
-  db.query('INSERT INTO customer (id) VALUES (?)', [id], (err, result) => {
+  // First check if table_number already exists
+  db.query('SELECT id FROM dining_table WHERE table_number = ?', [table_number], (err, results) => {
     if (err) {
-      console.error('เกิดข้อผิดพลาดในการเพิ่มโต๊ะ:', err);
-      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-      return;
+      console.error('เกิดข้อผิดพลาดในการตรวจสอบเบอร์โต๊ะ:', err);
+      return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
     }
-    res.json({ id });
+
+    if (results.length > 0) {
+      return res.status(409).json({ error: 'เบอร์โต๊ะนี้มีอยู่แล้ว' });
+    }
+
+    // If table_number doesn't exist, insert new table
+    db.query(
+      'INSERT INTO dining_table (table_number, status_id) VALUES (?, ?)',
+      [table_number, status_id],
+      (err, result) => {
+        if (err) {
+          console.error('เกิดข้อผิดพลาดในการเพิ่มโต๊ะ:', err);
+          res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+          return;
+        }
+
+        // Return the newly created table data
+        const newTable = {
+          id: result.insertId,
+          table_number,
+          status_id
+        };
+        
+        res.json(newTable);
+      }
+    );
   });
 });
 
@@ -98,39 +131,65 @@ app.put('/api/customer/:id', (req, res) => {
 });
 
 //ลบโต๊ะ
-app.delete('/api/customer/:id', (req, res) => {
-  const { id } = req.params;
+app.delete('/api/tables/:tableNumber', (req, res) => {
+  const tableNumber = req.params.tableNumber;
 
-  if (!id) {
-    return res.status(400).json({ error: 'ต้องระบุ ID ของโต๊ะ' });
-  }
-
-  // ตรวจสอบสถานะโต๊ะก่อนลบ
-  db.query('SELECT * FROM customer WHERE id = ?', [id], (err, results) => {
-    if (err) {
-      console.error('เกิดข้อผิดพลาดในการตรวจสอบโต๊ะ:', err);
-      return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'ไม่พบโต๊ะที่ต้องการลบ' });
-    }
-
-    // ตรวจสอบว่าโต๊ะมีคนนั่งอยู่หรือไม่
-    if (results[0].status === 'A') {
-      return res.status(400).json({ error: 'ไม่สามารถลบโต๊ะที่มีคนนั่งอยู่ได้' });
-    }
-
-    // ถ้าไม่มีคนนั่ง ดำเนินการลบโต๊ะ
-    db.query('DELETE FROM customer WHERE id = ?', [id], (deleteErr, result) => {
-      if (deleteErr) {
-        console.error('เกิดข้อผิดพลาดในการลบโต๊ะ:', deleteErr);
+  // First check if the table exists and get its status
+  db.query(
+    'SELECT dt.*, ts.name as status_name FROM dining_table dt JOIN table_status ts ON dt.status_id = ts.id WHERE dt.table_number = ?',
+    [tableNumber],
+    (err, results) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการตรวจสอบโต๊ะ:', err);
         return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
       }
 
-      res.json({ id });
-    });
-  });
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'ไม่พบโต๊ะที่ต้องการลบ' });
+      }
+
+      // Check if table is occupied
+      if (results[0].status_name === 'ไม่ว่าง') {
+        return res.status(400).json({ 
+          error: 'ไม่สามารถลบโต๊ะได้เนื่องจากโต๊ะกำลังถูกใช้งาน' 
+        });
+      }
+
+      // Check if table has any active orders
+      db.query(
+        `SELECT o.* FROM \`order\` o 
+         JOIN dining_table dt ON o.table_id = dt.id 
+         WHERE dt.table_number = ? AND o.status = 'A'`,
+        [tableNumber],
+        (err, orderResults) => {
+          if (err) {
+            console.error('เกิดข้อผิดพลาดในการตรวจสอบออเดอร์:', err);
+            return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+          }
+
+          if (orderResults.length > 0) {
+            return res.status(400).json({ 
+              error: 'ไม่สามารถลบโต๊ะได้เนื่องจากมีออเดอร์ที่ยังไม่เสร็จสิ้น' 
+            });
+          }
+
+          // If table is available and has no active orders, proceed with deletion
+          db.query(
+            'DELETE FROM dining_table WHERE table_number = ?',
+            [tableNumber],
+            (err, result) => {
+              if (err) {
+                console.error('เกิดข้อผิดพลาดในการลบโต๊ะ:', err);
+                return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+              }
+
+              res.json({ message: 'ลบโต๊ะสำเร็จ' });
+            }
+          );
+        }
+      );
+    }
+  );
 });
 
 //นำเมนูมาแสดงบน Page จัดการเมนู

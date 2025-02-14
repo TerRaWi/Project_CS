@@ -8,35 +8,36 @@
   display: inline-block;
 }
 
+/* คงส่วน CSS ของปุ่มเดิมไว้ */
 .imageadd {
-  background: none; /* ลบพื้นหลัง */
-  border: none;     /* ลบกรอบ */
+  background: none;
+  border: none;
   padding: 0;
   cursor: pointer;
-  position: absolute; /* ใช้ absolute position */
-  right: 110px;        /* กำหนดตำแหน่งทางขวา */
-  top: 20px;          /* กำหนดตำแหน่งทางบน */
-  z-index: 1000;      /* ทำให้ปุ่มอยู่ด้านหน้า */
+  position: absolute;
+  right: 110px;
+  top: 20px;
+  z-index: 1000;
 }
 
 .imageadd img {
-  width: 50px; /* ขนาดของรูปภาพ */
+  width: 50px;
   height: 50px;
 }
 
 .imagedel {
-  background: none; /* ลบพื้นหลัง */
-  border: none; /* ลบกรอบ */
+  background: none;
+  border: none;
   padding: 0;
   cursor: pointer;
-  position: absolute; /* ใช้ absolute position */
-  right: 30px; /* กำหนดตำแหน่งทางขวา */
-  top: 20px; /* กำหนดตำแหน่งทางบน */
-  z-index: 1000; /* ทำให้ปุ่มอยู่ด้านหน้า */
+  position: absolute;
+  right: 30px;
+  top: 20px;
+  z-index: 1000;
 }
 
 .imagedel img {
-  width: 50px; /* ขนาดของรูปภาพ */
+  width: 50px;
   height: 50px;
 }
 
@@ -87,7 +88,8 @@
   margin: 0 auto;
 }
 
-.tablesGrid {
+/* ส่วนของ Grid Layout */
+.tableGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 40px;
@@ -98,6 +100,7 @@
   margin-right: auto;
 }
 
+/* ส่วนของโต๊ะ */
 .table {
   position: relative;
   width: 120px;
@@ -106,66 +109,95 @@
   cursor: pointer;
 }
 
-/* สร้างส่วนของโต๊ะ (ตรงกลาง) */
-.table::before {
-  content: '';
+.tableContent {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.tableDrawing {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* โต๊ะตรงกลาง */
+.tableCenter {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 80px;
   height: 80px;
-  background-color: #fff;
   border: 2px solid #666;
   border-radius: 8px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* สร้างเก้าอี้ด้านบนและล่าง */
-.table::after {
-  content: '';
+/* เก้าอี้บนล่าง */
+.chairTop, .chairBottom {
   position: absolute;
-  top: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 30px;
   height: 20px;
-  background-color: #fff;
   border: 2px solid #666;
   border-radius: 10px;
-  box-shadow: 0 100px 0 0 #fff, 0 100px 0 2px #666;
+  background-color: white;
 }
 
-/* สร้างเก้าอี้ด้านซ้ายและขวา */
-.table > div:first-child {
-  content: '';
+.chairTop {
+  top: 0;
+}
+
+.chairBottom {
+  bottom: 0;
+}
+
+/* เก้าอี้ซ้ายขวา */
+.chairLeft, .chairRight {
   position: absolute;
   top: 50%;
-  left: 0;
   transform: translateY(-50%);
   width: 20px;
   height: 30px;
-  background-color: #fff;
   border: 2px solid #666;
   border-radius: 10px;
-  box-shadow: 100px 0 0 0 #fff, 100px 0 0 2px #666;
+  background-color: white;
+}
+
+.chairLeft {
+  left: 0;
+}
+
+.chairRight {
+  right: 0;
 }
 
 .tableNumber {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   font-size: 24px;
   font-weight: bold;
   color: #333;
-  z-index: 1;
 }
 
-.deleteMode.table::before {
+/* สถานะโต๊ะ */
+.tableAvailable .tableCenter {
+  border-color: #4CAF50;
+}
+
+.tableOccupied .tableCenter {
+  border-color: #f44336;
+}
+
+/* โหมดลบ */
+.deleteMode .tableCenter {
   border-color: #ff4444;
 }
 
-.deleteMode:hover::before {
+.deleteMode:hover .tableCenter {
   background-color: #ffebeb;
 }
 
@@ -183,5 +215,5 @@
   justify-content: center;
   font-size: 18px;
   font-weight: bold;
-  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }

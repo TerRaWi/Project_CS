@@ -23,25 +23,28 @@ const handleApiError = (error, customMessage) => {
 // Table/Customer APIs
 export const getTables = async () => {
   try {
-    const { data } = await axios.get(`${API_URL}/customer`);
+    const { data } = await axios.get(`${API_URL}/tables`);
     return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลโต๊ะ');
   }
 };
 
-export const addTable = async (id) => {
+export const addTable = async (tableNumber) => {
   try {
-    const { data } = await axios.post(`${API_URL}/customer`, { id });
+    const { data } = await axios.post(`${API_URL}/tables`, { 
+      table_number: tableNumber,
+      status_id: 1 // Assuming 1 is the ID for "ว่าง" status
+    });
     return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการเพิ่มโต๊ะ');
   }
 };
 
-export const deleteTable = async (id) => {
+export const deleteTable = async (tableNumber) => {
   try {
-    const { data } = await axios.delete(`${API_URL}/customer/${id}`);
+    const { data } = await axios.delete(`${API_URL}/tables/${tableNumber}`);
     return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการลบโต๊ะ');

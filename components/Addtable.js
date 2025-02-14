@@ -4,32 +4,36 @@ import styles from '../styles/tablelayout.module.css';
 import { addTable } from '../api';
 
 const Addtable = ({ onClose, onTableAdded }) => {
-  const [number, setNumber] = useState('');
+  const [tableNumber, setTableNumber] = useState('');
   const [error, setError] = useState(null);
 
   const handleNumberChange = (e) => {
     const value = e.target.value;
     if (value === '' || (parseInt(value, 10) >= 1 && parseInt(value, 10) <= 50)) {
-      setNumber(value);
+      setTableNumber(value);
     }
   };
 
   const handleSubmit = async () => {
-    if (!number) {
+    if (!tableNumber) {
       setError('กรุณาระบุเบอร์โต๊ะ');
       return;
     }
 
     try {
-      const result = await addTable(number);
-      alert(`เพิ่มโต๊ะเบอร์: ${number} สำเร็จ`);
+      const result = await addTable(tableNumber);
+      alert(`เพิ่มโต๊ะเบอร์: ${tableNumber} สำเร็จ`);
       if (onTableAdded) {
-        onTableAdded(result);  // เรียก callback function หลังจากเพิ่มโต๊ะสำเร็จ
+        onTableAdded(result);
       }
       onClose();
     } catch (error) {
       console.error('Error adding table:', error);
-      setError('เกิดข้อผิดพลาดในการเพิ่มโต๊ะ');
+      if (error.response?.status === 409) {
+        setError('เบอร์โต๊ะนี้มีอยู่แล้ว');
+      } else {
+        setError('เกิดข้อผิดพลาดในการเพิ่มโต๊ะ');
+      }
     }
   };
 
@@ -39,7 +43,7 @@ const Addtable = ({ onClose, onTableAdded }) => {
       <h2>เพิ่มโต๊ะใหม่</h2>
       <input
         type="number"
-        value={number}
+        value={tableNumber}
         onChange={handleNumberChange}
         placeholder="เบอร์โต๊ะ"
         className={styles.numberInput}

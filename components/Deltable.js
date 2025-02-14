@@ -1,49 +1,44 @@
-//ฟังก์ชั่นลบโต๊ะ //ทำงานกับหน้าtablelayout.jsx
 import React from 'react';
 import styles from '../styles/tablelayout.module.css';
 import { deleteTable } from '../api';
 
 const Deltable = ({ tables, isDeleteMode, onTableDelete, onDeleteModeToggle }) => {
-  const handleDeleteTable = async (tableId) => {
-    if (!window.confirm(`ยืนยันการลบโต๊ะเบอร์ ${tableId}?`)) {
+  const handleDeleteTable = async (tableNumber) => {
+    if (!window.confirm(`ยืนยันการลบโต๊ะเบอร์ ${tableNumber}?`)) {
       return;
     }
     
     try {
-      await deleteTable(tableId);
+      await deleteTable(tableNumber);
       await onTableDelete();
       onDeleteModeToggle(false);
     } catch (error) {
       console.error('Error deleting table:', error);
-      alert('เกิดข้อผิดพลาดในการลบโต๊ะ');
+      alert(error.response?.data?.error || 'เกิดข้อผิดพลาดในการลบโต๊ะ');
     }
   };
 
   return (
-    <>
+    <div>
       <button 
         onClick={() => onDeleteModeToggle(!isDeleteMode)} 
         className={`${styles.imagedel} ${isDeleteMode ? styles.active : ''}`}
       >
         <img src="/images/-.png" alt="ปุ่มลบโต๊ะ" />
       </button>
-
-      <div className={styles.tablesGrid}>
-        {tables.map((table) => (
-          <div
-            key={table.id}
-            className={`${styles.table} ${isDeleteMode ? styles.deleteMode : ''}`}
-            onClick={() => isDeleteMode && handleDeleteTable(table.id)}
-          >
-            <div></div>
-            <span className={styles.tableNumber}>{table.id}</span>
-            {isDeleteMode && (
-              <div className={styles.deleteIcon}>×</div>
-            )}
-          </div>
-        ))}
-      </div>
-    </>
+      
+      {/* Pass handleDeleteTable function up to parent */}
+      {isDeleteMode && (
+        <div style={{ display: 'none' }}>
+          {tables.map(table => (
+            <div
+              key={table.table_number}
+              onClick={() => handleDeleteTable(table.table_number)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
