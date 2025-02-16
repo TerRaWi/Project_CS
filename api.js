@@ -86,7 +86,7 @@ export const addProducts = async (productData) => {
   }
 };
 
-export const deleteProducts = async (id) => {
+export const deleteProduct = async (id) => {
   try {
     const { data } = await axios.delete(`${API_URL}/product/${id}`);
     return data;
@@ -100,13 +100,7 @@ export const updateProduct = async (id, productData) => {
     const { data } = await axios.put(`${API_URL}/product/${id}`, productData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    return {
-      id: data.id,
-      name: data.name,
-      price: data.price,
-      category_id: data.category_id,
-      image_url: data.image_url
-    };
+    return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการแก้ไขสินค้า');
   }
@@ -114,8 +108,8 @@ export const updateProduct = async (id, productData) => {
 
 export const updateProductStatus = async (id, newStatus) => {
   try {
-    const { data } = await axios.patch(`${API_URL}/product/${id}/status`, { 
-      status: newStatus 
+    const { data } = await axios.patch(`${API_URL}/product/${id}/status`, {
+      status: newStatus
     });
     return data;
   } catch (error) {

@@ -5,13 +5,16 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
-// การตั้งค่า multer สำหรับการอัปโหลดรูปภาพ
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/')
+    const uploadDir = 'uploads/';
+    if (!fs.existsSync(uploadDir)){
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname))
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
@@ -22,13 +25,13 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
-// Database connection
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '6101',
-  database: 'newtestdb',
+  database: 'newtestdb'
 });
 
 db.connect((err) => {
@@ -194,11 +197,17 @@ app.delete('/api/tables/:tableNumber', (req, res) => {
 
 //นำเมนูมาแสดงบน Page จัดการเมนู
 app.get('/api/product', (req, res) => {
-  db.query('SELECT id, name, price, category_id, image_url, status FROM product', (err, results) => {
+  const query = `
+    SELECT p.id, p.name, p.price, p.category_id, p.image_url, p.status 
+    FROM product p 
+    WHERE p.status IN ('A', 'I')
+    ORDER BY p.id DESC
+  `;
+  
+  db.query(query, (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า:', err);
-      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-      return;
+      return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
     }
     res.json(results);
   });
@@ -235,23 +244,29 @@ app.patch('/api/product/:id/status', (req, res) => {
 //เพิ่มสินค้าใหม่
 app.post('/api/product', upload.single('image'), (req, res) => {
   const { name, price, category_id } = req.body;
-  
   const image_url = req.file ? `/uploads/${req.file.filename}` : null;
-  const query = 'INSERT INTO product (name, price, category_id, image_url) VALUES (?, ?, ?, ?)';
+  
+  const query = `
+    INSERT INTO product (name, price, category_id, image_url, status) 
+    VALUES (?, ?, ?, ?, 'A')
+  `;
   
   db.query(query, [name, price, category_id, image_url], (err, result) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
-      return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+      return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
     }
     
-    res.status(201).json({ 
+    const newProduct = {
       id: result.insertId,
-      name, 
-      price, 
-      category_id, 
-      image_url 
-    });
+      name,
+      price,
+      category_id,
+      image_url,
+      status: 'A'
+    };
+    
+    res.status(201).json(newProduct);
   });
 });
 

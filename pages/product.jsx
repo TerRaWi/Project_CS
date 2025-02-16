@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../styles/product.module.css";
 import { getProduct, getCategories, updateProductStatus } from "../api";
 import Addproduct from "../components/Addproduct";
@@ -66,7 +66,6 @@ const Products = () => {
     }
   };
 
-  // เพิ่มฟังก์ชันที่หายไป
   const handleDeleteSuccess = (deletedProductId) => {
     setProducts((prevProducts) =>
       prevProducts.filter((product) => product.id !== deletedProductId)
@@ -138,7 +137,6 @@ const Products = () => {
           onClose={handleCloseModal}
           onAddProduct={(newProduct) => {
             setProducts((prevProducts) => [...prevProducts, newProduct]);
-            fetchProducts();
             handleCloseModal();
           }}
         />
