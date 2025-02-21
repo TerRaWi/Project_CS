@@ -27,6 +27,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
+
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -40,6 +41,10 @@ db.connect((err) => {
     return;
   }
   console.log('เชื่อมต่อฐานข้อมูล MySQL สำเร็จ');
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 //นำโต๊ะมาแสดงบน Page โต๊ะ
@@ -109,51 +114,82 @@ app.post('/api/saveCustomer', async (req, res) => {
   const { tableId, adultCount, oldChildCount, childCount } = req.body;
 
   try {
-    // Start transaction
+    // เริ่ม transaction
     await db.promise().query('START TRANSACTION');
 
-    // 1. Create new order
+    // 1. สร้าง order ใหม่
     const [orderResult] = await db.promise().query(
-      `INSERT INTO \`order\` (table_id, order_time, start_time, status) 
-       VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'A')`,
+      `INSERT INTO \`order\` (table_id, status) 
+       VALUES (?, 'A')`,
       [tableId]
     );
     
     const orderId = orderResult.insertId;
 
-    // 2. Get product IDs for customer types
+    // 2. ดึงข้อมูล product จากชื่อ
     const [products] = await db.promise().query(
-      `SELECT id, name, price FROM product 
-       WHERE name IN ('ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก')`
+      `SELECT id, price, name 
+       FROM product 
+       WHERE name IN ('ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก')
+       AND status = 'A'`  // เพิ่มเงื่อนไขเช็คสถานะ product ว่ายังใช้งานอยู่
     );
 
-    // 3. Insert order details for each customer type
-    const customerCounts = [
-      { type: 'ผู้ใหญ่', count: adultCount },
-      { type: 'เด็กโต', count: oldChildCount },
-      { type: 'เด็กเล็ก', count: childCount }
+    // 3. จับคู่จำนวนลูกค้ากับ product
+    const customerTypes = [
+      { name: 'ผู้ใหญ่', count: adultCount },
+      { name: 'เด็กโต', count: oldChildCount },
+      { name: 'เด็กเล็ก', count: childCount }
     ];
 
-    for (const customerType of customerCounts) {
-      const product = products.find(p => p.name === customerType.type);
-      if (product && customerType.count > 0) {
-        await db.promise().query(
-          `INSERT INTO order_detail (order_id, product_id, quantity, unit_price, status)
-           VALUES (?, ?, ?, ?, 'A')`,
-          [orderId, product.id, customerType.count, product.price]
-        );
+    // 4. ตรวจสอบว่ามีลูกค้าอย่างน้อย 1 คน
+    const totalCustomers = adultCount + oldChildCount + childCount;
+    if (totalCustomers === 0) {
+      await db.promise().query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'กรุณาระบุจำนวนลูกค้าอย่างน้อย 1 คน'
+      });
+    }
+
+    // 5. ตรวจสอบว่ามี product ครบทุกประเภท
+    if (products.length !== 3) {
+      await db.promise().query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'ไม่พบข้อมูลประเภทลูกค้าในระบบ'
+      });
+    }
+
+    // 6. สร้าง order_detail สำหรับแต่ละประเภทลูกค้าที่มีจำนวนมากกว่า 0
+    for (const type of customerTypes) {
+      if (type.count > 0) {
+        const product = products.find(p => p.name === type.name);
+        if (product) {
+          await db.promise().query(
+            `INSERT INTO order_detail (
+              order_id, 
+              product_id, 
+              quantity, 
+              unit_price, 
+              status,
+              order_time
+            ) VALUES (?, ?, ?, ?, 'A', CURRENT_TIMESTAMP)`,
+            [orderId, product.id, type.count, product.price]
+          );
+        }
       }
     }
 
-    // 4. Update table status to occupied (status_id = 2)
+    // 7. อัพเดทสถานะโต๊ะเป็นไม่ว่าง (status_id = 2)
     await db.promise().query(
       'UPDATE dining_table SET status_id = 2 WHERE id = ?',
       [tableId]
     );
 
-    // Commit transaction
+    // 8. บันทึก transaction
     await db.promise().query('COMMIT');
 
+    // 9. ส่งผลลัพธ์กลับ
     res.json({
       success: true,
       orderId,
@@ -161,7 +197,7 @@ app.post('/api/saveCustomer', async (req, res) => {
     });
 
   } catch (error) {
-    // Rollback on error
+    // กรณีเกิดข้อผิดพลาด
     await db.promise().query('ROLLBACK');
     console.error('Error saving customer data:', error);
     res.status(500).json({
@@ -406,84 +442,61 @@ app.put('/api/product/:id', upload.single('image'), (req, res) => {
 app.post('/api/order', (req, res) => {
   const { tableId, items } = req.body;
 
-  // ตรวจสอบข้อมูลที่ส่งมา
   if (!tableId || !items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ 
       error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ส่งมา' 
     });
   }
 
-  db.beginTransaction(err => {
-    if (err) {
-      console.error('เกิดข้อผิดพลาดในการเริ่ม transaction:', err);
-      return res.status(500).json({ 
-        error: 'เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง',
-        details: err.message 
-      });
-    }
-    
-    const orderQuery = `
-      INSERT INTO \`order\` (table_id, order_time, status)
-      VALUES (?, NOW(), 'A')
-    `;
-
-    db.query(orderQuery, [tableId], (orderErr, orderResult) => {
-      if (orderErr) {
-        return db.rollback(() => {
-          console.error('เกิดข้อผิดพลาดในการสร้าง order:', orderErr);
-          res.status(500).json({ 
-            error: 'ไม่สามารถสร้างออเดอร์ได้ กรุณาลองใหม่อีกครั้ง',
-            details: orderErr.message 
-          });
+  db.query(
+    'SELECT id FROM `order` WHERE table_id = ? AND status = "A" ORDER BY id DESC LIMIT 1',
+    [tableId],
+    (err, orders) => {
+      if (err) {
+        return res.status(500).json({ 
+          error: 'เกิดข้อผิดพลาดในการค้นหาออเดอร์' 
         });
       }
 
-      const orderId = orderResult.insertId;
-      const orderDetails = items.map(item => [
-        orderId,
-        item.id,
-        item.quantity,
-        Number(item.price),
-        'A'  // status
-      ]);
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({ 
+          error: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้' 
+        });
+      }
 
+      const orderId = orders[0].id;
+
+      // แก้ไข query ให้ตรงกับลำดับ columns ในตาราง
       const detailQuery = `
         INSERT INTO order_detail 
-        (order_id, product_id, quantity, unit_price, status) 
+        (quantity, unit_price, status, order_id, product_id) 
         VALUES ?
       `;
 
+      const orderDetails = items.map(item => [
+        item.quantity,
+        Number(item.price),
+        'A',
+        orderId,
+        item.id
+      ]);
+
       db.query(detailQuery, [orderDetails], (detailErr) => {
         if (detailErr) {
-          return db.rollback(() => {
-            console.error('เกิดข้อผิดพลาดในการสร้าง order details:', detailErr);
-            res.status(500).json({ 
-              error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร',
-              details: detailErr.message 
-            });
+          console.error('Error inserting order details:', detailErr);
+          return res.status(500).json({ 
+            error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร' 
           });
         }
 
-        db.commit(commitErr => {
-          if (commitErr) {
-            return db.rollback(() => {
-              console.error('เกิดข้อผิดพลาดในการ commit transaction:', commitErr);
-              res.status(500).json({ 
-                error: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง',
-                details: commitErr.message 
-              });
-            });
-          }
-
-          res.status(201).json({
-            success: true,
-            orderId,
-            message: 'สั่งอาหารสำเร็จ'
-          });
+        res.status(201).json({
+          success: true,
+          orderId,
+          message: 'สั่งอาหารสำเร็จ'
         });
       });
-    });
-  });
+    }
+  );
 });
 
 //ดึงข้อมูล category
@@ -498,14 +511,15 @@ app.get('/api/category', (req, res) => {
   });
 });
 
-// เพิ่มใน server.js
-app.get('/api/orders/:tableId', (req, res) => {
+// ประวัติการสั่งอาหาร
+// server.js
+app.get('/api/order/:tableId', (req, res) => {
   const tableId = req.params.tableId;
   
   const query = `
     SELECT 
       o.id as orderId,
-      o.order_time as date,
+      o.start_time as date,      /* แก้จาก order_time เป็น start_time */
       o.status,
       od.quantity,
       od.unit_price as price,
@@ -514,18 +528,27 @@ app.get('/api/orders/:tableId', (req, res) => {
     JOIN order_detail od ON o.id = od.order_id
     JOIN product p ON od.product_id = p.id
     WHERE o.table_id = ?
-    ORDER BY o.order_time DESC
+    ORDER BY o.start_time DESC   /* แก้ตรงนี้ด้วย */
   `;
 
   db.query(query, [tableId], (err, results) => {
     if (err) {
-      console.error('Error fetching orders:', err);
+      console.error('Database error:', err);
       return res.status(500).json({
         error: 'เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์'
       });
     }
 
-    // จัดกลุ่มข้อมูลตาม order
+    // log results
+    console.log('Query results:', {
+      count: results?.length,
+      firstRow: results?.[0]
+    });
+
+    if (!results || results.length === 0) {
+      return res.json([]);
+    }
+
     const orders = [];
     const orderMap = new Map();
 
@@ -543,7 +566,7 @@ app.get('/api/orders/:tableId', (req, res) => {
       orderMap.get(row.orderId).items.push({
         productName: row.productName,
         quantity: row.quantity,
-        price: row.price
+        price: parseFloat(row.price)
       });
     });
 

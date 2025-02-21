@@ -169,10 +169,57 @@ export const createOrder = async (tableId, items) => {
 
 export const getOrdersByTable = async (tableId) => {
   try {
-    const response = await axios.get(`${API_URL}/orders/${tableId}`);
-    return response.data;
+    if (!tableId) {
+      throw new Error('กรุณาระบุหมายเลขโต๊ะ');
+    }
+
+    // เพิ่ม log เพื่อดู URL ที่จะเรียก
+    console.log('Requesting URL:', `${API_URL}/order/${tableId}`);
+
+    const response = await axios.get(`${API_URL}/order/${tableId}`, {
+      // เพิ่ม debug options
+      validateStatus: false, // ให้ axios ไม่ throw error สำหรับ status อื่นๆ
+    });
+
+    // เพิ่ม log เพื่อดู response
+    console.log('Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data,
+      headers: response.headers
+    });
+
+    // ตรวจสอบ response status
+    if (response.status !== 200) {
+      throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
+    }
+
+    return response.data || [];
+
   } catch (error) {
-    handleApiError(error, 'ไม่สามารถโหลดข้อมูลออเดอร์ได้');
+    // เพิ่ม detailed error logging
+    console.error('Detailed error:', {
+      name: error.name,
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config
+    });
+
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNREFUSED') {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่าเซิร์ฟเวอร์กำลังทำงานอยู่');
+      }
+      if (!error.response) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+      }
+      if (error.response.status === 404) {
+        throw new Error('ไม่พบข้อมูลที่ต้องการ');
+      }
+      throw new Error(`เกิดข้อผิดพลาด: ${error.response.data?.error || error.message}`);
+    }
+    
+    throw error;
   }
 };
 
