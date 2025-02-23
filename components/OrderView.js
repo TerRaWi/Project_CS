@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getOrdersByTable } from '../api';
 import styles from '../styles/ordermenu.module.css';
+import { Clock } from 'lucide-react';
 
 const OrderView = ({ tableId }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -29,6 +31,13 @@ const OrderView = ({ tableId }) => {
     fetchOrders();
   }, [tableId]);
 
+  const toggleGroup = (orderId, groupTime) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [`${orderId}-${groupTime}`]: !prev[`${orderId}-${groupTime}`]
+    }));
+  };
+
   if (loading) {
     return <div className={styles.loading}>กำลังโหลด...</div>;
   }
@@ -41,7 +50,6 @@ const OrderView = ({ tableId }) => {
     return <div className={styles.emptyState}>ยังไม่มีประวัติการสั่งอาหาร</div>;
   }
 
-  // แสดงออเดอร์ล่าสุดก่อน
   const sortedOrders = [...orders].sort((a, b) => 
     new Date(b.date) - new Date(a.date)
   );
@@ -49,7 +57,6 @@ const OrderView = ({ tableId }) => {
   return (
     <div className={styles.historyCard}>
       {sortedOrders.map((order) => {
-        // จัดกลุ่มรายการตาม orderTime
         const groupedItems = order.items.reduce((acc, item) => {
           const timeKey = item.orderTime;
           if (!acc[timeKey]) {
@@ -59,7 +66,6 @@ const OrderView = ({ tableId }) => {
           return acc;
         }, {});
 
-        // เรียงกลุ่มตามเวลา
         const sortedGroups = Object.entries(groupedItems)
           .sort(([a], [b]) => new Date(a) - new Date(b))
           .map(([time, items], index) => ({
@@ -80,49 +86,64 @@ const OrderView = ({ tableId }) => {
             </div>
 
             {sortedGroups.map((group) => {
+              const groupId = `${order.orderId}-${group.time}`;
+              const isExpanded = expandedGroups[groupId];
               const groupTotal = group.items.reduce((sum, item) => 
                 sum + (item.price * item.quantity), 0
               );
 
               return (
                 <div key={group.time} className={styles.orderGroup}>
-                  <div className={styles.groupHeader}>
-                    <span>ครั้งที่ {group.orderNumber}</span>
-                    <span className={styles.orderTime}>
-                      {new Date(group.time).toLocaleTimeString('th-TH')}
+                  <button
+                    onClick={() => toggleGroup(order.orderId, group.time)}
+                    className={styles.groupHeader}
+                  >
+                    <div className={styles.groupInfo}>
+                      <span>ครั้งที่ {group.orderNumber}</span>
+                      <div className={styles.orderTime}>
+                        <Clock className={styles.clockIcon} />
+                        {new Date(group.time).toLocaleTimeString('th-TH')}
+                      </div>
+                    </div>
+                    <span className={styles.expandIcon}>
+                      {isExpanded ? '▼' : '▶'}
                     </span>
-                  </div>
+                  </button>
 
-                  <table className={styles.orderTable}>
-                    <thead>
-                      <tr>
-                        <th>รายการ</th>
-                        <th className={styles.textRight}>จำนวน</th>
-                        <th className={styles.textRight}>ราคา</th>
-                        <th className={styles.textRight}>รวม</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td>{item.productName}</td>
-                          <td className={styles.textRight}>{item.quantity}</td>
-                          <td className={styles.textRight}>฿{item.price.toFixed(2)}</td>
-                          <td className={styles.textRight}>
-                            ฿{(item.price * item.quantity).toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className={styles.totalRow}>
-                        <td colSpan="3" className={styles.textRight}>
-                          รวมครั้งที่ {group.orderNumber}:
-                        </td>
-                        <td className={styles.textRight}>
-                          ฿{groupTotal.toFixed(2)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  {isExpanded && (
+                    <div className={styles.orderContent}>
+                      <table className={styles.orderTable}>
+                        <thead>
+                          <tr>
+                            <th>รายการ</th>
+                            <th className={styles.textRight}>จำนวน</th>
+                            <th className={styles.textRight}>ราคา</th>
+                            <th className={styles.textRight}>รวม</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.items.map((item, idx) => (
+                            <tr key={idx}>
+                              <td>{item.productName}</td>
+                              <td className={styles.textRight}>{item.quantity}</td>
+                              <td className={styles.textRight}>฿{item.price.toFixed(2)}</td>
+                              <td className={styles.textRight}>
+                                ฿{(item.price * item.quantity).toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className={styles.totalRow}>
+                            <td colSpan="3" className={styles.textRight}>
+                              รวมครั้งที่ {group.orderNumber}:
+                            </td>
+                            <td className={styles.textRight}>
+                              ฿{groupTotal.toFixed(2)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               );
             })}
