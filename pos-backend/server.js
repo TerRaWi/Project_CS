@@ -519,16 +519,17 @@ app.get('/api/order/:tableId', (req, res) => {
   const query = `
     SELECT 
       o.id as orderId,
-      o.start_time as date,      /* แก้จาก order_time เป็น start_time */
+      o.start_time as date,      
       o.status,
       od.quantity,
       od.unit_price as price,
+      od.order_time,  /* เพิ่ม order_time */
       p.name as productName
     FROM \`order\` o
     JOIN order_detail od ON o.id = od.order_id
     JOIN product p ON od.product_id = p.id
     WHERE o.table_id = ?
-    ORDER BY o.start_time DESC   /* แก้ตรงนี้ด้วย */
+    ORDER BY o.start_time DESC
   `;
 
   db.query(query, [tableId], (err, results) => {
@@ -538,12 +539,6 @@ app.get('/api/order/:tableId', (req, res) => {
         error: 'เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์'
       });
     }
-
-    // log results
-    console.log('Query results:', {
-      count: results?.length,
-      firstRow: results?.[0]
-    });
 
     if (!results || results.length === 0) {
       return res.json([]);
@@ -563,11 +558,32 @@ app.get('/api/order/:tableId', (req, res) => {
         orders.push(orderMap.get(row.orderId));
       }
       
-      orderMap.get(row.orderId).items.push({
+      const currentOrder = orderMap.get(row.orderId);
+      currentOrder.items.push({
         productName: row.productName,
         quantity: row.quantity,
-        price: parseFloat(row.price)
+        price: parseFloat(row.price),
+        orderTime: row.order_time
       });
+    });
+
+    // เพิ่มการจัดกลุ่มตาม order_time สำหรับแต่ละ order
+    orders.forEach(order => {
+      // จัดกลุ่มรายการตาม order_time
+      const groupedItems = {};
+      order.items.forEach(item => {
+        const timeKey = new Date(item.orderTime).getTime();
+        if (!groupedItems[timeKey]) {
+          groupedItems[timeKey] = [];
+        }
+        groupedItems[timeKey].push(item);
+      });
+
+      // แปลงเป็น array และเรียงตามเวลา
+      order.items = Object.entries(groupedItems)
+        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+        .map(([_, items]) => items)
+        .flat();
     });
 
     res.json(orders);
