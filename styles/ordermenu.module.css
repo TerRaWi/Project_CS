@@ -354,3 +354,66 @@
     padding-bottom: 12px;
     border-bottom: 1px solid #e5e7eb;
   }
+
+ /* เพิ่มเติม styles ต่อจาก ordermenu.module.css เดิม */
+
+ .orderGroup {
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.groupHeader {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #f9fafb;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.groupHeader:hover {
+  background-color: #f3f4f6;
+}
+
+.groupInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.orderTime {
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.clockIcon {
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+}
+
+.expandIcon {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.orderContent {
+  padding: 16px;
+  background-color: white;
+}
+
+.orderTotal {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: right;
+}
