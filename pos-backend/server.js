@@ -512,7 +512,6 @@ app.get('/api/category', (req, res) => {
 });
 
 // ประวัติการสั่งอาหาร
-// server.js
 app.get('/api/order/:tableId', (req, res) => {
   const tableId = req.params.tableId;
   

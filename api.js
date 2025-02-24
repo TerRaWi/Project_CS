@@ -167,7 +167,7 @@ export const createOrder = async (tableId, items) => {
   }
 };
 
-// api.js
+//ประวัติการสั่งอาหาร
 export const getOrdersByTable = async (tableId) => {
   try {
     if (!tableId) {
