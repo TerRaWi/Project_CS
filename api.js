@@ -2,7 +2,9 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:3001/api';
 
-// Custom error handler
+/**
+ * การจัดการข้อผิดพลาด
+ */
 const handleApiError = (error, customMessage = 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ') => {
   let errorMessage = customMessage;
 
@@ -38,7 +40,13 @@ const handleApiError = (error, customMessage = 'เกิดข้อผิด�
   throw new Error(errorMessage);
 };
 
-// Table/Customer APIs
+/**
+ * ============================
+ * API เกี่ยวกับโต๊ะและลูกค้า
+ * ============================
+ */
+
+// ดึงข้อมูลโต๊ะทั้งหมด
 export const getTables = async () => {
   try {
     const { data } = await axios.get(`${API_URL}/tables`);
@@ -48,6 +56,7 @@ export const getTables = async () => {
   }
 };
 
+// เพิ่มโต๊ะใหม่
 export const addTable = async (tableNumber) => {
   try {
     const { data } = await axios.post(`${API_URL}/tables`, { 
@@ -60,6 +69,7 @@ export const addTable = async (tableNumber) => {
   }
 };
 
+// ลบโต๊ะ
 export const deleteTable = async (tableNumber) => {
   try {
     const { data } = await axios.delete(`${API_URL}/tables/${tableNumber}`);
@@ -69,6 +79,7 @@ export const deleteTable = async (tableNumber) => {
   }
 };
 
+// บันทึกข้อมูลลูกค้า
 export const saveCustomerData = async (tableId, adultCount, oldChildCount, childCount) => {
   try {
     const { data } = await axios.post(`${API_URL}/saveCustomer`, {
@@ -77,7 +88,6 @@ export const saveCustomerData = async (tableId, adultCount, oldChildCount, child
       oldChildCount,
       childCount
     });
-
     return data;
   } catch (error) {
     console.error('Error saving customer data:', error);
@@ -85,8 +95,13 @@ export const saveCustomerData = async (tableId, adultCount, oldChildCount, child
   }
 };
 
-// Product APIs
-//
+/**
+ * ============================
+ * API เกี่ยวกับสินค้า
+ * ============================
+ */
+
+// ดึงข้อมูลสินค้าทั้งหมด
 export const getProduct = async () => {
   try {
     const { data } = await axios.get(`${API_URL}/product`);
@@ -96,7 +111,7 @@ export const getProduct = async () => {
   }
 };
 
-//
+// เพิ่มสินค้าใหม่
 export const addProducts = async (productData) => {
   try {
     const { data } = await axios.post(`${API_URL}/product`, productData, {
@@ -108,7 +123,7 @@ export const addProducts = async (productData) => {
   }
 };
 
-//
+// ลบสินค้า
 export const deleteProduct = async (id) => {
   try {
     const { data } = await axios.delete(`${API_URL}/product/${id}`);
@@ -118,7 +133,7 @@ export const deleteProduct = async (id) => {
   }
 };
 
-//
+// แก้ไขข้อมูลสินค้า
 export const updateProduct = async (id, productData) => {
   try {
     const { data } = await axios.put(`${API_URL}/product/${id}`, productData, {
@@ -130,7 +145,7 @@ export const updateProduct = async (id, productData) => {
   }
 };
 
-// ฟังก์ชั่น ระงับการขายสินค้า
+// อัพเดทสถานะสินค้า (ระงับการขาย)
 export const updateProductStatus = async (id, newStatus) => {
   try {
     const { data } = await axios.patch(`${API_URL}/product/${id}/status`, {
@@ -142,7 +157,13 @@ export const updateProductStatus = async (id, newStatus) => {
   }
 };
 
-// Order APIs
+/**
+ * ============================
+ * API เกี่ยวกับออเดอร์
+ * ============================
+ */
+
+// สร้างออเดอร์ใหม่
 export const createOrder = async (tableId, items) => {
   try {
     const { data } = await axios.post(`${API_URL}/order`, { tableId, items });
@@ -167,7 +188,7 @@ export const createOrder = async (tableId, items) => {
   }
 };
 
-//ประวัติการสั่งอาหาร
+// ดึงประวัติการสั่งอาหารตามโต๊ะ
 export const getOrdersByTable = async (tableId) => {
   try {
     if (!tableId) {
@@ -183,7 +204,6 @@ export const getOrdersByTable = async (tableId) => {
     }
 
     return response.data;
-
   } catch (error) {
     console.error('Error fetching orders:', error);
     if (axios.isAxiosError(error)) {
@@ -196,7 +216,7 @@ export const getOrdersByTable = async (tableId) => {
   }
 };
 
-// เพิ่มฟังก์ชันสำหรับอัพเดทสถานะรายการอาหาร
+// อัพเดทสถานะรายการอาหาร
 export const updateOrderItemStatus = async (orderDetailId, newStatus) => {
   try {
     // ตรวจสอบว่า status ที่ส่งมาถูกต้องหรือไม่
@@ -214,7 +234,7 @@ export const updateOrderItemStatus = async (orderDetailId, newStatus) => {
   }
 };
 
-// ฟังก์ชันสำหรับดึงข้อมูลรายละเอียดออเดอร์
+// ดึงข้อมูลรายละเอียดออเดอร์
 export const getOrderDetails = async (orderId) => {
   try {
     const { data } = await axios.get(`${API_URL}/order-detail/${orderId}`);
@@ -224,7 +244,13 @@ export const getOrderDetails = async (orderId) => {
   }
 };
 
-// Category APIs
+/**
+ * ============================
+ * API เกี่ยวกับหมวดหมู่
+ * ============================
+ */
+
+// ดึงข้อมูลหมวดหมู่ทั้งหมด
 export const getCategories = async () => {
   try {
     const { data } = await axios.get(`${API_URL}/category`);

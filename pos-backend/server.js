@@ -5,6 +5,13 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * ============================
+ * การตั้งค่าเริ่มต้น (Configuration)
+ * ============================
+ */
+
+// กำหนดการจัดเก็บไฟล์รูปภาพ
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = 'uploads/';
@@ -20,14 +27,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// สร้าง Express app และกำหนดพอร์ต
 const app = express();
 const PORT = 3001;
 
+// กำหนด middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-
+// เชื่อมต่อฐานข้อมูล MySQL
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -43,11 +52,23 @@ db.connect((err) => {
   console.log('เชื่อมต่อฐานข้อมูล MySQL สำเร็จ');
 });
 
+/**
+ * ============================
+ * Health check API
+ * ============================
+ */
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-//นำโต๊ะมาแสดงบน Page โต๊ะ
+/**
+ * ============================
+ * API เกี่ยวกับโต๊ะ (Tables)
+ * ============================
+ */
+
+// นำโต๊ะมาแสดงบน Page โต๊ะ
 app.get('/api/tables', (req, res) => {
   const query = `
     SELECT dt.*, ts.name as status_name 
@@ -66,7 +87,7 @@ app.get('/api/tables', (req, res) => {
   });
 });
 
-//สร้างโต๊ะ
+// สร้างโต๊ะ
 app.post('/api/tables', (req, res) => {
   const { table_number, status_id } = req.body;
 
@@ -109,7 +130,7 @@ app.post('/api/tables', (req, res) => {
   });
 });
 
-// เปิดโต๊ะ
+// เปิดโต๊ะ (บันทึกข้อมูลลูกค้า)
 app.post('/api/saveCustomer', async (req, res) => {
   const { tableId, adultCount, oldChildCount, childCount } = req.body;
 
@@ -207,7 +228,7 @@ app.post('/api/saveCustomer', async (req, res) => {
   }
 });
 
-//ลบโต๊ะ
+// ลบโต๊ะ
 app.delete('/api/tables/:tableNumber', (req, res) => {
   const tableNumber = req.params.tableNumber;
 
@@ -269,7 +290,13 @@ app.delete('/api/tables/:tableNumber', (req, res) => {
   );
 });
 
-//นำเมนูมาแสดงบน Page จัดการเมนู
+/**
+ * ============================
+ * API เกี่ยวกับสินค้า (Products)
+ * ============================
+ */
+
+// นำเมนูมาแสดงบน Page จัดการเมนู
 app.get('/api/product', (req, res) => {
   const query = `
     SELECT p.id, p.name, p.price, p.category_id, p.image_url, p.status 
@@ -287,36 +314,7 @@ app.get('/api/product', (req, res) => {
   });
 });
 
-// อัพเดทสถานะสินค้า (A,I) updateProductStatus
-app.patch('/api/product/:id/status', (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  if (!['A', 'I'].includes(status)) {
-    return res.status(400).json({ error: 'สถานะไม่ถูกต้อง' });
-  }
-
-  const query = 'UPDATE product SET status = ? WHERE id = ?';
-  db.query(query, [status, id], (err, result) => {
-    if (err) {
-      console.error('เกิดข้อผิดพลาดในการอัพเดทสถานะสินค้า:', err);
-      return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
-    }
-
-    db.query(
-      'SELECT id, name, price, category_id, image_url, status FROM product WHERE id = ?',
-      [id],
-      (selectErr, selectResults) => {
-        if (selectErr) {
-          return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า' });
-        }
-        res.json(selectResults[0]);
-      });
-  });
-});
-
-//เพิ่มสินค้าใหม่
-//
+// เพิ่มสินค้าใหม่
 app.post('/api/product', upload.single('image'), (req, res) => {
   const { name, price, category_id } = req.body;
   const image_url = req.file ? `/uploads/${req.file.filename}` : null;
@@ -345,13 +343,11 @@ app.post('/api/product', upload.single('image'), (req, res) => {
   });
 });
 
-//สำหรับลบสินค้า
-//
+// ลบสินค้า
 app.delete('/api/product/:id', (req, res) => {
   const productId = req.params.id;  // ดึงค่า id จาก URL parameters
 
   if (!productId) {
-    ไ
     return res.status(400).json({ error: 'ไม่ได้ระบุรหัสสินค้า' });
   }
 
@@ -393,8 +389,7 @@ app.delete('/api/product/:id', (req, res) => {
   });
 });
 
-//แก้ไขสินค้า
-//
+// แก้ไขสินค้า
 app.put('/api/product/:id', upload.single('image'), (req, res) => {
   const { id } = req.params;
   const { name, price, category_id } = req.body;
@@ -439,7 +434,41 @@ app.put('/api/product/:id', upload.single('image'), (req, res) => {
   });
 });
 
-//สำหรับสร้าง order
+// อัพเดทสถานะสินค้า (A,I)
+app.patch('/api/product/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['A', 'I'].includes(status)) {
+    return res.status(400).json({ error: 'สถานะไม่ถูกต้อง' });
+  }
+
+  const query = 'UPDATE product SET status = ? WHERE id = ?';
+  db.query(query, [status, id], (err, result) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการอัพเดทสถานะสินค้า:', err);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
+    }
+
+    db.query(
+      'SELECT id, name, price, category_id, image_url, status FROM product WHERE id = ?',
+      [id],
+      (selectErr, selectResults) => {
+        if (selectErr) {
+          return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า' });
+        }
+        res.json(selectResults[0]);
+      });
+  });
+});
+
+/**
+ * ============================
+ * API เกี่ยวกับออเดอร์ (Orders)
+ * ============================
+ */
+
+// สร้างออเดอร์
 app.post('/api/order', (req, res) => {
   const { tableId, items } = req.body;
 
@@ -498,18 +527,6 @@ app.post('/api/order', (req, res) => {
       });
     }
   );
-});
-
-//ดึงข้อมูล category
-app.get('/api/category', (req, res) => {
-  db.query('SELECT * FROM category ORDER BY id', (err, results) => {
-    if (err) {
-      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
-      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-      return;
-    }
-    res.json(results);
-  });
 });
 
 // ประวัติการสั่งอาหาร
@@ -575,65 +592,29 @@ app.get('/api/order/:tableId', (req, res) => {
   });
 });
 
-app.post('/api/order', (req, res) => {
-  const { tableId, items } = req.body;
+/**
+ * ============================
+ * API เกี่ยวกับหมวดหมู่ (Categories)
+ * ============================
+ */
 
-  if (!tableId || !items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({
-      error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ส่งมา'
-    });
-  }
-
-  db.query(
-    'SELECT id FROM `order` WHERE table_id = ? AND status = "A" ORDER BY id DESC LIMIT 1',
-    [tableId],
-    (err, orders) => {
-      if (err) {
-        return res.status(500).json({
-          error: 'เกิดข้อผิดพลาดในการค้นหาออเดอร์'
-        });
-      }
-
-      if (!orders || orders.length === 0) {
-        return res.status(404).json({
-          error: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้'
-        });
-      }
-
-      const orderId = orders[0].id;
-
-      const detailQuery = `
-        INSERT INTO order_detail 
-        (quantity, unit_price, status, order_id, product_id) 
-        VALUES ?
-      `;
-
-      const orderDetails = items.map(item => [
-        item.quantity,
-        Number(item.price),
-        'P',  // เปลี่ยนจาก 'A' เป็น 'P' สำหรับสถานะ "กำลังทำ"
-        orderId,
-        item.id
-      ]);
-
-      db.query(detailQuery, [orderDetails], (detailErr) => {
-        if (detailErr) {
-          console.error('Error inserting order details:', detailErr);
-          return res.status(500).json({
-            error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร'
-          });
-        }
-
-        res.status(201).json({
-          success: true,
-          orderId,
-          message: 'สั่งอาหารสำเร็จ'
-        });
-      });
+// ดึงข้อมูล category
+app.get('/api/category', (req, res) => {
+  db.query('SELECT * FROM category ORDER BY id', (err, results) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
+      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+      return;
     }
-  );
+    res.json(results);
+  });
 });
 
+/**
+ * ============================
+ * เริ่มการทำงานของเซิร์ฟเวอร์
+ * ============================
+ */
 
 app.listen(PORT, () => {
   console.log(`เซิร์ฟเวอร์ทำงานที่ http://localhost:${PORT}`);
