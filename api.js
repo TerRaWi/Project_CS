@@ -196,6 +196,34 @@ export const getOrdersByTable = async (tableId) => {
   }
 };
 
+// เพิ่มฟังก์ชันสำหรับอัพเดทสถานะรายการอาหาร
+export const updateOrderItemStatus = async (orderDetailId, newStatus) => {
+  try {
+    // ตรวจสอบว่า status ที่ส่งมาถูกต้องหรือไม่
+    if (!['P', 'C', 'V'].includes(newStatus)) {
+      throw new Error('สถานะไม่ถูกต้อง กรุณาระบุ P, C หรือ V');
+    }
+
+    const { data } = await axios.put(`${API_URL}/order-detail/${orderDetailId}/status`, {
+      status: newStatus
+    });
+    
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการอัพเดทสถานะรายการอาหาร');
+  }
+};
+
+// ฟังก์ชันสำหรับดึงข้อมูลรายละเอียดออเดอร์
+export const getOrderDetails = async (orderId) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/order-detail/${orderId}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลรายละเอียดออเดอร์');
+  }
+};
+
 // Category APIs
 export const getCategories = async () => {
   try {

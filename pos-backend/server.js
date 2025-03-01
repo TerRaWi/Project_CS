@@ -8,7 +8,7 @@ const path = require('path');
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = 'uploads/';
-    if (!fs.existsSync(uploadDir)){
+    if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir);
     }
     cb(null, uploadDir);
@@ -55,7 +55,7 @@ app.get('/api/tables', (req, res) => {
     JOIN table_status ts ON dt.status_id = ts.id 
     ORDER BY CAST(table_number AS SIGNED)
   `;
-  
+
   db.query(query, (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลโต๊ะ:', err);
@@ -69,7 +69,7 @@ app.get('/api/tables', (req, res) => {
 //สร้างโต๊ะ
 app.post('/api/tables', (req, res) => {
   const { table_number, status_id } = req.body;
-  
+
   if (!table_number) {
     return res.status(400).json({ error: 'ต้องระบุเบอร์โต๊ะ' });
   }
@@ -102,7 +102,7 @@ app.post('/api/tables', (req, res) => {
           table_number,
           status_id
         };
-        
+
         res.json(newTable);
       }
     );
@@ -120,17 +120,17 @@ app.post('/api/saveCustomer', async (req, res) => {
     // 1. สร้าง order ใหม่
     const [orderResult] = await db.promise().query(
       `INSERT INTO \`order\` (table_id, status) 
-       VALUES (?, 'A')`,
+        VALUES (?, 'A')`,
       [tableId]
     );
-    
+
     const orderId = orderResult.insertId;
 
     // 2. ดึงข้อมูล product จากชื่อ
     const [products] = await db.promise().query(
       `SELECT id, price, name 
-       FROM product 
-       WHERE name IN ('ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก')
+        FROM product 
+        WHERE name IN ('ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก')
        AND status = 'A'`  // เพิ่มเงื่อนไขเช็คสถานะ product ว่ายังใช้งานอยู่
     );
 
@@ -159,7 +159,7 @@ app.post('/api/saveCustomer', async (req, res) => {
         message: 'ไม่พบข้อมูลประเภทลูกค้าในระบบ'
       });
     }
-
+  
     // 6. สร้าง order_detail สำหรับแต่ละประเภทลูกค้าที่มีจำนวนมากกว่า 0
     for (const type of customerTypes) {
       if (type.count > 0) {
@@ -173,7 +173,7 @@ app.post('/api/saveCustomer', async (req, res) => {
               unit_price, 
               status,
               order_time
-            ) VALUES (?, ?, ?, ?, 'A', CURRENT_TIMESTAMP)`,
+            ) VALUES (?, ?, ?, ?, 'C', CURRENT_TIMESTAMP)`,  // เปลี่ยนจาก 'A' เป็น 'C'
             [orderId, product.id, type.count, product.price]
           );
         }
@@ -227,16 +227,16 @@ app.delete('/api/tables/:tableNumber', (req, res) => {
 
       // Check if table is occupied
       if (results[0].status_name === 'ไม่ว่าง') {
-        return res.status(400).json({ 
-          error: 'ไม่สามารถลบโต๊ะได้เนื่องจากโต๊ะกำลังถูกใช้งาน' 
+        return res.status(400).json({
+          error: 'ไม่สามารถลบโต๊ะได้เนื่องจากโต๊ะกำลังถูกใช้งาน'
         });
       }
 
       // Check if table has any active orders
       db.query(
         `SELECT o.* FROM \`order\` o 
-         JOIN dining_table dt ON o.table_id = dt.id 
-         WHERE dt.table_number = ? AND o.status = 'A'`,
+          JOIN dining_table dt ON o.table_id = dt.id 
+          WHERE dt.table_number = ? AND o.status = 'A'`,
         [tableNumber],
         (err, orderResults) => {
           if (err) {
@@ -245,8 +245,8 @@ app.delete('/api/tables/:tableNumber', (req, res) => {
           }
 
           if (orderResults.length > 0) {
-            return res.status(400).json({ 
-              error: 'ไม่สามารถลบโต๊ะได้เนื่องจากมีออเดอร์ที่ยังไม่เสร็จสิ้น' 
+            return res.status(400).json({
+              error: 'ไม่สามารถลบโต๊ะได้เนื่องจากมีออเดอร์ที่ยังไม่เสร็จสิ้น'
             });
           }
 
@@ -277,7 +277,7 @@ app.get('/api/product', (req, res) => {
     WHERE p.status IN ('A', 'I')
     ORDER BY p.id DESC
   `;
-  
+
   db.query(query, (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า:', err);
@@ -304,14 +304,14 @@ app.patch('/api/product/:id/status', (req, res) => {
     }
 
     db.query(
-      'SELECT id, name, price, category_id, image_url, status FROM product WHERE id = ?', 
-      [id], 
+      'SELECT id, name, price, category_id, image_url, status FROM product WHERE id = ?',
+      [id],
       (selectErr, selectResults) => {
         if (selectErr) {
           return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า' });
         }
         res.json(selectResults[0]);
-    });
+      });
   });
 });
 
@@ -320,18 +320,18 @@ app.patch('/api/product/:id/status', (req, res) => {
 app.post('/api/product', upload.single('image'), (req, res) => {
   const { name, price, category_id } = req.body;
   const image_url = req.file ? `/uploads/${req.file.filename}` : null;
-  
+
   const query = `
     INSERT INTO product (name, price, category_id, image_url, status) 
     VALUES (?, ?, ?, ?, 'A')
   `;
-  
+
   db.query(query, [name, price, category_id, image_url], (err, result) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการเพิ่มสินค้า:', err);
       return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
     }
-    
+
     const newProduct = {
       id: result.insertId,
       name,
@@ -340,17 +340,18 @@ app.post('/api/product', upload.single('image'), (req, res) => {
       image_url,
       status: 'A'
     };
-    
+
     res.status(201).json(newProduct);
   });
 });
 
- //สำหรับลบสินค้า
- //
+//สำหรับลบสินค้า
+//
 app.delete('/api/product/:id', (req, res) => {
   const productId = req.params.id;  // ดึงค่า id จาก URL parameters
 
-  if (!productId) {ไ
+  if (!productId) {
+    ไ
     return res.status(400).json({ error: 'ไม่ได้ระบุรหัสสินค้า' });
   }
 
@@ -384,9 +385,9 @@ app.delete('/api/product/:id', (req, res) => {
         });
       }
 
-      res.json({ 
-        message: 'ลบสินค้าสำเร็จ', 
-        id: productId 
+      res.json({
+        message: 'ลบสินค้าสำเร็จ',
+        id: productId
       });
     });
   });
@@ -443,8 +444,8 @@ app.post('/api/order', (req, res) => {
   const { tableId, items } = req.body;
 
   if (!tableId || !items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ 
-      error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ส่งมา' 
+    return res.status(400).json({
+      error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ส่งมา'
     });
   }
 
@@ -453,14 +454,14 @@ app.post('/api/order', (req, res) => {
     [tableId],
     (err, orders) => {
       if (err) {
-        return res.status(500).json({ 
-          error: 'เกิดข้อผิดพลาดในการค้นหาออเดอร์' 
+        return res.status(500).json({
+          error: 'เกิดข้อผิดพลาดในการค้นหาออเดอร์'
         });
       }
 
       if (!orders || orders.length === 0) {
-        return res.status(404).json({ 
-          error: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้' 
+        return res.status(404).json({
+          error: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้'
         });
       }
 
@@ -476,7 +477,7 @@ app.post('/api/order', (req, res) => {
       const orderDetails = items.map(item => [
         item.quantity,
         Number(item.price),
-        'A',
+        'P',  // เปลี่ยนจาก 'A' เป็น 'P' สำหรับสถานะ "กำลังทำ"
         orderId,
         item.id
       ]);
@@ -484,8 +485,8 @@ app.post('/api/order', (req, res) => {
       db.query(detailQuery, [orderDetails], (detailErr) => {
         if (detailErr) {
           console.error('Error inserting order details:', detailErr);
-          return res.status(500).json({ 
-            error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร' 
+          return res.status(500).json({
+            error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร'
           });
         }
 
@@ -514,21 +515,23 @@ app.get('/api/category', (req, res) => {
 // ประวัติการสั่งอาหาร
 app.get('/api/order/:tableId', (req, res) => {
   const tableId = req.params.tableId;
-  
+
   const query = `
     SELECT 
       o.id as orderId,
       o.start_time as date,      
-      o.status,
+      o.status as orderStatus,
+      od.id as orderDetailId,
       od.quantity,
       od.unit_price as price,
-      od.order_time,  /* เพิ่ม order_time */
+      od.status as itemStatus,
+      od.order_time,
       p.name as productName
     FROM \`order\` o
     JOIN order_detail od ON o.id = od.order_id
     JOIN product p ON od.product_id = p.id
     WHERE o.table_id = ?
-    ORDER BY o.start_time DESC
+    ORDER BY o.start_time DESC, od.order_time ASC
   `;
 
   db.query(query, [tableId], (err, results) => {
@@ -551,43 +554,86 @@ app.get('/api/order/:tableId', (req, res) => {
         orderMap.set(row.orderId, {
           orderId: row.orderId,
           date: row.date,
-          status: row.status,
+          status: row.orderStatus,
           items: []
         });
         orders.push(orderMap.get(row.orderId));
       }
-      
+
       const currentOrder = orderMap.get(row.orderId);
       currentOrder.items.push({
+        orderDetailId: row.orderDetailId,
         productName: row.productName,
         quantity: row.quantity,
         price: parseFloat(row.price),
-        orderTime: row.order_time
+        orderTime: row.order_time,
+        status: row.itemStatus
       });
-    });
-
-    // เพิ่มการจัดกลุ่มตาม order_time สำหรับแต่ละ order
-    orders.forEach(order => {
-      // จัดกลุ่มรายการตาม order_time
-      const groupedItems = {};
-      order.items.forEach(item => {
-        const timeKey = new Date(item.orderTime).getTime();
-        if (!groupedItems[timeKey]) {
-          groupedItems[timeKey] = [];
-        }
-        groupedItems[timeKey].push(item);
-      });
-
-      // แปลงเป็น array และเรียงตามเวลา
-      order.items = Object.entries(groupedItems)
-        .sort(([a], [b]) => parseInt(a) - parseInt(b))
-        .map(([_, items]) => items)
-        .flat();
     });
 
     res.json(orders);
   });
 });
+
+app.post('/api/order', (req, res) => {
+  const { tableId, items } = req.body;
+
+  if (!tableId || !items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({
+      error: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ส่งมา'
+    });
+  }
+
+  db.query(
+    'SELECT id FROM `order` WHERE table_id = ? AND status = "A" ORDER BY id DESC LIMIT 1',
+    [tableId],
+    (err, orders) => {
+      if (err) {
+        return res.status(500).json({
+          error: 'เกิดข้อผิดพลาดในการค้นหาออเดอร์'
+        });
+      }
+
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({
+          error: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้'
+        });
+      }
+
+      const orderId = orders[0].id;
+
+      const detailQuery = `
+        INSERT INTO order_detail 
+        (quantity, unit_price, status, order_id, product_id) 
+        VALUES ?
+      `;
+
+      const orderDetails = items.map(item => [
+        item.quantity,
+        Number(item.price),
+        'P',  // เปลี่ยนจาก 'A' เป็น 'P' สำหรับสถานะ "กำลังทำ"
+        orderId,
+        item.id
+      ]);
+
+      db.query(detailQuery, [orderDetails], (detailErr) => {
+        if (detailErr) {
+          console.error('Error inserting order details:', detailErr);
+          return res.status(500).json({
+            error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร'
+          });
+        }
+
+        res.status(201).json({
+          success: true,
+          orderId,
+          message: 'สั่งอาหารสำเร็จ'
+        });
+      });
+    }
+  );
+});
+
 
 app.listen(PORT, () => {
   console.log(`เซิร์ฟเวอร์ทำงานที่ http://localhost:${PORT}`);
