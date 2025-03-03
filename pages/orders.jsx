@@ -1,71 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import { getOrdersByTable, getTables } from '../api';
+import { getAllActiveOrders, getTables, updateOrderDetailStatus } from '../api';
 import Statusorder from "../components/Statusorder";
 import styles from "../styles/orders.module.css";
 
 const Orders = () => {
   const [tables, setTables] = useState([]);
-  const [activeTable, setActiveTable] = useState(null);
-  const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortOrder, setSortOrder] = useState('newest'); // 'newest' or 'oldest'
 
   useEffect(() => {
-    fetchTables();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    if (activeTable) {
-      fetchOrders(activeTable.id);
-    }
-  }, [activeTable]);
-
-  const fetchTables = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // ดึงข้อมูลโต๊ะทั้งหมด
       const tablesData = await getTables();
       setTables(tablesData);
       
-      // ถ้ามีโต๊ะ ให้เลือกโต๊ะแรกเป็นค่าเริ่มต้น
-      if (tablesData.length > 0) {
-        setActiveTable(tablesData[0]);
-      }
+      // ดึงข้อมูลออเดอร์ทั้งหมดที่กำลังทำงานอยู่ (Active)
+      const activeOrders = await getAllActiveOrders();
+      // จัดเรียงออเดอร์ตามเวลา (ล่าสุดขึ้นก่อน หรือ เก่าสุดขึ้นก่อน)
+      sortOrders(activeOrders, sortOrder);
       
       setLoading(false);
     } catch (err) {
-      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลโต๊ะ');
+      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
       setLoading(false);
     }
   };
 
-  const fetchOrders = async (tableId) => {
-    try {
-      setLoading(true);
-      const ordersData = await getOrdersByTable(tableId);
-      
-      // กรองเฉพาะออเดอร์ที่ยังทำงานอยู่ (Active)
-      const activeOrders = ordersData.filter(order => order.status === 'A');
-      
-      setOrders(activeOrders);
-      setLoading(false);
-    } catch (err) {
-      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลออเดอร์');
-      setLoading(false);
+  const sortOrders = (orders, sortType) => {
+    const sorted = [...orders];
+    if (sortType === 'newest') {
+      sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } else {
+      sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
     }
+    setAllOrders(sorted);
   };
 
-  const handleTableClick = (table) => {
-    setActiveTable(table);
+  const handleSortChange = (e) => {
+    const newSortOrder = e.target.value;
+    setSortOrder(newSortOrder);
+    sortOrders(allOrders, newSortOrder);
   };
 
   const handleOrderUpdate = () => {
-    // Refresh ข้อมูลออเดอร์หลังจากอัปเดตสถานะ
-    if (activeTable) {
-      fetchOrders(activeTable.id);
-    }
+    // Refresh ข้อมูลออเดอร์ทั้งหมดหลังจากอัปเดตสถานะ
+    fetchData();
   };
 
-  if (loading && !activeTable) {
+  // กรองเฉพาะโต๊ะที่ไม่ว่าง (มีลูกค้าใช้บริการอยู่)
+  const busyTables = tables.filter(table => table.status_id === 2);
+
+  if (loading) {
     return <div className={styles.loading}>กำลังโหลด...</div>;
   }
 
@@ -79,42 +72,66 @@ const Orders = () => {
       
       <div className={styles.contentWrapper}>
         <div className={styles.tablesList}>
-          <h2 className={styles.sectionTitle}>โต๊ะอาหาร</h2>
+          <h2 className={styles.sectionTitle}>สถานะโต๊ะอาหาร</h2>
           {tables.length === 0 ? (
             <div className={styles.noTables}>ไม่พบข้อมูลโต๊ะ</div>
           ) : (
-            <div className={styles.tableButtons}>
+            <div className={styles.tableStatus}>
               {tables.map((table) => (
-                <button
-                  key={table.id}
-                  className={`${styles.tableButton} ${activeTable?.id === table.id ? styles.activeTable : ''}`}
-                  onClick={() => handleTableClick(table)}
-                >
-                  โต๊ะ {table.table_number}
-                </button>
+                <div key={table.id} className={styles.tableStatusItem}>
+                  <span className={styles.tableNumber}>โต๊ะ {table.table_number}</span>
+                  <span className={`${styles.statusBadge} ${table.status_id === 2 ? styles.statusBusy : styles.statusFree}`}>
+                    {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
+                  </span>
+                </div>
               ))}
             </div>
           )}
+          
+          <div className={styles.tableStats}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>จำนวนโต๊ะทั้งหมด:</span>
+              <span className={styles.statValue}>{tables.length}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>โต๊ะที่ไม่ว่าง:</span>
+              <span className={styles.statValue}>{busyTables.length}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>โต๊ะว่าง:</span>
+              <span className={styles.statValue}>{tables.length - busyTables.length}</span>
+            </div>
+          </div>
         </div>
         
         <div className={styles.ordersList}>
-          <h2 className={styles.sectionTitle}>
-            ออเดอร์{activeTable ? ` (โต๊ะ ${activeTable.table_number})` : ''}
-          </h2>
+          <div className={styles.ordersHeader}>
+            <h2 className={styles.sectionTitle}>ออเดอร์ทั้งหมด</h2>
+            
+            <div className={styles.orderTimeSort}>
+              <label htmlFor="sortOrder">เรียงตาม: </label>
+              <select 
+                id="sortOrder" 
+                value={sortOrder}
+                onChange={handleSortChange}
+                className={styles.sortSelect}
+              >
+                <option value="newest">ล่าสุดก่อน</option>
+                <option value="oldest">เก่าสุดก่อน</option>
+              </select>
+            </div>
+          </div>
           
-          {!activeTable ? (
-            <div className={styles.noTableSelected}>กรุณาเลือกโต๊ะ</div>
-          ) : loading ? (
-            <div className={styles.loading}>กำลังโหลดออเดอร์...</div>
-          ) : orders.length === 0 ? (
+          {allOrders.length === 0 ? (
             <div className={styles.noOrders}>ไม่พบออเดอร์ที่กำลังดำเนินการอยู่</div>
           ) : (
             <div className={styles.ordersGrid}>
-              {orders.map((order) => (
+              {allOrders.map((order) => (
                 <Statusorder
                   key={order.orderId}
                   orderId={order.orderId}
-                  tableId={activeTable.id}
+                  tableId={order.tableId}
+                  tableNumber={order.tableNumber}
                   onStatusUpdate={handleOrderUpdate}
                 />
               ))}

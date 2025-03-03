@@ -244,6 +244,33 @@ export const getOrderDetails = async (orderId) => {
   }
 };
 
+export const updateOrderDetailStatus = async (detailId, newStatus) => {
+  try {
+    // ตรวจสอบว่า status ที่ส่งมาถูกต้องหรือไม่
+    if (!['A', 'P', 'C', 'V'].includes(newStatus)) {
+      throw new Error('สถานะไม่ถูกต้อง กรุณาระบุ A, P, C หรือ V');
+    }
+
+    const { data } = await axios.patch(`${API_URL}/order-detail/${detailId}/status`, {
+      status: newStatus
+    });
+    
+    return data;
+  } catch (error) {
+    console.error('Error updating order detail status:', error);
+    
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+      } else if (error.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    
+    throw new Error('เกิดข้อผิดพลาดในการอัพเดทสถานะรายการอาหาร');
+  }
+};
+
 /**
  * ============================
  * API เกี่ยวกับหมวดหมู่
@@ -257,5 +284,49 @@ export const getCategories = async () => {
     return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลหมวดหมู่');
+  }
+};
+
+/**
+ * ดึงออเดอร์ทั้งหมดทุกโต๊ะที่ยังเปิดอยู่
+ */
+export const getAllActiveOrders = async () => {
+  try {
+    // ดึงข้อมูลโต๊ะทั้งหมดก่อน
+    const tables = await getTables();
+    
+    // จัดการดึงข้อมูลออเดอร์ทุกโต๊ะพร้อมกัน
+    const orderPromises = tables.map(table => getOrdersByTable(table.id));
+    
+    // รอให้ทุก Promise เสร็จสิ้น
+    const ordersArrays = await Promise.all(orderPromises);
+    
+    // รวมข้อมูลออเดอร์จากทุกโต๊ะและเพิ่มข้อมูลโต๊ะ
+    const allOrders = [];
+    
+    ordersArrays.forEach((tableOrders, index) => {
+      const tableInfo = tables[index];
+      const ordersWithTableInfo = tableOrders.map(order => ({
+        ...order,
+        tableNumber: tableInfo.table_number,
+        tableId: tableInfo.id
+      }));
+      
+      allOrders.push(...ordersWithTableInfo);
+    });
+    
+    // กรองเฉพาะออเดอร์ที่ยังทำงานอยู่ (Active)
+    const activeOrders = allOrders.filter(order => order.status === 'A');
+    
+    // เรียงออเดอร์ตามเวลาล่าสุด
+    const sortedOrders = activeOrders.sort((a, b) => {
+      return new Date(b.date) - new Date(a.date);
+    });
+    
+    return sortedOrders;
+    
+  } catch (error) {
+    console.error('Error fetching all orders:', error);
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลออเดอร์ทั้งหมด');
   }
 };

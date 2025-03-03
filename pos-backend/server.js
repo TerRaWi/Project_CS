@@ -594,6 +594,50 @@ app.get('/api/order/:tableId', (req, res) => {
 
 /**
  * ============================
+ * API เกี่ยวกับรายละเอียดออเดอร์ (Order Details)
+ * ============================
+ */
+
+// อัพเดทสถานะรายการอาหาร
+app.patch('/api/order-detail/:id/status', (req, res) => {
+  const detailId = req.params.id;
+  const { status } = req.body;
+
+  // ตรวจสอบความถูกต้องของข้อมูล
+  if (!detailId) {
+    return res.status(400).json({ error: 'ต้องระบุรหัสรายการอาหาร' });
+  }
+
+  if (!['A', 'P', 'C', 'V'].includes(status)) {
+    return res.status(400).json({ error: 'สถานะไม่ถูกต้อง กรุณาระบุ A, P, C หรือ V' });
+  }
+
+  // อัพเดทสถานะรายการอาหาร
+  db.query(
+    'UPDATE order_detail SET status = ? WHERE id = ?',
+    [status, detailId],
+    (err, result) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการอัพเดทสถานะรายการอาหาร:', err);
+        return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'ไม่พบรายการอาหารที่ต้องการอัพเดท' });
+      }
+
+      // เมื่ออัพเดทสำเร็จ ส่งข้อมูลกลับไป
+      res.json({
+        id: detailId,
+        status,
+        message: 'อัพเดทสถานะรายการอาหารสำเร็จ'
+      });
+    }
+  );
+});
+
+/**
+ * ============================
  * API เกี่ยวกับหมวดหมู่ (Categories)
  * ============================
  */
