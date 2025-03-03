@@ -433,3 +433,22 @@
     gap: 8px;
   }
 }
+
+.activeTable {
+  border-left: 4px solid #2196F3 !important;
+  font-weight: bold;
+}
+
+/* Container สำหรับแสดงรายการออเดอร์ทั้งหมด */
+.ordersListContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* CSS สำหรับ separator ระหว่างออเดอร์ของแต่ละโต๊ะ */
+.tableOrderSeparator {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 20px 0;
+}
