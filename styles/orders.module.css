@@ -1,3 +1,4 @@
+/* หน้าจัดการออเดอร์ - base styles */
 .ordersContainer {
   padding: 20px;
   max-width: 1200px;
@@ -10,6 +11,7 @@
   font-weight: 600;
   margin-bottom: 24px;
   color: #333;
+  text-align: center;
 }
   
 .contentWrapper {
@@ -21,7 +23,7 @@
 .tablesList {
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 16px;
 }
   
@@ -38,112 +40,7 @@
   color: #333;
 }
 
-/* New styles for orders header with sort controls */
-.ordersHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.orderTimeSort {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sortSelect {
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: white;
-  font-size: 0.9rem;
-  font-family: 'Kanit', sans-serif;
-}
-  
-.tableButtons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-  
-.tableButton {
-  padding: 12px;
-  border-radius: 6px;
-  background-color: #f1f1f1;
-  border: none;
-  text-align: left;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-  
-.tableButton:hover {
-  background-color: #e5e5e5;
-}
-  
-.activeTable {
-  background-color: #FF9800;
-  color: white;
-}
-  
-.activeTable:hover {
-  background-color: #F57C00;
-}
-  
-.ordersGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 16px;
-}
-  
-@media (max-width: 1200px) {
-  .ordersGrid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-}
-  
-@media (max-width: 768px) {
-  .contentWrapper {
-    grid-template-columns: 1fr;
-  }
-    
-  .tablesList {
-    margin-bottom: 16px;
-  }
-    
-  .tableButtons {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  }
-}
-  
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px;
-  color: #666;
-}
-  
-.error {
-  padding: 12px;
-  background-color: #FFEBEE;
-  color: #D32F2F;
-  border-radius: 4px;
-  margin-bottom: 16px;
-}
-  
-.noTables, .noOrders, .noTableSelected {
-  padding: 20px;
-  text-align: center;
-  color: #666;
-  font-style: italic;
-  background-color: #f5f5f5;
-  border-radius: 6px;
-}
-
-/* Table status styles */
+/* สถานะโต๊ะอาหาร */
 .tableStatus {
   display: flex;
   flex-direction: column;
@@ -155,9 +52,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: 10px 12px;
   background-color: #f8f8f8;
-  border-radius: 6px;
+  border-radius: 5px;
   border-left: 4px solid #ddd;
 }
 
@@ -185,7 +82,7 @@
   border: 1px solid #EF9A9A;
 }
 
-/* New statistics section for tables */
+/* สถิติโต๊ะ */
 .tableStats {
   background-color: #f8f8f8;
   border-radius: 6px;
@@ -196,7 +93,7 @@
 .statItem {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px dashed #ddd;
 }
 
@@ -211,4 +108,328 @@
 .statValue {
   font-weight: 600;
   color: #333;
+}
+
+/* ส่วนหัวออเดอร์ */
+.ordersHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.orderControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.orderTimeSort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sortSelect {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: white;
+  font-size: 0.9rem;
+  font-family: 'Kanit', sans-serif;
+}
+
+/* ปุ่มรีเฟรช */
+.refreshButton {
+  padding: 6px 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: 'Kanit', sans-serif;
+}
+
+.refreshButton:hover {
+  background-color: #388E3C;
+}
+
+/* ออเดอร์ตามโต๊ะ */
+.selectedTableOrders {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tableHeader {
+  background-color: #f0f0f0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #ddd;
+}
+
+.tableTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.orderCount {
+  background-color: #2196F3;
+  color: white;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  border-radius: 12px;
+}
+
+/* Container สำหรับแต่ละ order */
+.orderContainer {
+  border-bottom: 1px solid #eee;
+  margin: 15px;
+  padding-bottom: 15px;
+}
+
+.orderContainer:last-child {
+  border-bottom: none;
+}
+
+/* หัวข้อของแต่ละออเดอร์ */
+.orderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  margin-bottom: 10px;
+}
+
+.orderTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.orderBadge {
+  background-color: #e0e0e0;
+  color: #333;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  border-radius: 12px;
+  font-weight: normal;
+}
+
+.orderBadgeBlue {
+  background-color: #2196F3;
+  color: white;
+  padding: 3px 10px;
+  font-size: 0.9rem;
+  border-radius: 12px;
+}
+
+/* กลุ่มของรายการอาหารแต่ละครั้ง */
+.orderGroup {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* หัวข้อเวลาที่สั่ง */
+.orderTimeHeader {
+  background-color: #f0f0f0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* ตารางรายการอาหาร */
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  background-color: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.itemsTable thead {
+  background-color: #f0f0f0;
+}
+
+.itemsTable th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+}
+
+.itemsTable td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.itemsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.itemsTable tr.activeItem {
+  background-color: #FFF8E1;
+}
+
+.centered {
+  text-align: center;
+}
+
+.priceColumn {
+  text-align: right;
+}
+
+.actionsColumn {
+  text-align: center;
+}
+
+/* สถานะรายการอาหาร */
+.statusActive {
+  background-color: #FFC107;
+  color: #333;
+}
+
+.statusCompleted {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.statusVoid {
+  background-color: #F44336;
+  color: white;
+}
+
+.statusText {
+  color: #666;
+}
+
+/* ปุ่มการจัดการ */
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.actionButton {
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+  font-family: 'Kanit', sans-serif;
+}
+
+.completeButton {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.completeButton:hover {
+  background-color: #388E3C;
+}
+
+.cancelButton {
+  background-color: #F44336;
+  color: white;
+}
+
+.cancelButton:hover {
+  background-color: #D32F2F;
+}
+
+/* สรุปยอดเงิน */
+.groupSummary {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.subtotalAmount {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.orderSummary {
+  background-color: #f4f4f4;
+  padding: 12px 16px;
+  border-radius: 6px;
+  text-align: right;
+  margin-top: 15px;
+}
+
+.totalAmount {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+/* Loading, Error & Empty states */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: #666;
+}
+
+.error {
+  padding: 12px;
+  background-color: #FFEBEE;
+  color: #D32F2F;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.noOrders, .noItems, .noTables {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+}
+
+/* สำหรับหน้าจอขนาดเล็ก */
+@media (max-width: 768px) {
+  .contentWrapper {
+    grid-template-columns: 1fr;
+  }
+  
+  .tablesList {
+    margin-bottom: 16px;
+  }
+  
+  .actionButtons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .tableTitle {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .orderHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }
