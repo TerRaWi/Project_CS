@@ -41,7 +41,7 @@ const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '6101',
-  database: 'newtestdb'
+  database: 'posdb'
 });
 
 db.connect((err) => {
