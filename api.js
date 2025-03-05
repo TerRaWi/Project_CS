@@ -318,10 +318,19 @@ export const getAllActiveOrders = async () => {
     // กรองเฉพาะออเดอร์ที่ยังทำงานอยู่ (Active)
     const activeOrders = allOrders.filter(order => order.status === 'A');
     
-    // เรียงออเดอร์ตามเวลาล่าสุด
+    // เรียงออเดอร์ตามเวลาล่าสุด โดยใช้ getTime() ให้ถูกต้อง
     const sortedOrders = activeOrders.sort((a, b) => {
-      return new Date(b.date) - new Date(a.date);
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;  // เรียงจากใหม่ไปเก่า
     });
+    
+    // เพิ่ม debugging log เพื่อตรวจสอบผลลัพธ์
+    console.log('Sorted orders from API:', sortedOrders.map(order => ({
+      tableId: order.tableId,
+      date: order.date,
+      timestamp: new Date(order.date).getTime()
+    })));
     
     return sortedOrders;
     

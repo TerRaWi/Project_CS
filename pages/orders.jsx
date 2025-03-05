@@ -11,146 +11,97 @@ const Orders = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   // เพิ่มstate เพื่อควบคุมการแสดงผลทั้งหมด
   const [showAllOrders, setShowAllOrders] = useState(true);
-  
+
+  // ใช้ useEffect เพื่อเรียก fetchData เมื่อ sortOrder เปลี่ยน
   useEffect(() => {
     fetchData();
-    
-    // ตั้งเวลาดึงข้อมูลใหม่ทุก 30 วินาที
-    const intervalId = setInterval(fetchData, 30000);
-    
-    // ล้าง interval เมื่อ component ถูกถอดออกจาก DOM
-    return () => clearInterval(intervalId);
+  }, [sortOrder]); // เพิ่ม sortOrder เป็น dependency
+
+  // โหลดข้อมูลครั้งแรกเมื่อ component ถูกโหลด
+  useEffect(() => {
+    fetchData();
+    // ลบการตั้งเวลาดึงข้อมูลทุก 30 วินาที
   }, []);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // ดึงข้อมูลโต๊ะทั้งหมด
       const tablesData = await getTables();
       setTables(tablesData);
-      
+
       // ดึงข้อมูลออเดอร์ทั้งหมดที่กำลังทำงานอยู่ (Active)
       const activeOrders = await getAllActiveOrders();
-      
+      console.log('ข้อมูลออเดอร์จาก API:', activeOrders);
+
       // จัดกลุ่มออเดอร์ตามโต๊ะและเก็บเวลาล่าสุดของแต่ละโต๊ะ
       const ordersByTable = {};
-      const latestOrderTimes = {}; // เก็บเวลาล่าสุดของแต่ละโต๊ะ
       
       activeOrders.forEach(order => {
+        // แปลงวันที่ของออเดอร์เป็น Date object
         const orderDate = new Date(order.date);
         
-        // อัพเดทเวลาล่าสุดของโต๊ะนี้
-        if (!latestOrderTimes[order.tableId] || orderDate > latestOrderTimes[order.tableId]) {
-          latestOrderTimes[order.tableId] = orderDate;
+        // ค้นหาเวลาล่าสุดของรายการในออเดอร์
+        let latestItemTime = orderDate;
+        if (order.items && order.items.length > 0) {
+          order.items.forEach(item => {
+            const itemTime = new Date(item.orderTime);
+            if (itemTime > latestItemTime) {
+              latestItemTime = itemTime;
+            }
+          });
         }
         
         if (!ordersByTable[order.tableId]) {
           ordersByTable[order.tableId] = {
             tableId: order.tableId,
             tableNumber: order.tableNumber,
-            orders: [order], // เก็บทั้งออเดอร์
-            latestOrderTime: orderDate // เก็บเวลาล่าสุด
+            orders: [order],
+            latestOrderTime: latestItemTime,
+            latestTimestamp: latestItemTime.getTime()
           };
         } else {
-          // ตรวจสอบว่าออเดอร์นี้มีอยู่แล้วหรือไม่
-          const existingOrder = ordersByTable[order.tableId].orders.find(o => o.orderId === order.orderId);
-          
-          if (!existingOrder) {
-            ordersByTable[order.tableId].orders.push(order);
-            // อัพเดทเวลาล่าสุดถ้าจำเป็น
-            if (orderDate > ordersByTable[order.tableId].latestOrderTime) {
-              ordersByTable[order.tableId].latestOrderTime = orderDate;
-            }
+          ordersByTable[order.tableId].orders.push(order);
+          // อัพเดทเวลาล่าสุดถ้าออเดอร์นี้ใหม่กว่า
+          if (latestItemTime.getTime() > ordersByTable[order.tableId].latestTimestamp) {
+            ordersByTable[order.tableId].latestOrderTime = latestItemTime;
+            ordersByTable[order.tableId].latestTimestamp = latestItemTime.getTime();
           }
         }
       });
-      
-      // เรียงลำดับออเดอร์ในแต่ละโต๊ะตามเวลา
-      Object.values(ordersByTable).forEach(tableGroup => {
-        tableGroup.orders.sort((a, b) => {
-          if (sortOrder === 'newest') {
-            return new Date(b.date) - new Date(a.date);
-          } else {
-            return new Date(a.date) - new Date(b.date);
-          }
-        });
-      });
-      
-      // แปลงเป็น array และเรียงโต๊ะตามเวลาล่าสุด
-      const sortedTables = Object.values(ordersByTable).sort((a, b) => {
-        if (sortOrder === 'newest') {
-          return b.latestOrderTime - a.latestOrderTime;
-        } else {
-          return a.latestOrderTime - b.latestOrderTime;
-        }
-      });
-      
-      setAllOrders(sortedTables);
+
+      // แปลงเป็นอาร์เรย์และเรียงลำดับด้วย timestamp
+      const allOrdersArray = Object.values(ordersByTable);
+      console.log('ข้อมูลหลังจากจัดกลุ่ม ก่อนเรียง:', allOrdersArray);
+
+      // เรียงลำดับตามเวลาล่าสุด
+      if (sortOrder === 'newest') {
+        allOrdersArray.sort((a, b) => b.latestTimestamp - a.latestTimestamp);
+      } else {
+        allOrdersArray.sort((a, b) => a.latestTimestamp - b.latestTimestamp);
+      }
+
+      console.log('ข้อมูลหลังจากเรียงลำดับ:', allOrdersArray);
+      setAllOrders(allOrdersArray);
       
       // ถ้ายังไม่ได้เลือกโต๊ะให้เลือกโต๊ะแรก (ถ้ามี)
-      if (!selectedTable && sortedTables.length > 0) {
-        setSelectedTable(sortedTables[0].tableId);
+      if (!selectedTable && allOrdersArray.length > 0) {
+        setSelectedTable(allOrdersArray[0].tableId);
       }
-      
+
       setLoading(false);
     } catch (err) {
       setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
       setLoading(false);
     }
-  }, [sortOrder]);
+  }, [sortOrder, selectedTable]);
 
-  const handleSortChange = async (e) => {
+  const handleSortChange = (e) => {
+    // เปลี่ยนค่า sortOrder แต่ไม่ต้องเรียก fetchData เพราะ useEffect จะจัดการให้
     const newSortOrder = e.target.value;
     setSortOrder(newSortOrder);
-    
-    // รอให้สถานะ state อัพเดทก่อนเรียก fetchData
-    await new Promise(resolve => setTimeout(resolve, 0));
-    
-    // สร้างฟังก์ชันเรียงข้อมูลใหม่ตาม sort order ที่เปลี่ยน
-    const sortOrdersWithNewOrder = () => {
-      try {
-        // เรียงลำดับข้อมูลใหม่โดยใช้ค่า sortOrder ใหม่
-        const updatedOrders = [...allOrders].map(tableGroup => {
-          // เรียง orders ภายในแต่ละ tableGroup ใหม่
-          const sortedOrders = [...tableGroup.orders].sort((a, b) => {
-            if (newSortOrder === 'newest') {
-              return new Date(b.date) - new Date(a.date);
-            } else {
-              return new Date(a.date) - new Date(b.date);
-            }
-          });
-          
-          // สร้าง object ใหม่เพื่อไม่ให้มี side effect
-          return {
-            ...tableGroup,
-            orders: sortedOrders
-          };
-        });
-        
-        // เรียงลำดับโต๊ะตามเวลาล่าสุด/เก่าสุด
-        const sortedTables = updatedOrders.sort((a, b) => {
-          if (newSortOrder === 'newest') {
-            return b.latestOrderTime - a.latestOrderTime;
-          } else {
-            return a.latestOrderTime - b.latestOrderTime;
-          }
-        });
-        
-        // อัพเดท state ด้วยข้อมูลที่เรียงใหม่แล้ว
-        setAllOrders(sortedTables);
-      } catch (err) {
-        setError('เกิดข้อผิดพลาดในการเรียงลำดับข้อมูล');
-      }
-    };
-    
-    // ถ้ามีข้อมูลให้เรียงลำดับใหม่เลย ไม่ต้องดึงจาก API ใหม่
-    if (allOrders.length > 0) {
-      sortOrdersWithNewOrder();
-    } else {
-      // ถ้าไม่มีข้อมูลให้ดึงใหม่
-      fetchData();
-    }
+    // ไม่ต้องเรียก fetchData() ที่นี่อีกเพราะ useEffect จะทำงานเมื่อ sortOrder เปลี่ยนแปลง
   };
 
   const handleStatusChange = async (detailId, newStatus) => {
@@ -185,7 +136,7 @@ const Orders = () => {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case 'A': 
+      case 'A':
       case 'P': return styles.statusActive;
       case 'C': return styles.statusCompleted;
       case 'V': return styles.statusVoid;
@@ -196,57 +147,61 @@ const Orders = () => {
   // จัดรูปแบบวันที่และเวลา
   const formatDateTime = (dateString) => {
     if (!dateString) return '';
-    
+
     const date = new Date(dateString);
     const thaiDate = new Date(date.getTime());
-    
+
     const day = thaiDate.getDate();
     const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
     const month = months[thaiDate.getMonth()];
     const year = thaiDate.getFullYear() + 543; // แปลงเป็นพ.ศ.
-    
+
     const hours = String(thaiDate.getHours()).padStart(2, '0');
     const minutes = String(thaiDate.getMinutes()).padStart(2, '0');
-    
+
     return `${day} ${month} ${year} ${hours}:${minutes}`;
   };
 
   // จัดรูปแบบเวลาอย่างเดียว
   const formatTime = (dateString) => {
     if (!dateString) return '';
-    
+
     const date = new Date(dateString);
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-    
+
     return `${hours}:${minutes}:${seconds}`;
   };
 
   // จัดกลุ่มรายการอาหารตามเวลาที่สั่ง
   const groupOrderItemsByTime = (items) => {
     const groupedItems = {};
-    
+
     items.forEach(item => {
       const orderTime = new Date(item.orderTime);
       const timeKey = orderTime.toISOString();
-      
+
       if (!groupedItems[timeKey]) {
         groupedItems[timeKey] = {
           time: orderTime,
           items: []
         };
       }
-      
+
       groupedItems[timeKey].items.push(item);
     });
-    
-    // เรียงตามเวลาล่าสุด
+
+    // เรียงตามเวลาล่าสุด หรือเก่าสุด ตาม sortOrder
     return Object.values(groupedItems).sort((a, b) => {
+      // นำ timestamp มาเปรียบเทียบ
+      const timeA = a.time.getTime();
+      const timeB = b.time.getTime();
+      
       if (sortOrder === 'newest') {
-        return b.time - a.time;
+        return timeB - timeA; // ล่าสุดก่อน
       } else {
-        return a.time - b.time;
+        return timeA - timeB; // เก่าสุดก่อน
       }
     });
   };
@@ -261,7 +216,7 @@ const Orders = () => {
 
   // กรองเฉพาะโต๊ะที่ไม่ว่าง (มีลูกค้าใช้บริการอยู่)
   const busyTables = tables.filter(table => table.status_id === 2);
-  
+
   // หาข้อมูลโต๊ะที่เลือก
   const selectedTableGroup = allOrders.find(table => table.tableId === selectedTable);
 
@@ -271,13 +226,13 @@ const Orders = () => {
   return (
     <div className={styles.ordersContainer}>
       <h1 className={styles.pageTitle}>จัดการออเดอร์</h1>
-      
+
       <div className={styles.contentWrapper}>
         <div className={styles.tablesList}>
           <h2 className={styles.sectionTitle}>สถานะโต๊ะอาหาร</h2>
-          
+
           {/* เพิ่มปุ่มแสดงออเดอร์ทั้งหมด */}
-          <div 
+          <div
             className={`${styles.tableStatusItem} ${showAllOrders ? styles.activeTable : ''}`}
             onClick={handleShowAllOrders}
             style={{
@@ -289,14 +244,14 @@ const Orders = () => {
           >
             <span className={styles.tableNumber}>แสดงออเดอร์ทั้งหมด</span>
           </div>
-          
+
           {tables.length === 0 ? (
             <div className={styles.noTables}>ไม่พบข้อมูลโต๊ะ</div>
           ) : (
             <div className={styles.tableStatus}>
               {tables.map((table) => (
-                <div 
-                  key={table.id} 
+                <div
+                  key={table.id}
                   className={styles.tableStatusItem}
                   onClick={() => handleTableSelect(table.id)}
                   style={{
@@ -313,7 +268,7 @@ const Orders = () => {
               ))}
             </div>
           )}
-          
+
           <div className={styles.tableStats}>
             <div className={styles.statItem}>
               <span className={styles.statLabel}>จำนวนโต๊ะทั้งหมด:</span>
@@ -329,21 +284,21 @@ const Orders = () => {
             </div>
           </div>
         </div>
-        
+
         <div className={styles.ordersList}>
           <div className={styles.ordersHeader}>
             <h2 className={styles.sectionTitle}>
-              {showAllOrders 
-                ? 'ออเดอร์ทั้งหมด' 
+              {showAllOrders
+                ? 'ออเดอร์ทั้งหมด'
                 : `ออเดอร์โต๊ะ ${selectedTableGroup?.tableNumber || ''}`
               }
             </h2>
-            
+
             <div className={styles.orderControls}>
               <div className={styles.orderTimeSort}>
                 <label htmlFor="sortOrder">เรียงตาม: </label>
-                <select 
-                  id="sortOrder" 
+                <select
+                  id="sortOrder"
                   value={sortOrder}
                   onChange={handleSortChange}
                   className={styles.sortSelect}
@@ -353,7 +308,8 @@ const Orders = () => {
                 </select>
               </div>
               
-              <button 
+              {/* เพิ่มปุ่มรีเฟรชกลับมา เนื่องจากเราไม่มีการรีเฟรชอัตโนมัติแล้ว */}
+              <button
                 className={styles.refreshButton}
                 onClick={fetchData}
               >
@@ -361,7 +317,7 @@ const Orders = () => {
               </button>
             </div>
           </div>
-          
+
           {!hasOrders ? (
             <div className={styles.noOrders}>ไม่พบออเดอร์ที่กำลังทำอยู่</div>
           ) : (
@@ -377,11 +333,11 @@ const Orders = () => {
                         <span className={styles.orderCount}>{tableGroup.orders.length} ออเดอร์</span>
                       </h3>
                     </div>
-                    
+
                     {tableGroup.orders.map((order, orderIndex) => {
                       // จัดกลุ่มรายการอาหารตามเวลาที่สั่ง
                       const orderedGroups = groupOrderItemsByTime(order.items);
-                      
+
                       return (
                         <div key={order.orderId} className={styles.orderContainer}>
                           <div className={styles.orderHeader}>
@@ -392,15 +348,13 @@ const Orders = () => {
                               ออเดอร์ #{order.orderId}
                             </div>
                           </div>
-                          
+
                           {orderedGroups.map((group, groupIndex) => (
                             <div key={groupIndex} className={styles.orderGroup}>
                               <div className={styles.orderTimeHeader}>
-                                ครั้งที่ {sortOrder === 'newest' ? 
-                                  orderedGroups.length - groupIndex : groupIndex + 1
-                                }: {formatDateTime(group.time)}
+                                ครั้งที่ {orderedGroups.length - groupIndex}: {formatDateTime(group.time)}
                               </div>
-                              
+
                               <table className={styles.itemsTable}>
                                 <thead>
                                   <tr>
@@ -414,8 +368,8 @@ const Orders = () => {
                                 </thead>
                                 <tbody>
                                   {group.items.map((item) => (
-                                    <tr 
-                                      key={item.orderDetailId} 
+                                    <tr
+                                      key={item.orderDetailId}
                                       className={item.status === 'P' ? styles.activeItem : ''}
                                     >
                                       <td>{item.productName}</td>
@@ -430,13 +384,13 @@ const Orders = () => {
                                       <td className={styles.actionsColumn}>
                                         {item.status === 'P' && (
                                           <div className={styles.actionButtons}>
-                                            <button 
+                                            <button
                                               className={`${styles.actionButton} ${styles.completeButton}`}
                                               onClick={() => handleStatusChange(item.orderDetailId, 'C')}
                                             >
                                               สำเร็จ
                                             </button>
-                                            <button 
+                                            <button
                                               className={`${styles.actionButton} ${styles.cancelButton}`}
                                               onClick={() => handleStatusChange(item.orderDetailId, 'V')}
                                             >
@@ -451,7 +405,7 @@ const Orders = () => {
                                   ))}
                                 </tbody>
                               </table>
-                              
+
                               <div className={styles.groupSummary}>
                                 <div className={styles.subtotalAmount}>
                                   รวมครั้งนี้: {group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
@@ -459,7 +413,7 @@ const Orders = () => {
                               </div>
                             </div>
                           ))}
-                          
+
                           <div className={styles.orderSummary}>
                             <div className={styles.totalAmount}>
                               รวมทั้งหมด: {order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
@@ -482,11 +436,11 @@ const Orders = () => {
                         <span className={styles.orderCount}>{selectedTableGroup.orders.length} ออเดอร์</span>
                       </h3>
                     </div>
-                    
+
                     {selectedTableGroup.orders.map((order, orderIndex) => {
                       // จัดกลุ่มรายการอาหารตามเวลาที่สั่ง
                       const orderedGroups = groupOrderItemsByTime(order.items);
-                      
+
                       return (
                         <div key={order.orderId} className={styles.orderContainer}>
                           <div className={styles.orderHeader}>
@@ -497,13 +451,13 @@ const Orders = () => {
                               ออเดอร์ #{order.orderId}
                             </div>
                           </div>
-                          
+
                           {orderedGroups.map((group, groupIndex) => (
                             <div key={groupIndex} className={styles.orderGroup}>
                               <div className={styles.orderTimeHeader}>
                                 ครั้งที่ {orderedGroups.length - groupIndex}: {formatDateTime(group.time)}
                               </div>
-                              
+
                               <table className={styles.itemsTable}>
                                 <thead>
                                   <tr>
@@ -517,8 +471,8 @@ const Orders = () => {
                                 </thead>
                                 <tbody>
                                   {group.items.map((item) => (
-                                    <tr 
-                                      key={item.orderDetailId} 
+                                    <tr
+                                      key={item.orderDetailId}
                                       className={item.status === 'P' ? styles.activeItem : ''}
                                     >
                                       <td>{item.productName}</td>
@@ -533,13 +487,13 @@ const Orders = () => {
                                       <td className={styles.actionsColumn}>
                                         {item.status === 'P' && (
                                           <div className={styles.actionButtons}>
-                                            <button 
+                                            <button
                                               className={`${styles.actionButton} ${styles.completeButton}`}
                                               onClick={() => handleStatusChange(item.orderDetailId, 'C')}
                                             >
                                               สำเร็จ
                                             </button>
-                                            <button 
+                                            <button
                                               className={`${styles.actionButton} ${styles.cancelButton}`}
                                               onClick={() => handleStatusChange(item.orderDetailId, 'V')}
                                             >
@@ -554,7 +508,7 @@ const Orders = () => {
                                   ))}
                                 </tbody>
                               </table>
-                              
+
                               <div className={styles.groupSummary}>
                                 <div className={styles.subtotalAmount}>
                                   รวมครั้งนี้: {group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
@@ -562,7 +516,7 @@ const Orders = () => {
                               </div>
                             </div>
                           ))}
-                          
+
                           <div className={styles.orderSummary}>
                             <div className={styles.totalAmount}>
                               รวมทั้งหมด: {order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
