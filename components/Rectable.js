@@ -1,50 +1,23 @@
-//ฟังก์ชั่นบันทึกลูกค้าเข้าโต๊ะ//ทำงานกับหน้า table.jsx
 import React, { useState, useEffect } from "react";
 import styles from "../styles/rectable.module.css";
 import { saveCustomerData } from "../api";
 
 const Rectable = ({ table, onClose, onSave }) => {
-  // สร้าง state เพื่อติดตามจำนวนของเด็กเล็ก, เด็กโต และผู้ใหญ่
   const [numSmallChildren, setNumSmallChildren] = useState(0);
   const [numChildren, setNumChildren] = useState(0);
   const [numAdults, setNumAdults] = useState(0);
   const [activeInput, setActiveInput] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNumpadClick = (value) => {
-    if (
-      activeInput === "smallChildren" &&
-      numSmallChildren.toString().length < 3
-    ) {
-      setNumSmallChildren((prev) => Number(`${prev}${value}`));
-    } else if (
-      activeInput === "children" &&
-      numChildren.toString().length < 3
-    ) {
-      setNumChildren((prev) => Number(`${prev}${value}`));
+    if (activeInput === "smallChildren" && numSmallChildren.toString().length < 3) {
+      setNumSmallChildren(prev => Number(`${prev}${value}`));
+    } else if (activeInput === "children" && numChildren.toString().length < 3) {
+      setNumChildren(prev => Number(`${prev}${value}`));
     } else if (activeInput === "adults" && numAdults.toString().length < 3) {
-      setNumAdults((prev) => Number(`${prev}${value}`));
+      setNumAdults(prev => Number(`${prev}${value}`));
     }
   };
-
-  // ฟังก์ชันที่เรียกเมื่อมีการกดปุ่มลบ (Backspace)
-  const handleKeyDown = (e) => {
-    if (e.key === "Backspace") {
-      if (activeInput === "smallChildren") {
-        setNumSmallChildren((prev) => Math.floor(prev / 10));
-      } else if (activeInput === "children") {
-        setNumChildren((prev) => Math.floor(prev / 10));
-      } else if (activeInput === "adults") {
-        setNumAdults((prev) => Math.floor(prev / 10));
-      }
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [activeInput]);
 
   const handleDelete = () => {
     if (activeInput === "smallChildren") {
@@ -55,6 +28,31 @@ const Rectable = ({ table, onClose, onSave }) => {
       setNumAdults(0);
     }
   };
+
+  const handleBackspace = () => {
+    if (activeInput === "smallChildren") {
+      setNumSmallChildren(prev => Math.floor(prev / 10));
+    } else if (activeInput === "children") {
+      setNumChildren(prev => Math.floor(prev / 10));
+    } else if (activeInput === "adults") {
+      setNumAdults(prev => Math.floor(prev / 10));
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Backspace") {
+      handleBackspace();
+    } else if (/^\d$/.test(e.key)) {
+      handleNumpadClick(Number(e.key));
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeInput]);
 
   const handleInputChange = (e, type) => {
     const value = e.target.value;
@@ -75,31 +73,32 @@ const Rectable = ({ table, onClose, onSave }) => {
       return;
     }
 
-    const totalCount = numSmallChildren + numChildren + numAdults;
+    setIsSubmitting(true);
 
     try {
       const response = await saveCustomerData(
         table.id,
         numAdults,
         numChildren,
-        numSmallChildren,
-        totalCount
+        numSmallChildren
       );
-      console.log("Data sent to API:", {
-        id: table.id,
-        adultCount: numAdults,
-        oldChildCount: numChildren,
-        childCount: numSmallChildren,
-        count: totalCount
-      });
-      console.log("Response received:", response);
 
-      alert("บันทึกข้อมูลสำเร็จ");
-      onSave(response);  // ส่งข้อมูลที่อัพเดทกลับไปยัง parent component
-      onClose();
+      if (response.success) {
+        alert("บันทึกข้อมูลสำเร็จ");
+        onSave({
+          ...table,
+          orderId: response.orderId,
+          status_id: 2 // Assuming 2 is the status for occupied tables
+        });
+        onClose();
+      } else {
+        alert(response.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
     } catch (error) {
       console.error("Error saving customer data:", error);
       alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -107,70 +106,84 @@ const Rectable = ({ table, onClose, onSave }) => {
 
   return (
     <div className={styles.rectableContainer}>
-      <button className={styles.closeButton} onClick={onClose}>
+      <button 
+        className={styles.closeButton} 
+        onClick={onClose}
+        disabled={isSubmitting}
+      >
         X
       </button>
-      <h2 className={styles.rectableHeader}>โต๊ะ {table.id}</h2>
+      <h2 className={styles.rectableHeader}>โต๊ะ {table.table_number}</h2>
 
-      {/* Input เด็ก(เล็ก) */}
-      <h3
-        className={styles.rectableContent}
-        onClick={() => setActiveInput("smallChildren")}
-      >
-        เด็ก(เล็ก)
-        <input
-          type="number"
-          value={numSmallChildren}
-          onChange={(e) => handleInputChange(e, "smallChildren")}
-          className={styles.inputField}
-        />
-      </h3>
+      <div className={styles.inputSection}>
+        <h3 
+          className={styles.rectableContent}
+          onClick={() => setActiveInput("smallChildren")}
+        >
+          เด็ก(เล็ก)
+          <input
+            type="number"
+            value={numSmallChildren}
+            onChange={(e) => handleInputChange(e, "smallChildren")}
+            className={styles.inputField}
+            disabled={isSubmitting}
+          />
+        </h3>
 
-      {/* Input เด็ก(โต) */}
-      <h3
-        className={styles.rectableContent}
-        onClick={() => setActiveInput("children")}
-      >
-        เด็ก(โต)
-        <input
-          type="number"
-          value={numChildren}
-          onChange={(e) => handleInputChange(e, "children")}
-          className={styles.inputField}
-        />
-      </h3>
+        <h3 
+          className={styles.rectableContent}
+          onClick={() => setActiveInput("children")}
+        >
+          เด็ก(โต)
+          <input
+            type="number"
+            value={numChildren}
+            onChange={(e) => handleInputChange(e, "children")}
+            className={styles.inputField}
+            disabled={isSubmitting}
+          />
+        </h3>
 
-      {/* Input ผู้ใหญ่ */}
-      <h3
-        className={styles.rectableContent}
-        onClick={() => setActiveInput("adults")}
-      >
-        ผู้ใหญ่
-        <input
-          type="number"
-          value={numAdults}
-          onChange={(e) => handleInputChange(e, "adults")}
-          className={styles.inputField}
-        />
-      </h3>
+        <h3 
+          className={styles.rectableContent}
+          onClick={() => setActiveInput("adults")}
+        >
+          ผู้ใหญ่
+          <input
+            type="number"
+            value={numAdults}
+            onChange={(e) => handleInputChange(e, "adults")}
+            className={styles.inputField}
+            disabled={isSubmitting}
+          />
+        </h3>
+      </div>
 
-      {/* Numpad for input */}
       <div className={styles.numpad}>
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
           <button
             key={num}
             className={styles.numpadButton}
             onClick={() => handleNumpadClick(num)}
+            disabled={isSubmitting}
           >
             {num}
           </button>
         ))}
-        {/* ปุ่มตกลงและปุ่มลบ */}
+        
         <div className={styles.actionButtons}>
-          <button className={styles.confirmButton} onClick={handleConfirm}>
-            ตกลง
+          <button 
+            className={styles.confirmButton} 
+            onClick={handleConfirm}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "กำลังบันทึก..." : "ตกลง"}
           </button>
-          <button className={styles.numpadDelete} onClick={handleDelete}>
+          <button 
+            className={styles.numpadDelete} 
+            onClick={handleDelete}
+            disabled={isSubmitting}
+          >
             ลบ
           </button>
         </div>
@@ -178,4 +191,5 @@ const Rectable = ({ table, onClose, onSave }) => {
     </div>
   );
 };
+
 export default Rectable;

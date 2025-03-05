@@ -1,10 +1,9 @@
-//ฟังก์ชั่นคำสั่งโต๊ะ //ทำงานกับหน้าtable.jsx
 import React, { useState } from "react";
 import styles from "../styles/ordertable.module.css";
-import OrderMenu from "./OrderMenu";
+import Ordermenu from "./OrderMenu";
 
 const Ordertable = ({ table, onClose }) => {
-  const [showOrderMenu, setShowOrderMenu] = useState(false);
+  const [showOrdermenu, setShowOrdermenu] = useState(false);
 
   return (
     <>
@@ -12,11 +11,11 @@ const Ordertable = ({ table, onClose }) => {
         <button className={styles.closeButton} onClick={onClose}>
           X
         </button>
-        <div className={styles.tableInfo}>โต๊ะ: {table ? table.id : "N/A"}</div>
+        <div className={styles.tableInfo}>โต๊ะ: {table ? table.table_number : "N/A"}</div>
         <div>
           <button 
             className={styles.orderButton}
-            onClick={() => setShowOrderMenu(true)}
+            onClick={() => setShowOrdermenu(true)}
           >
             สั่งอาหาร
           </button>
@@ -26,10 +25,10 @@ const Ordertable = ({ table, onClose }) => {
         </div>
       </div>
 
-      {showOrderMenu && (
-        <OrderMenu 
+      {showOrdermenu && (
+        <Ordermenu 
           table={table} 
-          onClose={() => setShowOrderMenu(false)} 
+          onClose={() => setShowOrdermenu(false)} 
         />
       )}
     </>
