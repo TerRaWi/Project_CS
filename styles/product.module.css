@@ -81,3 +81,29 @@
 .edit-product{
   cursor: pointer;
 }
+
+.product-item {
+  position: relative;
+}
+
+.product-inactive .product-image {
+  opacity: 0.5;
+  filter: grayscale(70%);
+}
+
+.status-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

@@ -3,13 +3,13 @@ import { getTables } from '../api';
 import Image from 'next/image';
 import styles from '../styles/table.module.css';
 import Rectable from '../components/Rectable';
-import OrderFood from '../components/Ordertable.js';
+import OrderFood from '../components/Ordertable';
 
 const Tables = () => {
   const [tables, setTables] = useState([]);
   const [error, setError] = useState('');
   const [selectedTable, setSelectedTable] = useState(null);
-  const [orderTable, setOrderTable] = useState(null); 
+  const [orderTable, setOrderTable] = useState(null);
 
   useEffect(() => {
     fetchTables();
@@ -18,6 +18,7 @@ const Tables = () => {
   const fetchTables = async () => {
     try {
       const data = await getTables();
+      console.log('Table data:', data); // ดูข้อมูลที่ได้จาก API
       setTables(data);
     } catch (err) {
       setError('ดึงข้อมูลโต๊ะไม่สำเร็จ');
@@ -25,24 +26,32 @@ const Tables = () => {
   };
 
   const handleButtonClick = (table) => {
-    if (table.status === 'A') {
-      // Open OrderFood and reset selectedTable
+    // เช็คกับ status_id จากฐานข้อมูล
+    if (table.status_id === 2) {
       setOrderTable(table);
-      setSelectedTable(null); // Reset Rectable
+      setSelectedTable(null);
     } else {
-      // Open Rectable and reset orderTable
       setSelectedTable(table);
-      setOrderTable(null); // Reset OrderFood
+      setOrderTable(null);
     }
   };
-  
+
   const handleSave = (updatedTable) => {
     setTables(prevTables => 
       prevTables.map(table => 
         table.id === updatedTable.id ? updatedTable : table
       )
     );
-    fetchTables(); // เพิ่มการเรียก fetchTables หลังจากการ save
+    fetchTables();
+  };
+
+  const getTableImage = (statusId) => {
+    // ใช้ status_id จากฐานข้อมูล: 1 = ว่าง, 2 = ไม่ว่าง
+    return statusId === 2 ? '/images/t2.png' : '/images/t1.png';
+  };
+
+  const getTableStatus = (statusId) => {
+    return statusId === 2 ? 'ไม่ว่าง' : 'ว่าง';
   };
 
   return (
@@ -54,17 +63,23 @@ const Tables = () => {
           {tables.map((table) => (
             <button
               key={table.id}
-              className={styles.button}
+              className={`${styles.button} ${table.status_id === 2 ? styles.occupied : ''}`}
               onClick={() => handleButtonClick(table)}
             >
               <Image
-                src={table.status === 'A' ? '/images/tA.png' : '/images/tB.png'} // tA = table available, tB = table empty
-                alt={`Table ${table.id}`}
+                src={getTableImage(table.status_id)}
+                alt={`โต๊ะ ${table.table_number} (${getTableStatus(table.status_id)})`}
                 className={styles.image}
                 width={150}
                 height={150}
+                priority
               />
-              <div className={styles.tableNumber}>{table.id}</div>
+              <div className={styles.tableNumber}>
+                {table.table_number}
+                <div style={{ fontSize: '12px', color: 'gray' }}>
+                  {getTableStatus(table.status_id)}
+                </div>
+              </div>
             </button>
           ))}
         </div>

@@ -1,6 +1,5 @@
-//ฟังก์ชั่นแก้ไขข้อมูลสินค้า //ทำงานกับหน้าproduct.jsx
 import { useState, useEffect } from "react";
-import { updateProduct } from "../api";
+import { updateProduct, getCategories } from "../api";
 import styles from "../styles/updateproduct.module.css";
 
 const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
@@ -10,6 +9,7 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
     category_id: "",
     image: null,
   });
+  const [categories, setCategories] = useState([]);
   const [previewImage, setPreviewImage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +26,17 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
         product.image_url ? `http://localhost:3001${product.image_url}` : ""
       );
     }
+    fetchCategories();
   }, [product]);
+
+  const fetchCategories = async () => {
+    try {
+      const categoriesData = await getCategories();
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error("ไม่สามารถดึงข้อมูลหมวดหมู่ได้:", err);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +72,13 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
       }
 
       const updatedProduct = await updateProduct(product.id, formDataToSend);
-      onUpdateSuccess(updatedProduct);
+      const completeUpdatedProduct = {
+        ...updatedProduct,
+        id: product.id,
+        image_url: updatedProduct.image_url || product.image_url,
+        category_id: updatedProduct.category_id || product.category_id
+      };
+      onUpdateSuccess(completeUpdatedProduct);
       onClose();
     } catch (err) {
       setError(err.message || "เกิดข้อผิดพลาดในการแก้ไขสินค้า");
@@ -112,14 +128,20 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
           <div className={styles["form-group"]}>
             <label className={styles["form-label"]}>
               หมวดหมู่
-              <input
-                type="text"
+              <select
                 name="category_id"
                 value={formData.category_id}
                 onChange={handleInputChange}
                 className={styles["form-input"]}
                 required
-              />
+              >
+                <option value="">เลือกหมวดหมู่</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 
@@ -148,19 +170,19 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
 
           <div className={styles["button-group"]}>
             <button
+              type="submit"
+              className={`${styles.button} ${styles.submit}`}
+              disabled={isLoading}
+            >
+              {isLoading ? "กำลังบันทึก..." : "บันทึก"}
+            </button>
+            <button
               type="button"
               onClick={onClose}
               className={`${styles.button} ${styles.cancel}`}
               disabled={isLoading}
             >
               ยกเลิก
-            </button>
-            <button
-              type="submit"
-              className={`${styles.button} ${styles.submit}`}
-              disabled={isLoading}
-            >
-              {isLoading ? "กำลังบันทึก..." : "บันทึก"}
             </button>
           </div>
         </form>

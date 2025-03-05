@@ -1,9 +1,10 @@
+//ฟังก์ชั่นสั่งอาหาร //ทำงานกับหน้าtables.jsx
 import React, { useState, useEffect } from 'react';
-import { getProduct, getCategories, createOrder, getOrdersByTable } from '../api';
+import { getProduct, getCategories, createOrder } from '../api';
 import styles from '../styles/ordermenu.module.css';
-import OrderView from './OrderView';
+import Orderview from './OrderView';
 
-const OrderMenu = ({ table, onClose }) => {
+const Ordermenu = ({ table, onClose }) => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -86,7 +87,7 @@ const OrderMenu = ({ table, onClose }) => {
       alert('กรุณาเลือกรายการอาหาร');
       return;
     }
-
+  
     try {
       const orderItems = selectedItems.map(item => ({
         id: item.id,
@@ -94,7 +95,7 @@ const OrderMenu = ({ table, onClose }) => {
         price: Number(item.price),
         name: item.name
       }));
-
+  
       const response = await createOrder(
         table.id,
         orderItems
@@ -105,19 +106,25 @@ const OrderMenu = ({ table, onClose }) => {
         setSelectedItems([]);
         setActiveTab('history');
       } else {
-        throw new Error('ไม่ได้รับ order ID จากเซิร์ฟเวอร์');
+        // แทนที่จะ throw error ให้แสดง alert แทน
+        alert('ไม่สามารถสร้างออเดอร์ได้ กรุณาลองใหม่อีกครั้ง');
       }
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการสั่งอาหาร:', error);
-      alert(error.response?.data?.error || 'เกิดข้อผิดพลาดในการสั่งอาหาร กรุณาลองใหม่อีกครั้ง');
+      // ปรับปรุงข้อความ error ให้ชัดเจนขึ้น
+      const errorMessage = error.response?.data?.error || 
+        'เกิดข้อผิดพลาดในการเชื่อมต่อกับระบบ กรุณาลองใหม่อีกครั้ง';
+      alert(errorMessage);
     }
   };
 
   const getFilteredProducts = () => {
+    let filteredProducts = products.filter(product => product.status === 'A');
+    
     if (selectedCategory === 'all') {
-      return products;
+      return filteredProducts;
     }
-    return products.filter(product => product.category_id === selectedCategory);
+    return filteredProducts.filter(product => product.category_id === selectedCategory);
   };
 
   if (isLoading) {
@@ -130,7 +137,7 @@ const OrderMenu = ({ table, onClose }) => {
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         <div className={styles.header}>
-          <h2 className={styles.title}>สั่งอาหาร - โต๊ะ {table.id}</h2>
+          <h2 className={styles.title}>สั่งอาหาร - โต๊ะ {table.table_number}</h2>
           <button className={styles.closeButton} onClick={onClose}>✕</button>
         </div>
 
@@ -239,7 +246,7 @@ const OrderMenu = ({ table, onClose }) => {
           </div>
         ) : (
           <div className="mt-4">
-            <OrderView tableId={table.id} />
+            <Orderview tableId={table.id} />
           </div>
         )}
       </div>
@@ -247,4 +254,4 @@ const OrderMenu = ({ table, onClose }) => {
   );
 };
 
-export default OrderMenu;
+export default Ordermenu;

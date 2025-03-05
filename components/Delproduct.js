@@ -1,7 +1,7 @@
 //ฟังก์ชั่นลบสินค้า //ทำงานกับหน้าproduct.jsx
 import React, { useState } from 'react';
 import styles from "../styles/product.module.css";
-import { deleteproducts } from "../api";
+import { deleteProduct } from "../api";
 
 const Delproduct = ({ productId, onDelete }) => {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -11,7 +11,7 @@ const Delproduct = ({ productId, onDelete }) => {
     if (window.confirm("คุณต้องการลบสินค้านี้ใช่หรือไม่?")) {
       try {
         setIsDeleting(true);
-        await deleteproducts(productId); // เรียกใช้ฟังก์ชัน deleteproducts จาก api
+        await deleteProduct(productId); // เรียกใช้ฟังก์ชัน deleteproducts จาก api
         onDelete(productId);
         setError(""); // เคลียร์ error message ถ้าสำเร็จ
       } catch (err) {
