@@ -656,6 +656,148 @@ app.get('/api/category', (req, res) => {
 
 /**
  * ============================
+ * API เกี่ยวกับหมวดหมู่ (Categories)
+ * ============================
+ */
+
+// ดึงข้อมูล category ทั้งหมด
+app.get('/api/category', (req, res) => {
+  db.query('SELECT * FROM category ORDER BY id DESC', (err, results) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
+      res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
+      return;
+    }
+    res.json(results);
+  });
+});
+
+// เพิ่มหมวดหมู่ใหม่
+app.post('/api/category', (req, res) => {
+  const { name } = req.body;
+  
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ error: 'กรุณาระบุชื่อหมวดหมู่' });
+  }
+  
+  db.query(
+    'INSERT INTO category (name) VALUES (?)',
+    [name],
+    (err, result) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่:', err);
+        return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
+      }
+      
+      const newCategory = {
+        id: result.insertId,
+        name,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+      
+      res.status(201).json(newCategory);
+    }
+  );
+});
+
+// ดึงข้อมูลหมวดหมู่ตาม ID
+app.get('/api/category/:id', (req, res) => {
+  const categoryId = req.params.id;
+  
+  db.query(
+    'SELECT * FROM category WHERE id = ?',
+    [categoryId],
+    (err, results) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
+        return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
+      }
+      
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'ไม่พบหมวดหมู่ที่ต้องการ' });
+      }
+      
+      res.json(results[0]);
+    }
+  );
+});
+
+// แก้ไขหมวดหมู่
+app.put('/api/category/:id', (req, res) => {
+  const categoryId = req.params.id;
+  const { name } = req.body;
+  
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ error: 'กรุณาระบุชื่อหมวดหมู่' });
+  }
+  
+  db.query(
+    'UPDATE category SET name = ? WHERE id = ?',
+    [name, categoryId],
+    (err, result) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการแก้ไขหมวดหมู่:', err);
+        return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
+      }
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'ไม่พบหมวดหมู่ที่ต้องการแก้ไข' });
+      }
+      
+      res.json({
+        id: parseInt(categoryId),
+        name,
+        updated_at: new Date()
+      });
+    }
+  );
+});
+
+// ลบหมวดหมู่
+app.delete('/api/category/:id', (req, res) => {
+  const categoryId = req.params.id;
+  
+  // ตรวจสอบก่อนว่ามีสินค้าที่ใช้หมวดหมู่นี้หรือไม่
+  db.query(
+    'SELECT COUNT(*) as count FROM product WHERE category_id = ?',
+    [categoryId],
+    (err, results) => {
+      if (err) {
+        console.error('เกิดข้อผิดพลาดในการตรวจสอบการใช้งานหมวดหมู่:', err);
+        return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
+      }
+      
+      if (results[0].count > 0) {
+        return res.status(400).json({
+          error: 'ไม่สามารถลบหมวดหมู่ได้เนื่องจากมีสินค้าที่ใช้หมวดหมู่นี้อยู่',
+          productsCount: results[0].count
+        });
+      }
+      
+      // หากไม่มีสินค้าใช้หมวดหมู่นี้ ดำเนินการลบได้
+      db.query(
+        'DELETE FROM category WHERE id = ?',
+        [categoryId],
+        (err, result) => {
+          if (err) {
+            console.error('เกิดข้อผิดพลาดในการลบหมวดหมู่:', err);
+            return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
+          }
+          
+          if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'ไม่พบหมวดหมู่ที่ต้องการลบ' });
+          }
+          
+          res.json({ message: 'ลบหมวดหมู่สำเร็จ' });
+        }
+      );
+    }
+  );
+});
+
+/**
+ * ============================
  * เริ่มการทำงานของเซิร์ฟเวอร์
  * ============================
  */

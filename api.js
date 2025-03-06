@@ -287,6 +287,38 @@ export const getCategories = async () => {
   }
 };
 
+// เพิ่มหมวดหมู่ใหม่
+export const addCategory = async (categoryName) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/category`, { name: categoryName });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่');
+  }
+};
+
+// แก้ไขหมวดหมู่
+export const updateCategory = async (categoryId, categoryName) => {
+  try {
+    const { data } = await axios.put(`${API_URL}/category/${categoryId}`, {
+      name: categoryName
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการแก้ไขหมวดหมู่');
+  }
+};
+
+// ลบหมวดหมู่
+export const deleteCategory = async (categoryId) => {
+  try {
+    const { data } = await axios.delete(`${API_URL}/category/${categoryId}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการลบหมวดหมู่');
+  }
+};
+
 /**
  * ดึงออเดอร์ทั้งหมดทุกโต๊ะที่ยังเปิดอยู่
  */
