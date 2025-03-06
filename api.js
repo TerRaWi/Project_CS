@@ -287,6 +287,38 @@ export const getCategories = async () => {
   }
 };
 
+// เพิ่มหมวดหมู่ใหม่
+export const addCategory = async (categoryName) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/category`, { name: categoryName });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่');
+  }
+};
+
+// แก้ไขหมวดหมู่
+export const updateCategory = async (categoryId, categoryName) => {
+  try {
+    const { data } = await axios.put(`${API_URL}/category/${categoryId}`, {
+      name: categoryName
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการแก้ไขหมวดหมู่');
+  }
+};
+
+// ลบหมวดหมู่
+export const deleteCategory = async (categoryId) => {
+  try {
+    const { data } = await axios.delete(`${API_URL}/category/${categoryId}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการลบหมวดหมู่');
+  }
+};
+
 /**
  * ดึงออเดอร์ทั้งหมดทุกโต๊ะที่ยังเปิดอยู่
  */
@@ -318,10 +350,19 @@ export const getAllActiveOrders = async () => {
     // กรองเฉพาะออเดอร์ที่ยังทำงานอยู่ (Active)
     const activeOrders = allOrders.filter(order => order.status === 'A');
     
-    // เรียงออเดอร์ตามเวลาล่าสุด
+    // เรียงออเดอร์ตามเวลาล่าสุด โดยใช้ getTime() ให้ถูกต้อง
     const sortedOrders = activeOrders.sort((a, b) => {
-      return new Date(b.date) - new Date(a.date);
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;  // เรียงจากใหม่ไปเก่า
     });
+    
+    // เพิ่ม debugging log เพื่อตรวจสอบผลลัพธ์
+    console.log('Sorted orders from API:', sortedOrders.map(order => ({
+      tableId: order.tableId,
+      date: order.date,
+      timestamp: new Date(order.date).getTime()
+    })));
     
     return sortedOrders;
     

@@ -27,9 +27,28 @@ const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
       
       if (orders && orders.length > 0) {
         // Sort orders by date (newest first)
-        const sortedOrders = [...orders].sort((a, b) => 
-          new Date(b.date) - new Date(a.date)
-        );
+        const sortedOrders = [...orders].sort((a, b) => {
+          // เปรียบเทียบวันที่ของออเดอร์ก่อน
+          const dateComparison = new Date(b.date) - new Date(a.date);
+          
+          // ถ้าวันที่เท่ากัน ให้พิจารณาเวลาในรายการอาหารที่ใหม่ที่สุดของแต่ละออเดอร์
+          if (dateComparison === 0 && a.items && b.items) {
+            // หาเวลาล่าสุดในรายการของแต่ละออเดอร์
+            const latestTimeA = a.items.reduce((latest, item) => {
+              const itemTime = new Date(item.orderTime).getTime();
+              return itemTime > latest ? itemTime : latest;
+            }, 0);
+            
+            const latestTimeB = b.items.reduce((latest, item) => {
+              const itemTime = new Date(item.orderTime).getTime();
+              return itemTime > latest ? itemTime : latest;
+            }, 0);
+            
+            return latestTimeB - latestTimeA;
+          }
+          
+          return dateComparison;
+        });
         
         setAllOrderInstances(sortedOrders);
         
@@ -57,9 +76,9 @@ const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
       const currentOrder = orders.find(order => order.orderId === orderIdToFetch);
       
       if (currentOrder) {
-        // Sort items by order time
+        // Sort items by order time - newest first
         const sortedItems = [...currentOrder.items].sort((a, b) => 
-          new Date(a.orderTime) - new Date(b.orderTime)
+          new Date(b.orderTime) - new Date(a.orderTime)
         );
         
         setOrderDetails(sortedItems);
