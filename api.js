@@ -371,3 +371,85 @@ export const getAllActiveOrders = async () => {
     handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลออเดอร์ทั้งหมด');
   }
 };
+
+/**
+ * ============================
+ * API เกี่ยวกับการชำระเงิน (Payment)
+ * ============================
+ */
+
+// ดึงข้อมูลบิล
+export const getBill = async (orderId) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/order/${orderId}/bill`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงข้อมูลบิล');
+  }
+};
+
+// ชำระเงินและปิดโต๊ะ
+export const checkout = async (orderId, paymentMethod) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/checkout/${orderId}`, {
+      paymentMethod
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการชำระเงิน');
+  }
+};
+
+// ดึงประวัติการชำระเงินทั้งหมด
+export const getAllPayments = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/payments`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการชำระเงิน');
+  }
+};
+
+// ดึงประวัติการชำระเงินตามวันที่
+export const getPaymentsByDate = async (startDate, endDate) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/payments`, {
+      params: { startDate, endDate }
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการชำระเงิน');
+  }
+};
+
+// ดึงข้อมูลใบเสร็จ
+export const getReceipt = async (paymentId) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/receipt/${paymentId}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงข้อมูลใบเสร็จ');
+  }
+};
+
+// ยกเลิกการชำระเงิน (กรณีทำผิด)
+export const voidPayment = async (paymentId, reason) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/payment/${paymentId}/void`, {
+      reason
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการยกเลิกการชำระเงิน');
+  }
+};
+
+// ออกใบกำกับภาษี
+export const generateTaxInvoice = async (paymentId, customerInfo) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/payment/${paymentId}/tax-invoice`, customerInfo);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการออกใบกำกับภาษี');
+  }
+};
