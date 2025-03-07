@@ -899,19 +899,19 @@ app.get('/api/order/:orderId/bill', async (req, res) => {
     // ดึงข้อมูลรายการอาหารทั้งหมดในออเดอร์
     const [orderItems] = await db.promise().query(
       `SELECT od.*, p.name as product_name
-        FROM order_detail od
-        JOIN product p ON od.product_id = p.id
-        WHERE od.order_id = ? AND od.status != 'V'
-        ORDER BY od.order_time`,
+       FROM order_detail od
+       JOIN product p ON od.product_id = p.id
+       WHERE od.order_id = ? AND od.status != 'V'
+       ORDER BY od.order_time`,
       [orderId]
     );
 
     // ดึงข้อมูลโต๊ะและเวลาเริ่มต้น
     const [orderInfo] = await db.promise().query(
       `SELECT o.*, dt.table_number 
-        FROM \`order\` o
-        JOIN dining_table dt ON o.table_id = dt.id
-        WHERE o.id = ?`,
+       FROM \`order\` o
+       JOIN dining_table dt ON o.table_id = dt.id
+       WHERE o.id = ?`,
       [orderId]
     );
 
@@ -923,10 +923,10 @@ app.get('/api/order/:orderId/bill', async (req, res) => {
     }
 
     // คำนวณยอดรวม
-    let subtotal = 0;
+    let totalAmount = 0;
     const items = orderItems.map(item => {
       const amount = item.quantity * item.unit_price;
-      subtotal += amount;
+      totalAmount += amount;
       return {
         id: item.id,
         productName: item.product_name,
@@ -937,18 +937,13 @@ app.get('/api/order/:orderId/bill', async (req, res) => {
       };
     });
 
-    // คำนวณภาษีมูลค่าเพิ่ม (VAT) 7%
-    const vat = subtotal * 0.07;
-    const totalAmount = subtotal + vat;
-
+    // ลบการคำนวณภาษีมูลค่าเพิ่ม
     res.json({
       success: true,
       orderId,
       tableNumber: orderInfo[0].table_number,
       startTime: orderInfo[0].start_time,
       items,
-      subtotal,
-      vat,
       totalAmount,
       status: orderInfo[0].status
     });

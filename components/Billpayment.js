@@ -73,135 +73,135 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     }
 
     return (
-        <div className={styles.billContainer}>
-            <div className={styles.header}>
-                <button className={styles.closeButton} onClick={onClose}>
-                    X
-                </button>
-                <h2>ใบเสร็จรับเงิน</h2>
-            </div>
-
-            <div className={styles.billInfo}>
-                <p>โต๊ะ: {tableNumber || bill.tableNumber}</p>
-                <p>วันที่: {formatDateTime(bill.startTime)}</p>
-                <p>เลขที่ใบเสร็จ: {orderId}</p>
-            </div>
-
-            <div className={styles.itemsContainer}>
-                <table className={styles.itemsTable}>
-                    <thead>
-                        <tr>
-                            <th>รายการ</th>
-                            <th>จำนวน</th>
-                            <th>ราคา/หน่วย</th>
-                            <th>รวม</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {bill.items.map((item) => (
-                            <tr key={item.id}>
-                                <td>{item.productName}</td>
-                                <td className={styles.textCenter}>{item.quantity}</td>
-                                <td className={styles.textRight}>{formatCurrency(item.unitPrice)}</td>
-                                <td className={styles.textRight}>{formatCurrency(item.amount)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className={styles.summary}>
-                <div className={styles.summaryRow}>
-                    <span>รวม:</span>
-                    <span>{formatCurrency(bill.subtotal)} บาท</span>
+        <>
+            <div className={styles.modalOverlay} onClick={onClose}></div>
+            <div className={styles.billContainer}>
+                <div className={styles.header}>
+                    <h2>ใบเสร็จรับเงิน</h2>
+                    <button className={styles.closeButton} onClick={onClose}>
+                        X
+                    </button>
                 </div>
-                <div className={styles.summaryRow}>
-                    <span>ภาษีมูลค่าเพิ่ม 7%:</span>
-                    <span>{formatCurrency(bill.vat)} บาท</span>
-                </div>
-                <div className={`${styles.summaryRow} ${styles.total}`}>
-                    <span>ยอดรวมทั้งสิ้น:</span>
-                    <span>{formatCurrency(bill.totalAmount)} บาท</span>
-                </div>
-            </div>
 
-            {bill.status !== "C" && (
-                <div className={styles.paymentSection}>
-                    <h3>เลือกวิธีชำระเงิน</h3>
-                    <div className={styles.paymentMethods}>
-                        <label>
-                            <input
-                                type="radio"
-                                value="cash"
-                                checked={paymentMethod === "cash"}
-                                onChange={() => setPaymentMethod("cash")}
-                            />
-                            เงินสด
-                        </label>
-                        <label>
-                            <input
-                                type="radio"
-                                value="transfer"
-                                checked={paymentMethod === "transfer"}
-                                onChange={() => setPaymentMethod("transfer")}
-                            />
-                            โอนเงิน
-                        </label>
-                        <label>
-                            <input
-                                type="radio"
-                                value="credit_card"
-                                checked={paymentMethod === "credit_card"}
-                                onChange={() => setPaymentMethod("credit_card")}
-                            />
-                            บัตรเครดิต
-                        </label>
+                <div className={styles.billContent}>
+                    <div className={styles.billInfo}>
+                        <p>โต๊ะ: {tableNumber || bill.tableNumber}</p>
+                        <p>วันที่: {formatDateTime(bill.startTime)}</p>
+                        <p>เลขที่ใบเสร็จ: {orderId}</p>
                     </div>
 
-                    <div className={styles.actionButtons}>
-                        <button
-                            className={styles.payButton}
-                            onClick={() => setShowConfirm(true)}
-                            disabled={isLoading}
-                        >
-                            ชำระเงิน
-                        </button>
-                        <button className={styles.cancelButton} onClick={onClose}>
-                            ยกเลิก
-                        </button>
+                    <div className={styles.itemsContainer}>
+                        <table className={styles.itemsTable}>
+                            <thead>
+                                <tr>
+                                    <th>รายการ</th>
+                                    <th>จำนวน</th>
+                                    <th>ราคา/หน่วย</th>
+                                    <th>รวม</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {bill.items.map((item) => (
+                                    <tr key={item.id}>
+                                        <td>{item.productName}</td>
+                                        <td className={styles.textCenter}>{item.quantity}</td>
+                                        <td className={styles.textRight}>{formatCurrency(item.unitPrice)}</td>
+                                        <td className={styles.textRight}>{formatCurrency(item.amount)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-            )}
 
-            {/* Confirmation Modal */}
-            {showConfirm && (
-                <div className={styles.confirmModal}>
-                    <div className={styles.confirmContent}>
-                        <h3>ยืนยันการชำระเงิน</h3>
-                        <p>
-                            คุณต้องการชำระเงินจำนวน {formatCurrency(bill.totalAmount)} บาท
-                            ด้วย{paymentMethod === "cash" ? "เงินสด" : paymentMethod === "transfer" ? "การโอนเงิน" : "บัตรเครดิต"} ใช่หรือไม่?
-                        </p>
-                        <div className={styles.confirmButtons}>
-                            <button
-                                className={styles.confirmButton}
-                                onClick={handleCheckout}
-                                disabled={isLoading}
-                            >
-                                ยืนยัน
-                            </button>
-                            <button
-                                className={styles.cancelButton}
-                                onClick={() => setShowConfirm(false)}
-                                disabled={isLoading}
-                            >
-                                ยกเลิก
-                            </button>
+                    <div className={styles.summary}>
+                        <div className={`${styles.summaryRow} ${styles.total}`}>
+                            <span>ยอดรวมทั้งสิ้น:</span>
+                            <span>{formatCurrency(bill.totalAmount)} บาท</span>
                         </div>
                     </div>
+
+                    {bill.status !== "C" && (
+                        <div className={styles.paymentSection}>
+                            <h3>เลือกวิธีชำระเงิน</h3>
+                            <div className={styles.paymentMethods}>
+                                <div className={styles.paymentMethodItem}>
+                                    <input
+                                        id="cash"
+                                        type="radio"
+                                        value="cash"
+                                        checked={paymentMethod === "cash"}
+                                        onChange={() => setPaymentMethod("cash")}
+                                    />
+                                    <label htmlFor="cash">เงินสด</label>
+                                </div>
+                                <div className={styles.paymentMethodItem}>
+                                    <input
+                                        id="transfer"
+                                        type="radio"
+                                        value="transfer"
+                                        checked={paymentMethod === "transfer"}
+                                        onChange={() => setPaymentMethod("transfer")}
+                                    />
+                                    <label htmlFor="transfer">โอนเงิน</label>
+                                </div>
+                                <div className={styles.paymentMethodItem}>
+                                    <input
+                                        id="credit_card"
+                                        type="radio"
+                                        value="credit_card"
+                                        checked={paymentMethod === "credit_card"}
+                                        onChange={() => setPaymentMethod("credit_card")}
+                                    />
+                                    <label htmlFor="credit_card">บัตรเครดิต</label>
+                                </div>
+                            </div>
+
+                            <div className={styles.actionButtons}>
+                                <button
+                                    className={styles.payButton}
+                                    onClick={() => setShowConfirm(true)}
+                                    disabled={isLoading}
+                                >
+                                    ชำระเงิน
+                                </button>
+                                <button className={styles.cancelButton} onClick={onClose}>
+                                    ยกเลิก
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Confirmation Modal */}
+                    {showConfirm && (
+                        <div className={styles.confirmModal}>
+                            <div className={styles.confirmContent}>
+                                <h3>ยืนยันการชำระเงิน</h3>
+                                <p>
+                                    คุณต้องการชำระเงินจำนวน <strong>{formatCurrency(bill.totalAmount)} บาท</strong>
+                                    <br />ด้วย<strong>{paymentMethod === "cash" ? "เงินสด" : paymentMethod === "transfer" ? "การโอนเงิน" : "บัตรเครดิต"}</strong> ใช่หรือไม่?
+                                </p>
+                                <div className={styles.confirmButtons}>
+                                    <button
+                                        className={styles.confirmButton}
+                                        onClick={handleCheckout}
+                                        disabled={isLoading}
+                                    >
+                                        ยืนยัน
+                                    </button>
+                                    <button
+                                        className={styles.cancelButton}
+                                        onClick={() => setShowConfirm(false)}
+                                        disabled={isLoading}
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
-        </div>
+            </div>
+        </>
     );
 };
 
