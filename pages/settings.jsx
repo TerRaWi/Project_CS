@@ -12,7 +12,10 @@ const Setting = () => {
         จัดการผังโต๊ะ
       </Link>
       <Link href="/product" className={styles['manage-menu-button']}>
-      จัดการเมนู
+        จัดการเมนู
+      </Link>
+      <Link href="/category" className={styles['manage-category-button']}>
+        จัดการหมวดหมู่
       </Link>
     </div>
   );

@@ -271,6 +271,30 @@ export const updateOrderDetailStatus = async (detailId, newStatus) => {
   }
 };
 
+export const addOrderItem = async (orderId, productId, quantity, unitPrice) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/order-detail`, {
+      order_id: orderId,
+      product_id: productId,
+      quantity: quantity,
+      unit_price: unitPrice
+    });
+    return data;
+  } catch (error) {
+    console.error('Error adding order item:', error);
+    
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการเพิ่มรายการ');
+      } else if (error.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    
+    throw new Error('เกิดข้อผิดพลาดในการเพิ่มรายการอาหาร');
+  }
+};
+
 /**
  * ============================
  * API เกี่ยวกับหมวดหมู่
@@ -284,6 +308,38 @@ export const getCategories = async () => {
     return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลหมวดหมู่');
+  }
+};
+
+// เพิ่มหมวดหมู่ใหม่
+export const addCategory = async (categoryName) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/category`, { name: categoryName });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่');
+  }
+};
+
+// แก้ไขหมวดหมู่
+export const updateCategory = async (categoryId, categoryName) => {
+  try {
+    const { data } = await axios.put(`${API_URL}/category/${categoryId}`, {
+      name: categoryName
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการแก้ไขหมวดหมู่');
+  }
+};
+
+// ลบหมวดหมู่
+export const deleteCategory = async (categoryId) => {
+  try {
+    const { data } = await axios.delete(`${API_URL}/category/${categoryId}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการลบหมวดหมู่');
   }
 };
 
@@ -318,15 +374,106 @@ export const getAllActiveOrders = async () => {
     // กรองเฉพาะออเดอร์ที่ยังทำงานอยู่ (Active)
     const activeOrders = allOrders.filter(order => order.status === 'A');
     
-    // เรียงออเดอร์ตามเวลาล่าสุด
+    // เรียงออเดอร์ตามเวลาล่าสุด โดยใช้ getTime() ให้ถูกต้อง
     const sortedOrders = activeOrders.sort((a, b) => {
-      return new Date(b.date) - new Date(a.date);
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;  // เรียงจากใหม่ไปเก่า
     });
+    
+    // เพิ่ม debugging log เพื่อตรวจสอบผลลัพธ์
+    console.log('Sorted orders from API:', sortedOrders.map(order => ({
+      tableId: order.tableId,
+      date: order.date,
+      timestamp: new Date(order.date).getTime()
+    })));
     
     return sortedOrders;
     
   } catch (error) {
     console.error('Error fetching all orders:', error);
     handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลออเดอร์ทั้งหมด');
+  }
+};
+
+/**
+ * ============================
+ * API เกี่ยวกับการชำระเงิน (Payment)
+ * ============================
+ */
+
+// ดึงข้อมูลบิล
+export const getBill = async (orderId) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/order/${orderId}/bill`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงข้อมูลบิล');
+  }
+};
+
+// ชำระเงินและปิดโต๊ะ
+export const checkout = async (orderId, paymentMethod) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/checkout/${orderId}`, {
+      paymentMethod
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการชำระเงิน');
+  }
+};
+
+// ดึงประวัติการชำระเงินทั้งหมด
+export const getAllPayments = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/payments`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการชำระเงิน');
+  }
+};
+
+// ดึงประวัติการชำระเงินตามวันที่
+export const getPaymentsByDate = async (startDate, endDate) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/payments`, {
+      params: { startDate, endDate }
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการชำระเงิน');
+  }
+};
+
+// ดึงข้อมูลใบเสร็จ
+export const getReceipt = async (paymentId) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/receipt/${paymentId}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงข้อมูลใบเสร็จ');
+  }
+};
+
+// ยกเลิกการชำระเงิน (กรณีทำผิด)
+export const voidPayment = async (paymentId, reason) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/payment/${paymentId}/void`, {
+      reason
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการยกเลิกการชำระเงิน');
+  }
+};
+
+// ออกใบกำกับภาษี
+export const generateTaxInvoice = async (paymentId, customerInfo) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/payment/${paymentId}/tax-invoice`, customerInfo);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการออกใบกำกับภาษี');
   }
 };

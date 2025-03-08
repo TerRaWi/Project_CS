@@ -1,0 +1,251 @@
+.container {
+    padding: 20px;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    font-size: 18px;
+}
+
+.error {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border-left: 4px solid #c62828;
+}
+
+/* ส่วนของฟอร์มเพิ่มหมวดหมู่ */
+.addCategoryForm {
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.addCategoryForm h2 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 300px;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.addButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.addButton:hover {
+    background-color: #388E3C;
+}
+
+.addButton:disabled {
+    background-color: #A5D6A7;
+    cursor: not-allowed;
+}
+
+/* ส่วนของตารางแสดงหมวดหมู่ */
+.categoriesTable {
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.categoriesTable h2 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.categoriesTable table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.categoriesTable th,
+.categoriesTable td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.categoriesTable th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #333;
+}
+
+.categoriesTable tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* ส่วนของปุ่มการจัดการ */
+.actions,
+.editActions {
+    display: flex;
+    gap: 10px;
+}
+
+.editButton {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.editButton:hover {
+    background-color: #1976D2;
+}
+
+.deleteButton {
+    background-color: #F44336;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.deleteButton:hover {
+    background-color: #D32F2F;
+}
+
+.saveButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.saveButton:hover {
+    background-color: #388E3C;
+}
+
+.saveButton:disabled {
+    background-color: #A5D6A7;
+    cursor: not-allowed;
+}
+
+.cancelButton {
+    background-color: #9E9E9E;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.cancelButton:hover {
+    background-color: #757575;
+}
+
+.editInput {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    font-size: 14px;
+}
+
+/* Modal ยืนยันการลบ */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background-color: white;
+    border-radius: 5px;
+    padding: 20px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modal h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.warning {
+    color: #F44336;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.confirmDeleteButton {
+    background-color: #F44336;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.confirmDeleteButton:hover {
+    background-color: #D32F2F;
+}
+
+.confirmDeleteButton:disabled {
+    background-color: #FFCDD2;
+    cursor: not-allowed;
+}
+
+.cancelDeleteButton {
+    background-color: #9E9E9E;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.cancelDeleteButton:hover {
+    background-color: #757575;
+}

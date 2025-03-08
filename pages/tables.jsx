@@ -10,10 +10,19 @@ const Tables = () => {
   const [error, setError] = useState('');
   const [selectedTable, setSelectedTable] = useState(null);
   const [orderTable, setOrderTable] = useState(null);
+  const [isBillProcessed, setIsBillProcessed] = useState(false);
 
   useEffect(() => {
     fetchTables();
   }, []);
+
+  // Effect เพื่อรีเฟรชข้อมูลหลังจากชำระเงินสำเร็จ
+  useEffect(() => {
+    if (isBillProcessed) {
+      fetchTables();
+      setIsBillProcessed(false);
+    }
+  }, [isBillProcessed]);
 
   const fetchTables = async () => {
     try {
@@ -43,6 +52,12 @@ const Tables = () => {
       )
     );
     fetchTables();
+  };
+
+  // Handler สำหรับเมื่อชำระเงินสำเร็จ
+  const handleBillPaymentSuccess = () => {
+    setOrderTable(null); // ปิด modal การสั่งอาหาร
+    setIsBillProcessed(true); // กำหนดให้รีเฟรชข้อมูลโต๊ะ
   };
 
   const getTableImage = (statusId) => {
@@ -96,7 +111,8 @@ const Tables = () => {
       {orderTable && (
         <OrderFood 
           table={orderTable} 
-          onClose={() => setOrderTable(null)} 
+          onClose={() => setOrderTable(null)}
+          onPaymentSuccess={handleBillPaymentSuccess} 
         />
       )}
     </div>
