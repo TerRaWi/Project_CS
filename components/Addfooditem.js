@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getProduct, addOrderItem, getCategories } from "../api";
-import styles from "../styles/addfooditme.module.css";
+import styles from "../styles/addfooditem.module.css";
 
 const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
     const [products, setProducts] = useState([]);
@@ -11,6 +11,52 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
     const [error, setError] = useState(null);
     const [selectedItems, setSelectedItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+
+    // ป้องกันการเลื่อนของ document เมื่อ modal เปิด
+    useEffect(() => {
+        // บันทึกค่า overflow และ position เดิมของ body
+        const originalStyle = {
+            overflow: document.body.style.overflow,
+            position: document.body.style.position,
+            width: document.body.style.width,
+            height: document.body.style.height,
+            top: document.body.style.top
+        };
+        
+        // ล็อคการเลื่อนของ body
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+        document.body.style.top = `-${window.scrollY}px`;
+        
+        // ป้องกันการเลื่อนของ Billpayment modal ด้านหลัง
+        const billContainer = document.querySelector('.billContainer');
+        if (billContainer) {
+            billContainer.style.overflow = 'hidden';
+            billContainer.style.pointerEvents = 'none';
+        }
+        
+        // คืนค่าเดิมเมื่อ component unmount
+        return () => {
+            // คืนค่า scroll position
+            const scrollY = document.body.style.top;
+            document.body.style.overflow = originalStyle.overflow;
+            document.body.style.position = originalStyle.position;
+            document.body.style.width = originalStyle.width;
+            document.body.style.height = originalStyle.height;
+            document.body.style.top = originalStyle.top;
+            
+            // Restore scroll position
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+            
+            // คืนค่าการทำงานของ Billpayment modal
+            if (billContainer) {
+                billContainer.style.overflow = 'auto';
+                billContainer.style.pointerEvents = 'auto';
+            }
+        };
+    }, []);
 
     // ดึงข้อมูลสินค้าและสร้างข้อมูลหมวดหมู่
     useEffect(() => {
@@ -149,6 +195,18 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
         }
     };
 
+    // ป้องกันการส่งต่อเหตุการณ์ (event propagation)
+    const handleModalContainerClick = (e) => {
+        // ป้องกันไม่ให้ click event ไปยัง element อื่น
+        e.stopPropagation();
+    };
+
+    // เพิ่มฟังก์ชันป้องกันการเลื่อนของ modal ด้านหลัง
+    const handleButtonClick = (e) => {
+        // ป้องกันการเลื่อนของหน้าหลัก
+        e.stopPropagation();
+    };
+
     if (loading && products.length === 0) {
         return (
             <div className={styles.modalContainer}>
@@ -171,7 +229,7 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
     }
 
     return (
-        <div className={styles.modalContainer}>
+        <div className={styles.modalContainer} onClick={handleModalContainerClick}>
             <div className={styles.modalContent}>
                 <div className={styles.modalHeader}>
                     <h2>เพิ่มรายการอาหาร</h2>
@@ -254,20 +312,29 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
                                             </div>
                                             <div className={styles.orderItemQuantity}>
                                                 <button
-                                                    onClick={() => handleChangeQuantity(item.id, item.quantity - 1)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChangeQuantity(item.id, item.quantity - 1);
+                                                    }}
                                                 >
                                                     -
                                                 </button>
                                                 <span>{item.quantity}</span>
                                                 <button
-                                                    onClick={() => handleChangeQuantity(item.id, item.quantity + 1)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChangeQuantity(item.id, item.quantity + 1);
+                                                    }}
                                                 >
                                                     +
                                                 </button>
                                             </div>
                                             <button
                                                 className={styles.removeButton}
-                                                onClick={() => handleRemoveFromOrder(item.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveFromOrder(item.id);
+                                                }}
                                             >
                                                 ลบ
                                             </button>
@@ -287,14 +354,20 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
                 <div className={styles.modalFooter}>
                     <button
                         className={styles.submitButton}
-                        onClick={handleSubmit}
+                        onClick={(e) => {
+                            handleButtonClick(e);
+                            handleSubmit();
+                        }}
                         disabled={selectedItems.length === 0 || loading}
                     >
                         {loading ? 'กำลังบันทึก...' : 'เพิ่มรายการ'}
                     </button>
                     <button
                         className={styles.cancelButton}
-                        onClick={onClose}
+                        onClick={(e) => {
+                            handleButtonClick(e);
+                            onClose();
+                        }}
                         disabled={loading}
                     >
                         ยกเลิก

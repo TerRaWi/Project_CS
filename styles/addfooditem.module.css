@@ -8,26 +8,26 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
+    z-index: 2000; /* ค่า z-index สูงกว่า Billpayment */
     backdrop-filter: blur(4px);
-    /* เพิ่ม will-change เพื่อเพิ่มประสิทธิภาพ */
+    overflow: hidden; /* ป้องกันการเลื่อนของหน้าหลัก */
     will-change: opacity;
 }
 
 .modalContent {
-    width: 100%;
-    height: 100%;
-    max-width: none;
+    width: 90%; /* ลดความกว้างลงเพื่อให้ดูดีกว่า */
+    max-width: 1200px; /* กำหนดความกว้างสูงสุด */
+    height: 90%; /* ลดความสูงลงเพื่อให้มี padding รอบๆ */
+    max-height: 90vh;
     background-color: white;
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: 12px; /* เพิ่มความโค้งมน */
+    box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    /* เพิ่ม will-change เพื่อการแสดงผลที่ราบรื่น */
+    overflow: hidden; /* ป้องกันการเลื่อนของ modalContent */
     will-change: transform;
-    /* ใช้ transform: translate3d(0,0,0) เพื่อเปิดใช้ hardware acceleration */
-    transform: translate3d(0,0,0);
+    transform: translate3d(0,0,0); /* ใช้ hardware acceleration */
+    position: relative; /* เพิ่ม position relative เพื่อให้ child elements ใช้ position: sticky ได้ */
 }
 
 .modalHeader {
@@ -37,9 +37,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    /* เพิ่ม z-index เพื่อป้องกันการทับซ้อนกับองค์ประกอบอื่น */
+    position: sticky; /* เปลี่ยนจาก relative เป็น sticky */
+    top: 0; /* คงอยู่ที่ด้านบนเสมอ */
     z-index: 10;
+    border-top-left-radius: 12px; /* ให้สอดคล้องกับ modalContent */
+    border-top-right-radius: 12px;
 }
 
 .modalHeader h2 {
@@ -66,9 +68,7 @@
     justify-content: center;
     font-size: 20px;
     cursor: pointer;
-    /* แก้ไข transition เพื่อประสิทธิภาพที่ดีขึ้น */
     transition: background-color 0.2s ease, color 0.2s ease;
-    /* เพิ่ม z-index */
     z-index: 11;
 }
 
@@ -79,13 +79,12 @@
 
 .modalBody {
     flex: 1;
-    padding: 20px;
-    overflow: auto;
     display: flex;
     flex-direction: column;
-    /* ป้องกันการกระตุก */
+    overflow: hidden; /* เปลี่ยนจาก auto เป็น hidden */
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    padding: 0 20px; /* ปรับ padding เพื่อให้มีพื้นที่สำหรับเนื้อหา */
 }
 
 .modalFooter {
@@ -95,8 +94,11 @@
     gap: 20px;
     background-color: #f9f9f9;
     border-top: 1px solid #e0e0e0;
-    /* เพิ่ม z-index */
+    position: sticky; /* เปลี่ยนจาก relative เป็น sticky */
+    bottom: 0; /* คงอยู่ที่ด้านล่างเสมอ */
     z-index: 10;
+    border-bottom-left-radius: 12px; /* ให้สอดคล้องกับ modalContent */
+    border-bottom-right-radius: 12px;
 }
 
 .submitButton,
@@ -105,7 +107,6 @@
     border-radius: 5px;
     font-size: 16px;
     cursor: pointer;
-    /* แก้ไข transition */
     transition: background-color 0.2s ease;
     border: none;
     min-width: 120px;
@@ -142,10 +143,14 @@
 .tabs {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin: 15px 0;
     align-items: center;
-    /* เพิ่ม will-change */
     will-change: contents;
+    position: sticky; /* ทำให้ tabs sticky */
+    top: 0;
+    background: white;
+    z-index: 5;
+    padding-top: 15px;
 }
 
 .tabControl {
@@ -153,10 +158,11 @@
     gap: 10px;
     overflow-x: auto;
     padding-bottom: 5px;
-    /* ปรับปรุงการเลื่อน */
+    margin-right: 10px; /* เพิ่มระยะห่างจาก searchBox */
     scrollbar-width: thin;
     scrollbar-color: #ddd transparent;
     -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
 }
 
 .tabButton {
@@ -166,7 +172,6 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    /* แก้ไข transition */
     transition: background-color 0.2s ease, color 0.2s ease;
     white-space: nowrap;
 }
@@ -195,7 +200,6 @@
     border-radius: 20px;
     font-size: 15px;
     outline: none;
-    /* แก้ไข transition */
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -207,18 +211,18 @@
 .menuContainer {
     display: flex;
     gap: 20px;
-    height: calc(100% - 60px);
-    /* เพิ่ม will-change */
+    flex: 1;
+    overflow: hidden; /* เพิ่ม overflow: hidden เพื่อควบคุมการเลื่อน */
     will-change: contents;
+    min-height: 0; /* สำคัญมากสำหรับระบบ flexbox เพื่อให้สามารถใช้ overflow: auto ได้ */
 }
 
 .menuList {
     flex: 3;
-    overflow: auto;
-    /* ปรับปรุงการเลื่อน */
-    scrollbar-width: thin;
-    scrollbar-color: #ddd transparent;
-    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* เปลี่ยนจาก auto เป็น hidden */
+    min-height: 0; /* สำคัญมากสำหรับระบบ flexbox */
 }
 
 .menuList h3 {
@@ -226,14 +230,26 @@
     margin-bottom: 15px;
     font-size: 18px;
     color: #333;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 4;
+    padding-top: 10px;
 }
 
 .menuGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 20px;
-    /* ช่วยให้การคำนวณกริดมีประสิทธิภาพ */
+    overflow-y: auto; /* เลื่อนได้เฉพาะส่วนนี้ */
+    padding-right: 10px;
+    flex: 1;
     contain: layout style;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+    -webkit-overflow-scrolling: touch;
+    max-height: 100%; /* เพิ่ม max-height เพื่อให้สามารถเลื่อนได้ */
+    margin-bottom: 20px; /* เพิ่ม margin เพื่อให้ไม่ติด footer */
 }
 
 .menuItem {
@@ -242,10 +258,8 @@
     border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
-    /* แก้ไข transition */
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    /* ป้องกันการกระตุก */
     transform: translateZ(0);
     -webkit-font-smoothing: subpixel-antialiased;
     backface-visibility: hidden;
@@ -266,7 +280,7 @@
 
 .placeholderImage {
     width: 100%;
-    height: 140px;
+    height:.140px;
     background-color: #f5f5f5;
     display: flex;
     align-items: center;
@@ -304,8 +318,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* เพิ่ม will-change */
     will-change: contents;
+    min-height: 0; /* สำคัญมากสำหรับระบบ flexbox */
 }
 
 .orderSummary h3 {
@@ -313,6 +327,11 @@
     margin-bottom: 15px;
     font-size: 18px;
     color: #333;
+    position: sticky;
+    top: 0;
+    background: #f9f9f9;
+    z-index: 4;
+    padding-top: 5px;
 }
 
 .emptyOrder {
@@ -323,12 +342,12 @@
 
 .orderItems {
     flex: 1;
-    overflow-y: auto;
-    padding-right: 5px;
-    /* ปรับปรุงการเลื่อน */
+    overflow-y: auto; /* เลื่อนได้เฉพาะส่วนนี้ */
+    padding-right: 10px;
     scrollbar-width: thin;
     scrollbar-color: #ddd transparent;
     -webkit-overflow-scrolling: touch;
+    margin-bottom: 10px; /* เพิ่ม margin เพื่อไม่ให้เนื้อหาติด totalAmount */
 }
 
 .orderItem {
@@ -371,7 +390,6 @@
     justify-content: center;
     cursor: pointer;
     font-size: 14px;
-    /* แก้ไข transition */
     transition: background-color 0.2s ease;
 }
 
@@ -387,7 +405,6 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
-    /* แก้ไข transition */
     transition: background-color 0.2s ease;
 }
 
@@ -403,6 +420,12 @@
     padding-top: 15px;
     border-top: 2px solid #ddd;
     font-size: 16px;
+    position: sticky;
+    bottom: 0;
+    background: #f9f9f9;
+    padding-bottom: 5px;
+    margin-bottom: 0;
+    z-index: 3;
 }
 
 .loading {
@@ -425,71 +448,78 @@
     text-align: center;
 }
 
-.modalContent::-webkit-scrollbar {
+/* Custom scrollbar styles */
+.modalContent::-webkit-scrollbar,
+.menuList::-webkit-scrollbar,
+.menuGrid::-webkit-scrollbar,
+.orderItems::-webkit-scrollbar,
+.tabControl::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-.modalContent::-webkit-scrollbar-track {
+.modalContent::-webkit-scrollbar-track,
+.menuList::-webkit-scrollbar-track,
+.menuGrid::-webkit-scrollbar-track,
+.orderItems::-webkit-scrollbar-track,
+.tabControl::-webkit-scrollbar-track {
     background-color: transparent;
 }
 
-.modalContent::-webkit-scrollbar-thumb {
+.modalContent::-webkit-scrollbar-thumb,
+.menuList::-webkit-scrollbar-thumb,
+.menuGrid::-webkit-scrollbar-thumb,
+.orderItems::-webkit-scrollbar-thumb,
+.tabControl::-webkit-scrollbar-thumb {
     background-color: #ddd;
     border-radius: 4px;
 }
 
-.modalContent::-webkit-scrollbar-thumb:hover {
-    background-color: #ccc;
-}
-
-.menuList::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.menuList::-webkit-scrollbar-track {
-    background-color: transparent;
-}
-
-.menuList::-webkit-scrollbar-thumb {
-    background-color: #ddd;
-    border-radius: 4px;
-}
-
-.menuList::-webkit-scrollbar-thumb:hover {
-    background-color: #ccc;
-}
-
-.orderItems::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.orderItems::-webkit-scrollbar-track {
-    background-color: transparent;
-}
-
-.orderItems::-webkit-scrollbar-thumb {
-    background-color: #ddd;
-    border-radius: 4px;
-}
-
-.orderItems::-webkit-scrollbar-thumb:hover {
+.modalContent::-webkit-scrollbar-thumb:hover,
+.menuList::-webkit-scrollbar-thumb:hover,
+.menuGrid::-webkit-scrollbar-thumb:hover,
+.orderItems::-webkit-scrollbar-thumb:hover,
+.tabControl::-webkit-scrollbar-thumb:hover {
     background-color: #ccc;
 }
 
 /* Media queries สำหรับหน้าจอขนาดเล็ก */
 @media (max-width: 768px) {
+    .modalContent {
+        width: 95%;
+        height: 95%;
+        border-radius: 8px;
+    }
+    
     .menuContainer {
         flex-direction: column;
     }
 
     .searchBox {
-        width: 200px;
+        width: 150px; /* ลดขนาดลงสำหรับหน้าจอเล็ก */
     }
 
     .menuGrid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 15px;
+    }
+    
+    .tabs {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .tabControl {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .searchBox {
+        width: 100%;
+    }
+    
+    .menuItem img,
+    .placeholderImage {
+        height: 100px; /* ลดความสูงของรูปภาพสำหรับหน้าจอเล็ก */
     }
 }
