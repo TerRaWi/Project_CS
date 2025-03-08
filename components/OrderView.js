@@ -23,8 +23,11 @@ const OrderView = ({ tableId }) => {
       }
       const data = await getOrdersByTable(tableId);
 
+      // กรองเฉพาะออเดอร์ที่มีสถานะ 'A' (กำลังใช้งาน)
+      const activeOrders = data.filter(order => order.status === 'A');
+
       // คำนวณครั้งที่สั่งและจัดกลุ่มตาม order_time
-      const processedOrders = data.map(order => {
+      const processedOrders = activeOrders.map(order => {
         // จัดกลุ่มสินค้าตาม order_time
         const groupedByTime = {};
         order.items.forEach(item => {
@@ -101,7 +104,7 @@ const OrderView = ({ tableId }) => {
   }
 
   if (!orders || orders.length === 0) {
-    return <div className={styles.emptyState}>ยังไม่มีประวัติการสั่งอาหาร</div>;
+    return <div className={styles.emptyState}>ยังไม่มีรายการสั่งอาหาร</div>;
   }
 
   const sortedOrders = [...orders].sort((a, b) =>
@@ -114,9 +117,8 @@ const OrderView = ({ tableId }) => {
         <div key={order.orderId} className={styles.orderCard}>
           <div className={styles.orderHeader}>
             <h3>ออเดอร์ #{order.orderId}</h3>
-            <div className={`${styles.statusBadge} ${order.status === 'A' ? styles.statusActive : styles.statusComplete
-              }`}>
-              {order.status === 'A' ? 'กำลังใช้งาน' : 'เสร็จสิ้น'}
+            <div className={styles.statusBadge}>
+              กำลังใช้งาน
             </div>
           </div>
 
