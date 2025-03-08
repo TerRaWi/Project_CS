@@ -1029,6 +1029,53 @@ app.get('/api/receipt/:paymentId', async (req, res) => {
   }
 });
 
+app.post('/api/order-detail', async (req, res) => {
+  const { order_id, product_id, quantity, unit_price } = req.body;
+
+  if (!order_id || !product_id || !quantity || !unit_price) {
+    return res.status(400).json({
+      success: false,
+      message: 'กรุณาระบุข้อมูลให้ครบถ้วน'
+    });
+  }
+
+  try {
+    // ตรวจสอบว่าออเดอร์ยังเปิดอยู่หรือไม่
+    const [orderCheck] = await db.promise().query(
+      `SELECT id FROM \`order\` WHERE id = ? AND status = 'A'`,
+      [order_id]
+    );
+
+    if (orderCheck.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ไม่พบออเดอร์ที่เปิดอยู่'
+      });
+    }
+
+    // เพิ่มรายการใหม่
+    const [result] = await db.promise().query(
+      `INSERT INTO order_detail 
+        (order_id, product_id, quantity, unit_price, status, order_time) 
+        VALUES (?, ?, ?, ?, 'P', CURRENT_TIMESTAMP)`,
+      [order_id, product_id, quantity, unit_price]
+    );
+
+    res.status(201).json({
+      success: true,
+      id: result.insertId,
+      message: 'เพิ่มรายการอาหารสำเร็จ'
+    });
+
+  } catch (error) {
+    console.error('Error adding order item:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการเพิ่มรายการอาหาร'
+    });
+  }
+});
+
 /**
  * ============================
  * เริ่มการทำงานของเซิร์ฟเวอร์

@@ -271,6 +271,30 @@ export const updateOrderDetailStatus = async (detailId, newStatus) => {
   }
 };
 
+export const addOrderItem = async (orderId, productId, quantity, unitPrice) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/order-detail`, {
+      order_id: orderId,
+      product_id: productId,
+      quantity: quantity,
+      unit_price: unitPrice
+    });
+    return data;
+  } catch (error) {
+    console.error('Error adding order item:', error);
+    
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการเพิ่มรายการ');
+      } else if (error.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    
+    throw new Error('เกิดข้อผิดพลาดในการเพิ่มรายการอาหาร');
+  }
+};
+
 /**
  * ============================
  * API เกี่ยวกับหมวดหมู่
