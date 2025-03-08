@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getBill, checkout, updateOrderDetailStatus, getProduct } from "../api";
+import { getBill, checkout, updateOrderDetailStatus } from "../api";
+import Addfooditem from "./Addfooditme"; // นำเข้า Addfooditem component
 import styles from "../styles/billpayment.module.css";
 
 const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
@@ -8,10 +9,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     const [error, setError] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [showConfirm, setShowConfirm] = useState(false);
-    const [showAddItem, setShowAddItem] = useState(false);
-    const [products, setProducts] = useState([]);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [quantity, setQuantity] = useState(1);
+    const [showAddFood, setShowAddFood] = useState(false); // เปลี่ยนชื่อตัวแปร
 
     // ดึงข้อมูลบิล
     const fetchBill = async () => {
@@ -27,20 +25,8 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         }
     };
 
-    // ดึงข้อมูลสินค้า
-    const fetchProducts = async () => {
-        try {
-            const data = await getProduct();
-            // กรองเฉพาะสินค้าที่มีสถานะ Active
-            setProducts(data.filter(product => product.status === 'A'));
-        } catch (err) {
-            console.error("Error fetching products:", err);
-        }
-    };
-
     useEffect(() => {
         fetchBill();
-        fetchProducts();
     }, [orderId]);
 
     // ฟังก์ชันชำระเงิน
@@ -75,27 +61,9 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         }
     };
 
-    // ฟังก์ชันเพิ่มรายการ
-    const handleAddItem = async () => {
-        if (!selectedProduct || quantity <= 0) {
-            alert("กรุณาเลือกรายการและระบุจำนวนที่ถูกต้อง");
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-            // เพิ่มรายการใหม่เข้าไปในออเดอร์
-            await addOrderItem(orderId, selectedProduct.id, quantity, selectedProduct.price);
-            // ปิด modal เพิ่มรายการ
-            setShowAddItem(false);
-            setSelectedProduct(null);
-            setQuantity(1);
-            // โหลดข้อมูลบิลใหม่
-            await fetchBill();
-        } catch (err) {
-            setError(err.message || "เกิดข้อผิดพลาดในการเพิ่มรายการ");
-            setIsLoading(false);
-        }
+    // ฟังก์ชันสำหรับจัดการเมื่อเพิ่มรายการอาหารสำเร็จ
+    const handleItemAdded = async () => {
+        await fetchBill(); // โหลดข้อมูลบิลใหม่
     };
 
     // ฟังก์ชันในการจัดรูปแบบเงิน
@@ -147,7 +115,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                         <div className={styles.addItemSection}>
                             <button
                                 className={styles.addButton}
-                                onClick={() => setShowAddItem(true)}
+                                onClick={() => setShowAddFood(true)}
                             >
                                 + เพิ่มรายการ
                             </button>
@@ -276,55 +244,13 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                         </div>
                     )}
 
-                    {/* Modal เพิ่มรายการอาหาร */}
-                    {showAddItem && (
-                        <div className={styles.confirmModal}>
-                            <div className={styles.confirmContent}>
-                                <h3>เพิ่มรายการอาหาร</h3>
-                                <div className={styles.formGroup}>
-                                    <label>เลือกรายการ:</label>
-                                    <select
-                                        value={selectedProduct ? selectedProduct.id : ""}
-                                        onChange={(e) => {
-                                            const product = products.find(p => p.id.toString() === e.target.value);
-                                            setSelectedProduct(product || null);
-                                        }}
-                                    >
-                                        <option value="">-- เลือกรายการ --</option>
-                                        {products.map(product => (
-                                            <option key={product.id} value={product.id}>
-                                                {product.name} - {formatCurrency(product.price)} บาท
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label>จำนวน:</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                                    />
-                                </div>
-                                <div className={styles.confirmButtons}>
-                                    <button
-                                        className={styles.confirmButton}
-                                        onClick={handleAddItem}
-                                        disabled={isLoading || !selectedProduct}
-                                    >
-                                        เพิ่มรายการ
-                                    </button>
-                                    <button
-                                        className={styles.cancelButton}
-                                        onClick={() => setShowAddItem(false)}
-                                        disabled={isLoading}
-                                    >
-                                        ยกเลิก
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    {/* เรียกใช้ Addfooditem component */}
+                    {showAddFood && (
+                        <Addfooditem 
+                            orderId={orderId}
+                            onClose={() => setShowAddFood(false)}
+                            onItemAdded={handleItemAdded}
+                        />
                     )}
                 </div>
             </div>
