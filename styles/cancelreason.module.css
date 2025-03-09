@@ -1,0 +1,199 @@
+/* cancelreason.module.css - ปรับปรุงใหม่ */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.65);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.modalContent {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease-out;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #666;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.closeButton:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+.modalBody {
+    padding: 20px 24px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.reasonsList {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.reasonItem {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.reasonItem:hover {
+    background-color: #f5f5f5;
+    border-color: #d0d0d0;
+}
+
+.reasonItem input[type="radio"] {
+    margin-right: 12px;
+    margin-top: 3px;
+    accent-color: #e53935;
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+.reasonItem label {
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+    flex: 1;
+    line-height: 1.4;
+}
+
+.reasonDescription {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+}
+
+.cancelButton, .confirmButton {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancelButton {
+    background-color: #f1f3f5;
+    color: #495057;
+    border: 1px solid #ddd;
+}
+
+.confirmButton {
+    background-color: #e53935;
+    color: white;
+}
+
+.cancelButton:hover {
+    background-color: #e9ecef;
+}
+
+.confirmButton:hover {
+    background-color: #d32f2f;
+}
+
+.confirmButton:disabled {
+    background-color: #f1f1f1;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    font-size: 16px;
+    color: #666;
+}
+
+.error {
+    padding: 16px;
+    color: #d32f2f;
+    background-color: #ffebee;
+    border-radius: 4px;
+    margin: 16px 0;
+    border-left: 4px solid #d32f2f;
+}
+
+/* เพิ่มเอฟเฟกต์เมื่อเลือกเหตุผล */
+.reasonItem.selected {
+    background-color: #ffebee;
+    border-color: #e53935;
+}
+
+/* สไตล์สำหรับรายการที่เลือก */
+.reasonItem:has(input:checked) {
+    background-color: #ffebee;
+    border-color: #e53935;
+}

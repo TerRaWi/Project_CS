@@ -244,16 +244,29 @@ export const getOrderDetails = async (orderId) => {
   }
 };
 
-export const updateOrderDetailStatus = async (detailId, newStatus) => {
+export const updateOrderDetailStatus = async (detailId, newStatus, cancelReasonId = null) => {
   try {
-    // ตรวจสอบว่า status ที่ส่งมาถูกต้องหรือไม่
+    // ตรวจสอบว่าสถานะที่ส่งมาถูกต้องหรือไม่
     if (!['A', 'P', 'C', 'V'].includes(newStatus)) {
       throw new Error('สถานะไม่ถูกต้อง กรุณาระบุ A, P, C หรือ V');
     }
 
-    const { data } = await axios.patch(`${API_URL}/order-detail/${detailId}/status`, {
+    // ถ้าเป็นการยกเลิกรายการ (V) และไม่มีเหตุผลการยกเลิก ให้แจ้งเตือน
+    if (newStatus === 'V' && !cancelReasonId) {
+      throw new Error('กรุณาระบุเหตุผลในการยกเลิก');
+    }
+
+    // สร้าง payload สำหรับส่งไป API
+    const payload = {
       status: newStatus
-    });
+    };
+
+    // เพิ่มเหตุผลการยกเลิกในกรณีที่เป็นการยกเลิกรายการ
+    if (newStatus === 'V' && cancelReasonId) {
+      payload.cancel_reason_id = cancelReasonId;
+    }
+
+    const { data } = await axios.patch(`${API_URL}/order-detail/${detailId}/status`, payload);
     
     return data;
   } catch (error) {
@@ -268,6 +281,30 @@ export const updateOrderDetailStatus = async (detailId, newStatus) => {
     }
     
     throw new Error('เกิดข้อผิดพลาดในการอัพเดทสถานะรายการอาหาร');
+  }
+};
+
+export const addOrderItem = async (orderId, productId, quantity, unitPrice) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/order-detail`, {
+      order_id: orderId,
+      product_id: productId,
+      quantity: quantity,
+      unit_price: unitPrice
+    });
+    return data;
+  } catch (error) {
+    console.error('Error adding order item:', error);
+    
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการเพิ่มรายการ');
+      } else if (error.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    
+    throw new Error('เกิดข้อผิดพลาดในการเพิ่มรายการอาหาร');
   }
 };
 
@@ -369,5 +406,99 @@ export const getAllActiveOrders = async () => {
   } catch (error) {
     console.error('Error fetching all orders:', error);
     handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลออเดอร์ทั้งหมด');
+  }
+};
+
+/**
+ * ============================
+ * API เกี่ยวกับการชำระเงิน (Payment)
+ * ============================
+ */
+
+// ดึงข้อมูลบิล
+export const getBill = async (orderId) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/order/${orderId}/bill`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงข้อมูลบิล');
+  }
+};
+
+// ชำระเงินและปิดโต๊ะ
+export const checkout = async (orderId, paymentMethod) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/checkout/${orderId}`, {
+      paymentMethod
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการชำระเงิน');
+  }
+};
+
+// ดึงประวัติการชำระเงินทั้งหมด
+export const getAllPayments = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/payments`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการชำระเงิน');
+  }
+};
+
+// ดึงประวัติการชำระเงินตามวันที่
+export const getPaymentsByDate = async (startDate, endDate) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/payments`, {
+      params: { startDate, endDate }
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการชำระเงิน');
+  }
+};
+
+// ดึงข้อมูลใบเสร็จ
+export const getReceipt = async (paymentId) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/receipt/${paymentId}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงข้อมูลใบเสร็จ');
+  }
+};
+
+// ยกเลิกการชำระเงิน (กรณีทำผิด)
+export const voidPayment = async (paymentId, reason) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/payment/${paymentId}/void`, {
+      reason
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการยกเลิกการชำระเงิน');
+  }
+};
+
+// ออกใบกำกับภาษี
+export const generateTaxInvoice = async (paymentId, customerInfo) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/payment/${paymentId}/tax-invoice`, customerInfo);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการออกใบกำกับภาษี');
+  }
+};
+
+/**
+ * ดึงข้อมูลเหตุผลในการยกเลิกรายการอาหาร
+ */
+export const getCancelReasons = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/cancel-reasons`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลเหตุผลการยกเลิก');
   }
 };
