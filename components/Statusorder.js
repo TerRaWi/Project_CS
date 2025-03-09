@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from "../styles/statusorder.module.css";
-import { updateOrderDetailStatus, getOrdersByTable } from '../api';
+import { updateOrderDetailStatus, getOrdersByTable, getCancelReasons } from '../api';
+import Cancelreason from './Cancelreason';
 
 const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
   const [orderDetails, setOrderDetails] = useState([]);
@@ -9,6 +10,10 @@ const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
   const [orderTime, setOrderTime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // เพิ่ม state สำหรับการจัดการ modal ยกเลิกรายการอาหาร
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedDetailId, setSelectedDetailId] = useState(null);
 
   useEffect(() => {
     fetchAllOrdersForTable();
@@ -95,8 +100,37 @@ const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
   };
 
   const handleStatusChange = async (detailId, newStatus) => {
+    // ถ้าเป็นการยกเลิก (status = V) ให้แสดง modal เลือกเหตุผล
+    if (newStatus === 'V') {
+      setSelectedDetailId(detailId);
+      setShowCancelModal(true);
+      return;
+    }
+    
+    // ถ้าไม่ใช่การยกเลิก ให้อัพเดทสถานะตามปกติ
     try {
       await updateOrderDetailStatus(detailId, newStatus);
+      
+      // อัปเดตสถานะในหน้าจอ
+      fetchOrderDetails(selectedOrderId);
+      
+      // เรียก callback function เพื่อแจ้งให้ parent component ทราบ
+      if (onStatusUpdate) {
+        onStatusUpdate();
+      }
+    } catch (err) {
+      setError(err.message || 'เกิดข้อผิดพลาดในการอัปเดตสถานะ');
+    }
+  };
+
+  // ฟังก์ชันสำหรับจัดการการยกเลิกรายการอาหารพร้อมเหตุผล
+  const handleCancelWithReason = async (detailId, newStatus, cancelReasonId) => {
+    try {
+      await updateOrderDetailStatus(detailId, newStatus, cancelReasonId);
+      
+      // ปิด modal
+      setShowCancelModal(false);
+      setSelectedDetailId(null);
       
       // อัปเดตสถานะในหน้าจอ
       fetchOrderDetails(selectedOrderId);
@@ -256,6 +290,14 @@ const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
           </div>
         </>
       )}
+
+      {/* Modal สำหรับเลือกเหตุผลการยกเลิก */}
+      <Cancelreason
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancelWithReason}
+        detailId={selectedDetailId}
+      />
     </div>
   );
 };

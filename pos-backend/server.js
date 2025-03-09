@@ -601,7 +601,7 @@ app.get('/api/order/:tableId', (req, res) => {
 // อัพเดทสถานะรายการอาหาร
 app.patch('/api/order-detail/:id/status', (req, res) => {
   const detailId = req.params.id;
-  const { status } = req.body;
+  const { status, cancel_reason_id } = req.body;
 
   // ตรวจสอบความถูกต้องของข้อมูล
   if (!detailId) {
@@ -612,28 +612,50 @@ app.patch('/api/order-detail/:id/status', (req, res) => {
     return res.status(400).json({ error: 'สถานะไม่ถูกต้อง กรุณาระบุ A, P, C หรือ V' });
   }
 
+  // ตรวจสอบว่าถ้าเป็นการยกเลิก (V) ต้องมีเหตุผลการยกเลิก
+  if (status === 'V' && !cancel_reason_id) {
+    return res.status(400).json({ error: 'กรุณาระบุเหตุผลในการยกเลิก' });
+  }
+
+  // สร้าง query สำหรับอัพเดทสถานะ
+  let query = 'UPDATE order_detail SET status = ?';
+  let params = [status];
+
+  // ถ้าเป็นการยกเลิก ให้อัพเดทเหตุผลการยกเลิกด้วย
+  if (status === 'V' && cancel_reason_id) {
+    query += ', cancel_reason_id = ?';
+    params.push(cancel_reason_id);
+  }
+
+  // เพิ่ม id เป็น parameter สุดท้าย
+  query += ' WHERE id = ?';
+  params.push(detailId);
+
   // อัพเดทสถานะรายการอาหาร
-  db.query(
-    'UPDATE order_detail SET status = ? WHERE id = ?',
-    [status, detailId],
-    (err, result) => {
-      if (err) {
-        console.error('เกิดข้อผิดพลาดในการอัพเดทสถานะรายการอาหาร:', err);
-        return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
-      }
-
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'ไม่พบรายการอาหารที่ต้องการอัพเดท' });
-      }
-
-      // เมื่ออัพเดทสำเร็จ ส่งข้อมูลกลับไป
-      res.json({
-        id: detailId,
-        status,
-        message: 'อัพเดทสถานะรายการอาหารสำเร็จ'
-      });
+  db.query(query, params, (err, result) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการอัพเดทสถานะรายการอาหาร:', err);
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์' });
     }
-  );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'ไม่พบรายการอาหารที่ต้องการอัพเดท' });
+    }
+
+    // เมื่ออัพเดทสำเร็จ ส่งข้อมูลกลับไป
+    const response = {
+      id: detailId,
+      status,
+      message: 'อัพเดทสถานะรายการอาหารสำเร็จ'
+    };
+
+    // ถ้าเป็นการยกเลิก ให้ส่งข้อมูลเหตุผลกลับไปด้วย
+    if (status === 'V' && cancel_reason_id) {
+      response.cancel_reason_id = cancel_reason_id;
+    }
+
+    res.json(response);
+  });
 });
 
 /**
@@ -1074,6 +1096,19 @@ app.post('/api/order-detail', async (req, res) => {
       message: 'เกิดข้อผิดพลาดในการเพิ่มรายการอาหาร'
     });
   }
+});
+
+/**
+ * ดึงข้อมูลเหตุผลในการยกเลิกรายการอาหาร
+ */
+app.get('/api/cancel-reasons', (req, res) => {
+  db.query('SELECT * FROM cancel_reason ORDER BY id', (err, results) => {
+    if (err) {
+      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลเหตุผลการยกเลิก:', err);
+      return res.status(500).json({ error: 'ข้อผิดพลาดของเซิร์ฟเวอร์' });
+    }
+    res.json(results);
+  });
 });
 
 /**

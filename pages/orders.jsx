@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getAllActiveOrders, getTables, updateOrderDetailStatus } from '../api';
 import styles from "../styles/orders.module.css";
+import Cancelreason from '../components/Cancelreason';
 
 const Orders = () => {
   const [tables, setTables] = useState([]);
@@ -11,6 +12,10 @@ const Orders = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   // เพิ่มstate เพื่อควบคุมการแสดงผลทั้งหมด
   const [showAllOrders, setShowAllOrders] = useState(true);
+  
+  // เพิ่ม state สำหรับการจัดการ modal ยกเลิกรายการอาหาร
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedDetailId, setSelectedDetailId] = useState(null);
 
   // ใช้ useEffect เพื่อเรียก fetchData เมื่อ sortOrder เปลี่ยน
   useEffect(() => {
@@ -104,12 +109,41 @@ const Orders = () => {
     // ไม่ต้องเรียก fetchData() ที่นี่อีกเพราะ useEffect จะทำงานเมื่อ sortOrder เปลี่ยนแปลง
   };
 
-  const handleStatusChange = async (detailId, newStatus) => {
+  const handleStatusChange = (detailId, newStatus) => {
+    // ถ้าเป็นการยกเลิก (status = V) ให้แสดง modal เลือกเหตุผล
+    if (newStatus === 'V') {
+      setSelectedDetailId(detailId);
+      setShowCancelModal(true);
+      return;
+    }
+    
+    // ถ้าไม่ใช่การยกเลิก ให้อัพเดทสถานะตามปกติ
+    handleUpdateStatus(detailId, newStatus);
+  };
+
+  // ฟังก์ชันสำหรับจัดการการอัพเดทสถานะทั่วไป
+  const handleUpdateStatus = async (detailId, newStatus, cancelReasonId = null) => {
     try {
-      await updateOrderDetailStatus(detailId, newStatus);
+      await updateOrderDetailStatus(detailId, newStatus, cancelReasonId);
       fetchData();
     } catch (err) {
       setError(err.message || 'เกิดข้อผิดพลาดในการอัพเดตสถานะ');
+    }
+  };
+
+  // ฟังก์ชันสำหรับจัดการการยกเลิกรายการอาหารพร้อมเหตุผล
+  const handleCancelWithReason = async (detailId, newStatus, cancelReasonId) => {
+    try {
+      await updateOrderDetailStatus(detailId, newStatus, cancelReasonId);
+      
+      // ปิด modal
+      setShowCancelModal(false);
+      setSelectedDetailId(null);
+      
+      // โหลดข้อมูลใหม่
+      fetchData();
+    } catch (err) {
+      setError(err.message || 'เกิดข้อผิดพลาดในการอัปเดตสถานะ');
     }
   };
 
@@ -532,6 +566,14 @@ const Orders = () => {
           )}
         </div>
       </div>
+
+      {/* Modal สำหรับเลือกเหตุผลการยกเลิก */}
+      <Cancelreason
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancelWithReason}
+        detailId={selectedDetailId}
+      />
     </div>
   );
 };
