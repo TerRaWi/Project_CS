@@ -12,7 +12,17 @@ const Cancelreason = ({ isOpen, onClose, onConfirm, detailId }) => {
         // ถ้า modal เปิดอยู่ ให้โหลดข้อมูลเหตุผลการยกเลิก
         if (isOpen) {
             fetchCancelReasons();
+            // เพิ่ม: ป้องกันการเลื่อนหน้าจอของส่วนพื้นหลัง
+            document.body.style.overflow = 'hidden';
+        } else {
+            // เพิ่ม: เมื่อ modal ปิด ให้คืนค่า overflow กลับเป็นค่าเดิม
+            document.body.style.overflow = 'auto';
         }
+
+        // เพิ่ม: Cleanup function เมื่อ component unmount
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
     }, [isOpen]);
 
     const fetchCancelReasons = async () => {
@@ -46,14 +56,25 @@ const Cancelreason = ({ isOpen, onClose, onConfirm, detailId }) => {
         }
     };
 
-    // เพิ่มเอฟเฟกต์ fade-in เมื่อเปิด modal
+    // เพิ่มการจัดการปัญหา scroll ใน wheel และ touchmove events
+    const handleWheel = (e) => {
+        const modalBody = document.querySelector(`.${styles.modalBody}`);
+        const isScrollable = modalBody && modalBody.scrollHeight > modalBody.clientHeight;
+
+        // ถ้าไม่ได้อยู่ใน modalBody หรือ modalBody ไม่สามารถเลื่อนได้ ให้ป้องกันการเลื่อน
+        const isInModalBody = e.target.closest(`.${styles.modalBody}`);
+
+        if (!isInModalBody || !isScrollable) {
+            e.preventDefault();
+        }
+    };
+
     const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
             onClose();
         }
     };
 
-    // เมื่อกดคลิกที่พื้นที่ภายนอก modal ให้ปิด
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
             onClose();
@@ -68,6 +89,7 @@ const Cancelreason = ({ isOpen, onClose, onConfirm, detailId }) => {
             className={styles.modalOverlay}
             onClick={handleOverlayClick}
             onKeyDown={handleKeyDown}
+            onWheel={handleWheel}
             tabIndex={-1}
             role="dialog"
         >
