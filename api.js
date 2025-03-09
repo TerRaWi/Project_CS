@@ -244,16 +244,29 @@ export const getOrderDetails = async (orderId) => {
   }
 };
 
-export const updateOrderDetailStatus = async (detailId, newStatus) => {
+export const updateOrderDetailStatus = async (detailId, newStatus, cancelReasonId = null) => {
   try {
-    // ตรวจสอบว่า status ที่ส่งมาถูกต้องหรือไม่
+    // ตรวจสอบว่าสถานะที่ส่งมาถูกต้องหรือไม่
     if (!['A', 'P', 'C', 'V'].includes(newStatus)) {
       throw new Error('สถานะไม่ถูกต้อง กรุณาระบุ A, P, C หรือ V');
     }
 
-    const { data } = await axios.patch(`${API_URL}/order-detail/${detailId}/status`, {
+    // ถ้าเป็นการยกเลิกรายการ (V) และไม่มีเหตุผลการยกเลิก ให้แจ้งเตือน
+    if (newStatus === 'V' && !cancelReasonId) {
+      throw new Error('กรุณาระบุเหตุผลในการยกเลิก');
+    }
+
+    // สร้าง payload สำหรับส่งไป API
+    const payload = {
       status: newStatus
-    });
+    };
+
+    // เพิ่มเหตุผลการยกเลิกในกรณีที่เป็นการยกเลิกรายการ
+    if (newStatus === 'V' && cancelReasonId) {
+      payload.cancel_reason_id = cancelReasonId;
+    }
+
+    const { data } = await axios.patch(`${API_URL}/order-detail/${detailId}/status`, payload);
     
     return data;
   } catch (error) {
@@ -475,5 +488,17 @@ export const generateTaxInvoice = async (paymentId, customerInfo) => {
     return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการออกใบกำกับภาษี');
+  }
+};
+
+/**
+ * ดึงข้อมูลเหตุผลในการยกเลิกรายการอาหาร
+ */
+export const getCancelReasons = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/cancel-reasons`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลเหตุผลการยกเลิก');
   }
 };
