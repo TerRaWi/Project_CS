@@ -3,7 +3,7 @@ import { getTables } from '../api';
 import Image from 'next/image';
 import styles from '../styles/table.module.css';
 import Rectable from '../components/Rectable';
-import OrderFood from '../components/Ordertable';
+import Ordertable from '../components/Ordertable';
 
 const Tables = () => {
   const [tables, setTables] = useState([]);
@@ -109,7 +109,7 @@ const Tables = () => {
       )}
       
       {orderTable && (
-        <OrderFood 
+        <Ordertable 
           table={orderTable} 
           onClose={() => setOrderTable(null)}
           onPaymentSuccess={handleBillPaymentSuccess} 

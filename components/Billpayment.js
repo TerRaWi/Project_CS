@@ -386,17 +386,6 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                                     />
                                     <label htmlFor="transfer">โอนเงิน</label>
                                 </div>
-                                <div className={styles.paymentMethodItem}>
-                                    <input
-                                        id="credit_card"
-                                        type="radio"
-                                        value="credit_card"
-                                        checked={paymentMethod === "credit_card"}
-                                        onChange={() => setPaymentMethod("credit_card")}
-                                        disabled={showAddFood || showConfirm}
-                                    />
-                                    <label htmlFor="credit_card">บัตรเครดิต</label>
-                                </div>
                             </div>
 
                             <div className={styles.actionButtons}>
@@ -439,7 +428,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                         )}
                         <p>
                             คุณต้องการชำระเงินจำนวน <strong>{formatCurrency(bill.totalAmount)} บาท</strong>
-                            <br />ด้วย<strong>{paymentMethod === "cash" ? "เงินสด" : paymentMethod === "transfer" ? "การโอนเงิน" : "บัตรเครดิต"}</strong> ใช่หรือไม่?
+                            <br />ด้วย<strong>{paymentMethod === "cash" ? "เงินสด" : "การโอนเงิน"}</strong> ใช่หรือไม่?
                         </p>
                         <div className={styles.confirmButtons}>
                             <button

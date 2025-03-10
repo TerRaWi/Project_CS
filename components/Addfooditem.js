@@ -259,10 +259,24 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
                         <div className={styles.searchBox}>
                             <input
                                 type="text"
-                                placeholder="ค้นหาอาหาร..."
+                                placeholder="ค้นหาอาหาร"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                aria-label="ค้นหาอาหาร"
+                                autoComplete="off"
                             />
+                            {searchTerm && (
+                                <button 
+                                    className={styles.clearSearch}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSearchTerm('');
+                                    }}
+                                    aria-label="ล้างการค้นหา"
+                                >
+                                    ×
+                                </button>
+                            )}
                         </div>
                     </div>
 

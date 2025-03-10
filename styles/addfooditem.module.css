@@ -150,7 +150,10 @@
     top: 0;
     background: white;
     z-index: 5;
-    padding-top: 15px;
+    padding: 15px 5px 10px 5px; /* เพิ่ม padding ด้านข้าง */
+    width: 100%; /* ระบุความกว้างชัดเจน */
+    box-sizing: border-box; /* ทำให้ padding อยู่ภายในความกว้าง 100% */
+    max-width: 100%; /* ป้องกันไม่ให้ขยายเกินขอบ */
 }
 
 .tabControl {
@@ -163,6 +166,8 @@
     scrollbar-color: #ddd transparent;
     -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
+    flex: 1; /* ให้ tabControl ขยายเต็มพื้นที่ที่เหลือ */
+    max-width: calc(100% - 290px); /* ลบด้วยความกว้างของ searchBox + margin */
 }
 
 .tabButton {
@@ -189,23 +194,65 @@
     background-color: #e67e00;
 }
 
+/* ปรับปรุงช่องค้นหา */
 .searchBox {
-    width: 300px;
+    width: 280px; /* ลดความกว้างลงเล็กน้อย */
+    flex-shrink: 0; /* Prevent shrinking too much on smaller screens */
+    position: relative; /* For adding search icon */
+    margin-right: 5px; /* เพิ่มระยะห่างจากขอบขวา */
 }
 
 .searchBox input {
     width: 100%;
-    padding: 10px 15px;
+    padding: 10px 15px 10px 40px; /* Add left padding for icon */
     border: 1px solid #ddd;
     border-radius: 20px;
     font-size: 15px;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box; /* ทำให้ padding อยู่ภายในความกว้าง 100% */
 }
 
 .searchBox input:focus {
     border-color: #f8961e;
     box-shadow: 0 0 0 2px rgba(248, 150, 30, 0.2);
+}
+
+/* Add search icon */
+.searchBox::before {
+    content: "🔍";
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 16px;
+    pointer-events: none; /* Allow clicks to pass through to input */
+}
+
+/* ปุ่มล้างการค้นหา */
+.clearSearch {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.clearSearch:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #666;
 }
 
 .menuContainer {
@@ -280,7 +327,7 @@
 
 .placeholderImage {
     width: 100%;
-    height:.140px;
+    height: 140px;
     background-color: #f5f5f5;
     display: flex;
     align-items: center;
@@ -495,27 +542,30 @@
         flex-direction: column;
     }
 
+    .tabs {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 15px 10px 10px 10px;
+    }
+    
+    .tabControl {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    
     .searchBox {
-        width: 150px; /* ลดขนาดลงสำหรับหน้าจอเล็ก */
+        width: 100%; /* Full width on mobile */
+        max-width: none;
+        margin-right: 0;
     }
 
     .menuGrid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 15px;
-    }
-    
-    .tabs {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .tabControl {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-    
-    .searchBox {
-        width: 100%;
     }
     
     .menuItem img,
