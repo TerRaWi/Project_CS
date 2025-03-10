@@ -506,7 +506,7 @@ app.post('/api/order', (req, res) => {
       const orderDetails = items.map(item => [
         item.quantity,
         Number(item.price),
-        'P',  // เปลี่ยนจาก 'A' เป็น 'P' สำหรับสถานะ "กำลังทำ"
+        'P',
         orderId,
         item.id
       ]);
@@ -608,8 +608,8 @@ app.patch('/api/order-detail/:id/status', (req, res) => {
     return res.status(400).json({ error: 'ต้องระบุรหัสรายการอาหาร' });
   }
 
-  if (!['A', 'P', 'C', 'V'].includes(status)) {
-    return res.status(400).json({ error: 'สถานะไม่ถูกต้อง กรุณาระบุ A, P, C หรือ V' });
+  if (!['A', 'C', 'V'].includes(status)) {
+    return res.status(400).json({ error: 'สถานะไม่ถูกต้อง กรุณาระบุ A, C หรือ V' });
   }
 
   // ตรวจสอบว่าถ้าเป็นการยกเลิก (V) ต้องมีเหตุผลการยกเลิก
@@ -921,19 +921,19 @@ app.get('/api/order/:orderId/bill', async (req, res) => {
     // ดึงข้อมูลรายการอาหารทั้งหมดในออเดอร์
     const [orderItems] = await db.promise().query(
       `SELECT od.*, p.name as product_name
-       FROM order_detail od
-       JOIN product p ON od.product_id = p.id
-       WHERE od.order_id = ? AND od.status != 'V'
-       ORDER BY od.order_time`,
+        FROM order_detail od
+        JOIN product p ON od.product_id = p.id
+        WHERE od.order_id = ? AND od.status != 'V'
+        ORDER BY od.order_time`,
       [orderId]
     );
 
     // ดึงข้อมูลโต๊ะและเวลาเริ่มต้น
     const [orderInfo] = await db.promise().query(
       `SELECT o.*, dt.table_number 
-       FROM \`order\` o
-       JOIN dining_table dt ON o.table_id = dt.id
-       WHERE o.id = ?`,
+        FROM \`order\` o
+        JOIN dining_table dt ON o.table_id = dt.id
+        WHERE o.id = ?`,
       [orderId]
     );
 

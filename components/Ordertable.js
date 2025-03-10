@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import styles from "../styles/ordertable.module.css";
-import Ordermenu from "./OrderMenu";
+import Ordermenu from "./Ordermenu";
 import Billpayment from "./Billpayment";
 import { getOrdersByTable } from "../api";
 
-const OrderFood = ({ table, onClose, onPaymentSuccess }) => {
+const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
   const [showOrdermenu, setShowOrdermenu] = useState(false);
   const [showBillpayment, setShowBillpayment] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
@@ -130,4 +130,4 @@ const OrderFood = ({ table, onClose, onPaymentSuccess }) => {
   );
 };
 
-export default OrderFood;
+export default Ordertable;
