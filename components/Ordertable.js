@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import styles from "../styles/ordertable.module.css";
 import Ordermenu from "./Ordermenu";
 import Billpayment from "./Billpayment";
+import Tablemanage from "./Tablemanage";
 import { getOrdersByTable } from "../api";
 
 const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
   const [showOrdermenu, setShowOrdermenu] = useState(false);
   const [showBillpayment, setShowBillpayment] = useState(false);
+  const [showTablemanage, setShowTablemanage] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -79,6 +81,38 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
     setShowBillpayment(true);
   };
 
+  // จัดการเมื่อจัดการโต๊ะสำเร็จ
+  const handleTablemanageSuccess = (result) => {
+    console.log("Table management successful:", result); // เพิ่ม log
+    
+    // ปิด modal จัดการโต๊ะ
+    setShowTablemanage(false);
+    
+    // รีเฟรชข้อมูลหรือปิดหน้าต่าง
+    if (onClose) {
+      onClose();
+    }
+    
+    // แสดงข้อความสำเร็จตามประเภทการจัดการ
+    let message = "";
+    
+    switch (result.action) {
+      case 'move':
+        message = `ย้ายโต๊ะเรียบร้อยแล้ว`;
+        break;
+      case 'merge':
+        message = `รวมโต๊ะเรียบร้อยแล้ว`;
+        break;
+      case 'cancel':
+        message = `ยกเลิกโต๊ะเรียบร้อยแล้ว`;
+        break;
+      default:
+        message = `ดำเนินการเรียบร้อยแล้ว`;
+    }
+    
+    alert(message);
+  };
+
   return (
     <>
       <div className={styles.sidebar}>
@@ -106,7 +140,12 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
             >
               คิดเงิน
             </button>
-            <button className={styles.editButton}>แก้ไข</button>
+            <button 
+              className={styles.editButton}
+              onClick={() => setShowTablemanage(true)}
+            >
+              แก้ไข
+            </button>
           </div>
         )}
       </div>
@@ -124,6 +163,14 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
           tableNumber={table ? table.table_number : ""}
           onClose={() => setShowBillpayment(false)}
           onSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {showTablemanage && (
+        <Tablemanage
+          table={table}
+          onClose={() => setShowTablemanage(false)}
+          onSuccess={handleTablemanageSuccess}
         />
       )}
     </>
