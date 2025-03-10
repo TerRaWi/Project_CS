@@ -1290,20 +1290,14 @@ app.post('/api/tables/merge', async (req, res) => {
 });
 
 // ยกเลิกโต๊ะ (ยกเลิกออเดอร์และปิดโต๊ะ)
+// ยกเลิกโต๊ะ (ยกเลิกออเดอร์และปิดโต๊ะ)
 app.post('/api/tables/cancel', async (req, res) => {
-  const { tableId, reason } = req.body;
+  const { tableId } = req.body;
 
   if (!tableId) {
     return res.status(400).json({ 
       success: false, 
       message: 'กรุณาระบุรหัสโต๊ะ' 
-    });
-  }
-
-  if (!reason) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'กรุณาระบุเหตุผลในการยกเลิก' 
     });
   }
 
@@ -1327,30 +1321,19 @@ app.post('/api/tables/cancel', async (req, res) => {
 
     const orderId = activeOrders[0].id;
 
-    // 2. บันทึกเหตุผลการยกเลิก (สร้างตาราง cancellation_log ก่อนใช้งาน)
-    try {
-      await db.promise().query(
-        'INSERT INTO cancellation_log (order_id, reason, cancel_time) VALUES (?, ?, CURRENT_TIMESTAMP)',
-        [orderId, reason]
-      );
-    } catch (logError) {
-      // ถ้าไม่มีตาราง cancellation_log ก็ข้ามขั้นตอนนี้ไป
-      console.log('Cancellation log table does not exist, skipping log:', logError);
-    }
-
-    // 3. ยกเลิกรายการอาหารที่ยังไม่เสร็จทั้งหมด
+    // 2. ยกเลิกรายการอาหารที่ยังไม่เสร็จทั้งหมด
     await db.promise().query(
       'UPDATE order_detail SET status = "V" WHERE order_id = ? AND status IN ("A", "P")',
       [orderId]
     );
 
-    // 4. อัพเดทสถานะออเดอร์เป็นยกเลิก
+    // 3. อัพเดทสถานะออเดอร์เป็นยกเลิก
     await db.promise().query(
       'UPDATE `order` SET status = "X", end_time = CURRENT_TIMESTAMP WHERE id = ?',
       [orderId]
     );
 
-    // 5. อัพเดทสถานะโต๊ะเป็นว่าง
+    // 4. อัพเดทสถานะโต๊ะเป็นว่าง
     await db.promise().query(
       'UPDATE dining_table SET status_id = 1 WHERE id = ?',
       [tableId]
@@ -1363,8 +1346,7 @@ app.post('/api/tables/cancel', async (req, res) => {
       success: true,
       message: 'ยกเลิกโต๊ะสำเร็จ',
       tableId,
-      orderId,
-      reason
+      orderId
     });
 
   } catch (error) {

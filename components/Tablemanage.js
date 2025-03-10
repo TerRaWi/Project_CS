@@ -10,7 +10,6 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
     const [activeTab, setActiveTab] = useState("move"); // "move", "merge", "cancel"
     const [selectedTargetTable, setSelectedTargetTable] = useState(null);
     const [confirmationOpen, setConfirmationOpen] = useState(false);
-    const [cancelReason, setCancelReason] = useState("");
 
     // ดึงข้อมูลโต๊ะทั้งหมด
     useEffect(() => {
@@ -72,14 +71,9 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
 
     // จัดการการยกเลิกโต๊ะ
     const handleCancelTable = async () => {
-        if (!cancelReason) {
-            alert("กรุณาระบุเหตุผลในการยกเลิกโต๊ะ");
-            return;
-        }
-
         try {
             setIsLoading(true);
-            const result = await cancelTable(table.id, cancelReason);
+            const result = await cancelTable(table.id);
             
             // เรียกใช้ onTableUpdate สำหรับอัพเดตข้อมูลโต๊ะทันที
             if (onTableUpdate) {
@@ -90,7 +84,6 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
                 onSuccess({
                     action: 'cancel',
                     tableId: table.id,
-                    reason: cancelReason,
                     result: result,
                     timestamp: new Date().toISOString() // เพิ่มเวลาปัจจุบัน
                 });
@@ -284,16 +277,6 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
                             <div className={styles.cancelForm}>
                                 <h3>ยกเลิกโต๊ะ</h3>
                                 <p>การยกเลิกโต๊ะจะทำให้รายการอาหารทั้งหมดถูกยกเลิก</p>
-                                <div className={styles.formGroup}>
-                                    <label htmlFor="cancelReason">เหตุผลในการยกเลิก:</label>
-                                    <textarea
-                                        id="cancelReason"
-                                        value={cancelReason}
-                                        onChange={(e) => setCancelReason(e.target.value)}
-                                        placeholder="ระบุเหตุผลในการยกเลิกโต๊ะ"
-                                        rows={4}
-                                    />
-                                </div>
                             </div>
                         )}
 

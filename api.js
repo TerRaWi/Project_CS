@@ -544,11 +544,10 @@ export const mergeTable = async (sourceTableId, targetTableId) => {
 };
 
 // ยกเลิกโต๊ะ (ยกเลิกออเดอร์ทั้งหมดและปรับสถานะโต๊ะเป็นว่าง)
-export const cancelTable = async (tableId, reason) => {
+export const cancelTable = async (tableId) => {
   try {
     const { data } = await axios.post(`${API_URL}/tables/cancel`, {
-      tableId,
-      reason
+      tableId
     });
     return data;
   } catch (error) {
