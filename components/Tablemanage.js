@@ -179,13 +179,35 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
         }
     };
 
+    // ฟังก์ชันสำหรับจัดรูปแบบวันที่และเวลา
+    const formatDateTime = () => {
+        const now = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+        return now.toLocaleDateString('th-TH', options);
+    };
+
+    // ไอคอนสำหรับแต่ละแท็บ
+    const tabIcons = {
+        move: "↗️",
+        merge: "🔄",
+        cancel: "❌"
+    };
+
     return (
-        <div className={styles.modal}>
+        <div className={styles.modal} onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className={styles.modalContent}>
                 <div className={styles.header}>
                     <h2>จัดการโต๊ะ {table.table_number}</h2>
                     <button className={styles.closeButton} onClick={onClose}>
-                        X
+                        ×
                     </button>
                 </div>
 
@@ -194,24 +216,24 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
                         className={`${styles.tabButton} ${activeTab === "move" ? styles.active : ""}`}
                         onClick={() => handleTabChange("move")}
                     >
-                        ย้ายโต๊ะ
+                        {tabIcons.move} ย้ายโต๊ะ
                     </button>
                     <button
                         className={`${styles.tabButton} ${activeTab === "merge" ? styles.active : ""}`}
                         onClick={() => handleTabChange("merge")}
                     >
-                        รวมโต๊ะ
+                        {tabIcons.merge} รวมโต๊ะ
                     </button>
                     <button
                         className={`${styles.tabButton} ${activeTab === "cancel" ? styles.active : ""}`}
                         onClick={() => handleTabChange("cancel")}
                     >
-                        ยกเลิกโต๊ะ
+                        {tabIcons.cancel} ยกเลิกโต๊ะ
                     </button>
                 </div>
 
-                {isLoading ? (
-                    <div className={styles.loading}>กำลังโหลด...</div>
+                {isLoading && !confirmationOpen ? (
+                    <div className={styles.loading}>กำลังโหลดข้อมูล...</div>
                 ) : error ? (
                     <div className={styles.error}>{error}</div>
                 ) : (
@@ -263,8 +285,9 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
                                 <h3>ยกเลิกโต๊ะ</h3>
                                 <p>การยกเลิกโต๊ะจะทำให้รายการอาหารทั้งหมดถูกยกเลิก</p>
                                 <div className={styles.formGroup}>
-                                    <label>เหตุผลในการยกเลิก:</label>
+                                    <label htmlFor="cancelReason">เหตุผลในการยกเลิก:</label>
                                     <textarea
+                                        id="cancelReason"
                                         value={cancelReason}
                                         onChange={(e) => setCancelReason(e.target.value)}
                                         placeholder="ระบุเหตุผลในการยกเลิกโต๊ะ"
@@ -281,7 +304,7 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
                                     onClick={handleShowConfirmation}
                                     disabled={(activeTab !== "cancel" && !selectedTargetTable) || isLoading}
                                 >
-                                    ดำเนินการต่อ
+                                    {isLoading ? "กำลังดำเนินการ..." : "ดำเนินการต่อ"}
                                 </button>
                                 <button
                                     className={styles.cancelButton}
@@ -294,7 +317,7 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
                             <div className={styles.confirmation}>
                                 <h3>ยืนยันการดำเนินการ</h3>
                                 <div className={styles.timestamp}>
-                                    <p>เวลาปัจจุบัน: {new Date().toLocaleString('th-TH')}</p>
+                                    <p>เวลาปัจจุบัน: {formatDateTime()}</p>
                                 </div>
                                 {activeTab === "move" && (
                                     <p>ยืนยันการย้ายจากโต๊ะ {table.table_number} ไปยังโต๊ะ {selectedTargetTable.table_number}?</p>
@@ -307,7 +330,7 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
                                 )}
                                 <div className={styles.actions}>
                                     <button
-                                        className={styles.confirmButton}
+                                        className={`${styles.confirmButton} ${isLoading ? styles.loading : ""}`}
                                         onClick={handleConfirm}
                                         disabled={isLoading}
                                     >
