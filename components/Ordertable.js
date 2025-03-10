@@ -88,7 +88,16 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
     // ปิด modal จัดการโต๊ะ
     setShowTablemanage(false);
     
-    // รีเฟรชข้อมูลหรือปิดหน้าต่าง
+    // แจ้ง component หลักว่ามีการเปลี่ยนแปลงโต๊ะ (ใช้ onPaymentSuccess เพื่อทำให้ parent component รีเฟรชข้อมูล)
+    if (onPaymentSuccess) {
+      onPaymentSuccess({
+        action: result.action,
+        tableId: table.id,
+        // เพิ่มข้อมูลอื่นๆ ตามต้องการ
+      });
+    }
+    
+    // ปิดหน้าต่าง Ordertable เนื่องจากโต๊ะอาจถูกย้ายหรือยกเลิกไปแล้ว
     if (onClose) {
       onClose();
     }
@@ -171,6 +180,12 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
           table={table}
           onClose={() => setShowTablemanage(false)}
           onSuccess={handleTablemanageSuccess}
+          onTableUpdate={() => {
+            // ให้ parent component อัพเดตข้อมูลโต๊ะ
+            if (onPaymentSuccess) {
+              onPaymentSuccess({ action: 'refreshTables' });
+            }
+          }}
         />
       )}
     </>

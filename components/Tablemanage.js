@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "../styles/tablemanage.module.css";
 import { getTables, getOrdersByTable, cancelTable, mergeTable, moveTable } from "../api";
 
-const Tablemanage = ({ table, onClose, onSuccess }) => {
+const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
     const [availableTables, setAvailableTables] = useState([]);
     const [occupiedTables, setOccupiedTables] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -79,12 +79,20 @@ const Tablemanage = ({ table, onClose, onSuccess }) => {
 
         try {
             setIsLoading(true);
-            await cancelTable(table.id, cancelReason);
+            const result = await cancelTable(table.id, cancelReason);
+            
+            // เรียกใช้ onTableUpdate สำหรับอัพเดตข้อมูลโต๊ะทันที
+            if (onTableUpdate) {
+                onTableUpdate();
+            }
+
             if (onSuccess) {
                 onSuccess({
                     action: 'cancel',
                     tableId: table.id,
-                    reason: cancelReason
+                    reason: cancelReason,
+                    result: result,
+                    timestamp: new Date().toISOString() // เพิ่มเวลาปัจจุบัน
                 });
             }
             onClose();
@@ -100,12 +108,20 @@ const Tablemanage = ({ table, onClose, onSuccess }) => {
     const handleMoveTable = async () => {
         try {
             setIsLoading(true);
-            await moveTable(table.id, selectedTargetTable.id);
+            const result = await moveTable(table.id, selectedTargetTable.id);
+            
+            // เรียกใช้ onTableUpdate สำหรับอัพเดตข้อมูลโต๊ะทันที
+            if (onTableUpdate) {
+                onTableUpdate();
+            }
+
             if (onSuccess) {
                 onSuccess({
                     action: 'move',
                     sourceTableId: table.id,
-                    targetTableId: selectedTargetTable.id
+                    targetTableId: selectedTargetTable.id,
+                    result: result,
+                    timestamp: new Date().toISOString() // เพิ่มเวลาปัจจุบัน
                 });
             }
             onClose();
@@ -121,12 +137,20 @@ const Tablemanage = ({ table, onClose, onSuccess }) => {
     const handleMergeTable = async () => {
         try {
             setIsLoading(true);
-            await mergeTable(table.id, selectedTargetTable.id);
+            const result = await mergeTable(table.id, selectedTargetTable.id);
+            
+            // เรียกใช้ onTableUpdate สำหรับอัพเดตข้อมูลโต๊ะทันที
+            if (onTableUpdate) {
+                onTableUpdate();
+            }
+
             if (onSuccess) {
                 onSuccess({
                     action: 'merge',
                     sourceTableId: table.id,
-                    targetTableId: selectedTargetTable.id
+                    targetTableId: selectedTargetTable.id,
+                    result: result,
+                    timestamp: new Date().toISOString() // เพิ่มเวลาปัจจุบัน
                 });
             }
             onClose();
@@ -269,6 +293,9 @@ const Tablemanage = ({ table, onClose, onSuccess }) => {
                         ) : (
                             <div className={styles.confirmation}>
                                 <h3>ยืนยันการดำเนินการ</h3>
+                                <div className={styles.timestamp}>
+                                    <p>เวลาปัจจุบัน: {new Date().toLocaleString('th-TH')}</p>
+                                </div>
                                 {activeTab === "move" && (
                                     <p>ยืนยันการย้ายจากโต๊ะ {table.table_number} ไปยังโต๊ะ {selectedTargetTable.table_number}?</p>
                                 )}

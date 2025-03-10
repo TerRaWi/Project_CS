@@ -54,10 +54,20 @@ const Tables = () => {
     fetchTables();
   };
 
-  // Handler สำหรับเมื่อชำระเงินสำเร็จ
-  const handleBillPaymentSuccess = () => {
-    setOrderTable(null); // ปิด modal การสั่งอาหาร
-    setIsBillProcessed(true); // กำหนดให้รีเฟรชข้อมูลโต๊ะ
+  // Handler สำหรับเมื่อชำระเงินสำเร็จ หรือมีการจัดการโต๊ะ
+  const handleBillPaymentSuccess = (result) => {
+    console.log("Payment or table action success:", result);
+    
+    // ปิด modal การสั่งอาหาร
+    setOrderTable(null);
+    
+    // เรียกให้รีเฟรชข้อมูลโต๊ะทันที
+    fetchTables();
+    
+    // สำหรับกรณีชำระเงิน
+    if (result && result.totalAmount) {
+      setIsBillProcessed(true);
+    }
   };
 
   const getTableImage = (statusId) => {
