@@ -824,10 +824,10 @@ app.delete('/api/category/:id', (req, res) => {
  * ============================
  */
 
-// คิดเงินและปิดโต๊ะ
+// คิดเงินและปิดโต๊ะ (อัพเดต)
 app.post('/api/checkout/:orderId', async (req, res) => {
   const orderId = req.params.orderId;
-  const { paymentMethod } = req.body; // เช่น เงินสด, โอนเงิน, บัตรเครดิต
+  const { paymentMethod } = req.body; // เราจะยังคงรับ parameter นี้ไว้ แต่ไม่จำเป็นต้องส่งมา
 
   try {
     // เริ่ม transaction
@@ -881,12 +881,12 @@ app.post('/api/checkout/:orderId', async (req, res) => {
       [tableId]
     );
 
-    // 6. บันทึกข้อมูลการชำระเงิน
+    // 6. บันทึกข้อมูลการชำระเงิน (กำหนดสถานะเป็น Success เสมอ)
     await db.promise().query(
       `INSERT INTO payment 
         (order_id, amount, payment_method, payment_date, status) 
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP, 'S')`,
-      [orderId, totalAmount, paymentMethod]
+        VALUES (?, ?, 'ชำระแล้ว', CURRENT_TIMESTAMP, 'S')`,
+      [orderId, totalAmount]
     );
 
     // 7. บันทึก transaction

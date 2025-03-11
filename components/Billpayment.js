@@ -9,21 +9,20 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     const [bill, setBill] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [paymentMethod, setPaymentMethod] = useState("cash");
-    const [showConfirm, setShowConfirm] = useState(false);
     const [showAddFood, setShowAddFood] = useState(false);
     const [processingItems, setProcessingItems] = useState(0);
     const [completedItems, setCompletedItems] = useState(0);
     const [processingTotal, setProcessingTotal] = useState(0);
     const [completedTotal, setCompletedTotal] = useState(0);
     const [qrCodeURL, setQrCodeURL] = useState(null);
-    const [showQRCode, setShowQRCode] = useState(false);
     const [promptPayNumber, setPromptPayNumber] = useState("0123456789");
     const qrCanvasRef = useRef(null);
     const [cancelReasons, setCancelReasons] = useState([]);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [selectedCancelReasonId, setSelectedCancelReasonId] = useState(null);
     const [itemToCancel, setItemToCancel] = useState(null);
+    const [showPrintReceipt, setShowPrintReceipt] = useState(false);
+    const [receiptData, setReceiptData] = useState(null);
 
     // ดึงข้อมูลบิล
     const fetchBill = async () => {
@@ -52,6 +51,11 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
             setCompletedItems(cItems);
             setProcessingTotal(pTotal);
             setCompletedTotal(cTotal);
+
+            // สร้าง QR Code สำหรับ PromptPay หลังจากได้ข้อมูลบิล
+            if (data.totalAmount > 0) {
+                await generateQRCodeWithLogo(data.totalAmount);
+            }
 
             setError(null);
         } catch (err) {
@@ -124,7 +128,6 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
             // 8. แปลง canvas เป็น data URL
             const finalQRCode = canvas.toDataURL();
             setQrCodeURL(finalQRCode);
-            setShowQRCode(true);
         } catch (err) {
             console.error("Error generating QR code with logo:", err);
             setError("เกิดข้อผิดพลาดในการสร้าง QR Code");
@@ -169,7 +172,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     useEffect(() => {
         const billContainer = document.querySelector(`.${styles.billContainer}`);
 
-        if (showAddFood || showConfirm || showQRCode) {
+        if (showAddFood || showPrintReceipt) {
             // ถ้ามี modal ใดๆ เปิดอยู่ ให้หยุดการทำงานของ billContainer
             if (billContainer) {
                 billContainer.style.overflow = 'hidden';
@@ -184,7 +187,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                 billContainer.classList.remove(styles.disabled);
             }
         }
-    }, [showAddFood, showConfirm, showQRCode, styles.billContainer, styles.disabled]);
+    }, [showAddFood, showPrintReceipt, styles.billContainer, styles.disabled]);
 
     useEffect(() => {
         const loadCancelReasons = async () => {
@@ -199,18 +202,16 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         loadCancelReasons();
     }, []);
 
-    // ฟังก์ชันเริ่มกระบวนการชำระเงินเมื่อกดปุ่ม "ชำระเงิน"
-    const handleStartPayment = async () => {
-        // ตรวจสอบว่ามีรายการที่กำลังทำอยู่หรือไม่
-        if (processingItems > 0) {
-            if (!window.confirm(`มีรายการอาหารที่ยังอยู่ในสถานะ "กำลังทำ" จำนวน ${processingItems} รายการ (${formatCurrency(processingTotal)} บาท) ระบบจะเปลี่ยนเป็นสถานะ "เสร็จแล้ว"  ต้องการดำเนินการต่อหรือไม่?`)) {
-                return;
-            }
+    const handlePrintReceipt = async () => {
+        try {
+            // ตรวจสอบรายการที่กำลังทำอยู่
+            if (processingItems > 0) {
+                if (!window.confirm(`มีรายการอาหารที่ยังอยู่ในสถานะ "กำลังทำ" จำนวน ${processingItems} รายการ (${formatCurrency(processingTotal)} บาท) ระบบจะเปลี่ยนเป็นสถานะ "เสร็จแล้ว" ต้องการดำเนินการต่อหรือไม่?`)) {
+                    return;
+                }
 
-            // อัพเดทสถานะรายการที่กำลังทำให้เป็นเสร็จสิ้น
-            try {
+                // อัพเดทสถานะรายการที่กำลังทำให้เป็นเสร็จสิ้น
                 setIsLoading(true);
-                // ทำการอัพเดทสถานะทีละรายการ
                 for (const item of bill.items) {
                     if (item.status === 'P') {
                         await updateOrderDetailStatus(item.id, 'C');
@@ -218,42 +219,312 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                 }
                 // รีโหลดข้อมูลบิลหลังจากอัพเดทสถานะ
                 await fetchBill();
-                setIsLoading(false);
-            } catch (err) {
-                setError(err.message || "เกิดข้อผิดพลาดในการอัพเดทสถานะรายการ");
-                setIsLoading(false);
-                handleCloseConfirm();
-                return;
             }
-        }
 
-        // เปิดหน้าจอ QR Code ถ้าผู้ใช้เลือกชำระด้วย PromptPay
-        if (paymentMethod === "promptpay") {
-            setShowConfirm(false);
-            await generateQRCodeWithLogo(bill.totalAmount); // เรียกใช้ฟังก์ชันสร้าง QR Code พร้อมโลโก้
-        } else {
-            // ถ้าเป็นวิธีการชำระเงินอื่น ให้ดำเนินการตามปกติ
-            handleCheckout();
+            // สร้าง QR Code ถ้ายังไม่มี
+            if (!qrCodeURL && bill.totalAmount > 0) {
+                await generateQRCodeWithLogo(bill.totalAmount);
+            }
+
+            setIsLoading(true);
+
+            // *** สำคัญ: ทำการ checkout ก่อน ***
+            const result = await checkout(orderId, "");
+
+            if (!result.success) {
+                throw new Error(result.message || "การชำระเงินไม่สำเร็จ");
+            }
+
+            // เพิ่มบรรทัดเหล่านี้: ตั้งค่า receiptData และแสดง Modal
+            setReceiptData({
+                receiptNumber: orderId,
+                orderDate: new Date().toLocaleString('th-TH')
+            });
+            setShowPrintReceipt(true);
+
+            // จากนั้นค่อยสร้างหน้าแสดงใบเสร็จและปุ่มพิมพ์
+            const receiptWindow = window.open('', '_blank');
+
+            // เตรียมข้อมูลรายการสินค้าสำหรับแสดงในใบเสร็จ
+            const itemsHtml = bill.items
+                .filter(item => item.status !== 'V')
+                .map(item => `
+                    <tr>
+                        <td>${item.productName}</td>
+                        <td style="text-align: center">${item.quantity}</td>
+                        <td style="text-align: right">${formatCurrency(item.amount)}</td>
+                    </tr>
+                `).join('');
+
+            // สร้าง HTML สำหรับใบเสร็จที่ง่ายและเสถียร
+            receiptWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>ใบเสร็จรับเงิน</title>
+                    <style>
+                        body {
+                            font-family: 'Angsana New', 'TH SarabunPSK', 'Tahoma', sans-serif;
+                            padding: 20px;
+                            max-width: 400px;
+                            margin: 0 auto;
+                            line-height: 1.3;
+                        }
+                        
+                        .receipt-header {
+                            text-align: center;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .receipt-header h2 {
+                            margin: 5px 0;
+                            font-size: 20px;
+                        }
+                        
+                        .receipt-header p {
+                            margin: 3px 0;
+                            font-size: 16px;
+                        }
+                        
+                        .divider {
+                            border-top: 1px dashed #999;
+                            margin: 10px 0;
+                        }
+                        
+                        .receipt-info {
+                            margin: 10px 0;
+                        }
+                        
+                        .receipt-info p {
+                            margin: 3px 0;
+                        }
+                        
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 10px 0;
+                        }
+                        
+                        th, td {
+                            padding: 5px;
+                            text-align: left;
+                        }
+                        
+                        .total-section {
+                            font-weight: bold;
+                            margin: 10px 0;
+                        }
+                        
+                        .total-row {
+                            display: flex;
+                            justify-content: space-between;
+                        }
+                        
+                        .qr-section {
+                            text-align: center;
+                            margin: 15px 0;
+                        }
+                        
+                        .qr-section img {
+                            max-width: 150px;
+                            margin: 10px auto;
+                            display: block;
+                        }
+                        
+                        .footer {
+                            text-align: center;
+                            margin-top: 15px;
+                        }
+                        
+                        @media print {
+                            #print-button {
+                                display: none;
+                            }
+                        }
+                        
+                        #print-button {
+                            display: block;
+                            margin: 20px auto;
+                            padding: 10px 20px;
+                            background-color: #4CAF50;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 16px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt-header">
+                        <h2>ร้านอาหาร Fast Shabu</h2>
+                        <p> 122/3 หมู่ 20 ต.นิคม อ.สตึก จ.บุรีรัมย์</p>
+                        <p>ร้านเปิดบริการ 11.00-21.30 น.</p> 
+                        <p>โทร: 082-2502628</p>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="receipt-info">
+                        <p><strong>โต๊ะ:</strong> ${tableNumber || bill.tableNumber}</p>
+                        <p><strong>วันที่:</strong> ${new Date().toLocaleString('th-TH')}</p>
+                        <p><strong>เลขที่ใบเสร็จ:</strong> ${orderId}</p>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <table>
+                        <tr>
+                            <th>รายการ</th>
+                            <th style="text-align: center">จำนวน</th>
+                            <th style="text-align: right">ราคา</th>
+                        </tr>
+                        ${itemsHtml}
+                    </table>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="total-section">
+                        <div class="total-row">
+                            <span>ยอดรวมทั้งสิ้น:</span>
+                            <span>${formatCurrency(bill.totalAmount)} บาท</span>
+                        </div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="qr-section">
+                        <p>ชำระด้วย PromptPay</p>
+                        <p>หมายเลข: ${promptPayNumber}</p>
+                        <img src="${qrCodeURL}" alt="PromptPay QR Code">
+                        <p>จำนวนเงิน: ${formatCurrency(bill.totalAmount)} บาท</p>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="footer">
+                        <p>ขอบคุณที่ใช้บริการ</p>
+                        <p>Fast Shabu - สวรรค์ของคนรักชาบู</p>
+                    </div>
+                    
+                    <button id="print-button" onclick="window.print()">พิมพ์ใบเสร็จ</button>
+                    
+                    <script>
+                        // เพิ่มฟังก์ชันพิมพ์อัตโนมัติเมื่อโหลดเสร็จ หรือให้ผู้ใช้กดปุ่มพิมพ์เอง
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // ถ้าต้องการพิมพ์อัตโนมัติ ให้เปิดบรรทัดนี้
+                            // window.print();
+                        });
+                    </script>
+                </body>
+                </html>
+            `);
+
+            receiptWindow.document.close();
+
+            // เรียก onSuccess เมื่อชำระเงินสำเร็จ
+            if (onSuccess) {
+                onSuccess(result);
+            }
+
+            setIsLoading(false);
+        } catch (err) {
+            setError(err.message || "เกิดข้อผิดพลาดในการชำระเงิน");
+            setIsLoading(false);
         }
     };
 
-    // ฟังก์ชันชำระเงิน (หลังจากตรวจสอบรายการที่กำลังทำแล้ว)
-    const handleCheckout = async () => {
-        try {
-            setIsLoading(true);
-            const result = await checkout(orderId, paymentMethod);
-            if (result.success) {
-                if (onSuccess) {
-                    onSuccess(result);
-                }
-            }
-        } catch (err) {
-            setError(err.message || "เกิดข้อผิดพลาดในการชำระเงิน");
-        } finally {
-            setIsLoading(false);
-            handleCloseConfirm();
-            setShowQRCode(false);
-        }
+    // ใส่ฟังก์ชันนี้แทนฟังก์ชัน handlePrint เดิมในไฟล์ Billpayment.js
+    const handlePrint = () => {
+        // เปิดหน้าต่างใหม่เพื่อพิมพ์
+        const printWindow = window.open('', '_blank');
+
+        // ดึงเนื้อหาใบเสร็จ
+        const receiptContent = document.getElementById('receipt-to-print');
+
+        // สร้าง HTML สำหรับการพิมพ์
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>ใบเสร็จรับเงิน Fast Shabu</title>
+                <style>
+                    body { 
+                        font-family: sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    
+                    .receipt-header {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    
+                    .receipt-header h2 {
+                        margin-bottom: 5px;
+                    }
+                    
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    
+                    th, td {
+                        padding: 8px;
+                        text-align: left;
+                        border-bottom: 1px solid #ddd;
+                    }
+                    
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                    
+                    .text-right {
+                        text-align: right;
+                    }
+                    
+                    .text-center {
+                        text-align: center;
+                    }
+                    
+                    .total {
+                        font-weight: bold;
+                    }
+                    
+                    .qr-container {
+                        display: flex;
+                        justify-content: space-between;
+                        margin: 20px 0;
+                        padding: 15px;
+                        border: 1px dashed #ccc;
+                        border-radius: 8px;
+                    }
+                    
+                    .footer {
+                        text-align: center;
+                        margin-top: 20px;
+                    }
+                </style>
+            </head>
+            <body>
+                ${receiptContent ? receiptContent.innerHTML : '<p>ไม่พบข้อมูลใบเสร็จ</p>'}
+            </body>
+            </html>
+        `);
+
+        // ปิด document
+        printWindow.document.close();
+
+        // รอให้ทรัพยากรโหลดเสร็จและพิมพ์
+        printWindow.onload = function () {
+            // ทำการพิมพ์
+            printWindow.focus();
+            printWindow.print();
+
+            // ผู้ใช้สามารถปิดหน้าต่างได้เอง หรือจะให้ปิดอัตโนมัติหลังพิมพ์ โดยเพิ่มบรรทัดนี้:
+            // printWindow.close();
+        };
     };
 
     // ฟังก์ชันลบรายการ
@@ -305,47 +576,9 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         setShowAddFood(false);
     };
 
-    // ฟังก์ชันเปิด modal ยืนยันการชำระเงิน
-    const handleOpenConfirm = () => {
-        setShowConfirm(true);
-
-        // หยุดการเลื่อนของ billContainer
-        const billContainer = document.querySelector(`.${styles.billContainer}`);
-        if (billContainer) {
-            billContainer.style.overflow = 'hidden';
-            billContainer.style.pointerEvents = 'none';
-            billContainer.classList.add(styles.disabled);
-        }
-    };
-
-    // ฟังก์ชันปิด modal ยืนยันการชำระเงิน
-    const handleCloseConfirm = () => {
-        setShowConfirm(false);
-
-        // คืนค่าการเลื่อนของ billContainer ถ้าไม่มี modal อื่นเปิดอยู่
-        if (!showAddFood && !showQRCode) {
-            const billContainer = document.querySelector(`.${styles.billContainer}`);
-            if (billContainer) {
-                billContainer.style.overflow = 'auto';
-                billContainer.style.pointerEvents = 'auto';
-                billContainer.classList.remove(styles.disabled);
-            }
-        }
-    };
-
-    // ฟังก์ชันปิด modal QR Code
-    const handleCloseQRCode = () => {
-        setShowQRCode(false);
-
-        // คืนค่าการเลื่อนของ billContainer ถ้าไม่มี modal อื่นเปิดอยู่
-        if (!showAddFood && !showConfirm) {
-            const billContainer = document.querySelector(`.${styles.billContainer}`);
-            if (billContainer) {
-                billContainer.style.overflow = 'auto';
-                billContainer.style.pointerEvents = 'auto';
-                billContainer.classList.remove(styles.disabled);
-            }
-        }
+    // ฟังก์ชันปิด modal ใบเสร็จ
+    const handleClosePrintReceipt = () => {
+        setShowPrintReceipt(false);
     };
 
     // ฟังก์ชันสำหรับดาวน์โหลด QR Code
@@ -357,24 +590,6 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        }
-    };
-
-    // ฟังก์ชันยืนยันการชำระเงินด้วย PromptPay
-    const handlePromptPayConfirm = async () => {
-        try {
-            setIsLoading(true);
-            const result = await checkout(orderId, 'promptpay');
-            setShowQRCode(false);
-            if (result.success) {
-                if (onSuccess) {
-                    onSuccess(result);
-                }
-            }
-        } catch (err) {
-            setError(err.message || "เกิดข้อผิดพลาดในการชำระเงิน");
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -507,7 +722,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                                                         e.stopPropagation();
                                                         handleRemoveItem(item.id);
                                                     }}
-                                                    disabled={isLoading || showAddFood || showConfirm}
+                                                    disabled={isLoading || showAddFood}
                                                 >
                                                     ลบ
                                                 </button>
@@ -533,131 +748,103 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                     )}
 
                     {bill.status !== "C" && (
-                        <div className={styles.paymentSection}>
-                            <h3>เลือกวิธีชำระเงิน</h3>
-                            <div className={styles.paymentMethods}>
-                                <div className={styles.paymentMethodItem}>
-                                    <input
-                                        id="cash"
-                                        type="radio"
-                                        value="cash"
-                                        checked={paymentMethod === "cash"}
-                                        onChange={() => setPaymentMethod("cash")}
-                                        disabled={showAddFood || showConfirm || showQRCode}
-                                    />
-                                    <label htmlFor="cash">เงินสด</label>
-                                </div>
-                                <div className={styles.paymentMethodItem}>
-                                    <input
-                                        id="transfer"
-                                        type="radio"
-                                        value="transfer"
-                                        checked={paymentMethod === "transfer"}
-                                        onChange={() => setPaymentMethod("transfer")}
-                                        disabled={showAddFood || showConfirm || showQRCode}
-                                    />
-                                    <label htmlFor="transfer">โอนเงิน</label>
-                                </div>
-                                <div className={styles.paymentMethodItem}>
-                                    <input
-                                        id="promptpay"
-                                        type="radio"
-                                        value="promptpay"
-                                        checked={paymentMethod === "promptpay"}
-                                        onChange={() => setPaymentMethod("promptpay")}
-                                        disabled={showAddFood || showConfirm || showQRCode}
-                                    />
-                                    <label htmlFor="promptpay">พร้อมเพย์ QR</label>
-                                </div>
-                            </div>
-
-                            <div className={styles.actionButtons}>
-                                <button
-                                    className={styles.payButton}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenConfirm();
-                                    }}
-                                    disabled={isLoading || showAddFood || showConfirm || showQRCode}
-                                >
-                                    ชำระเงิน
-                                </button>
-                                <button
-                                    className={styles.cancelButton}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleClose();
-                                    }}
-                                    disabled={showAddFood || showConfirm || showQRCode}
-                                >
-                                    ยกเลิก
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Modal ยืนยันการชำระเงิน */}
-            {showConfirm && (
-                <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.confirmContent} onClick={handleModalClick}>
-                        <h3>ยืนยันการชำระเงิน</h3>
-                        {processingItems > 0 && (
-                            <div className={styles.confirmWarning}>
-                                <p>⚠️ มีรายการอาหารที่ยังอยู่ในสถานะ "กำลังทำ" จำนวน {processingItems} รายการ</p>
-                                <p className={styles.smallNote}>รายการเหล่านี้จะถูกเปลี่ยนเป็นสถานะ "เสร็จแล้ว" </p>
-                            </div>
-                        )}
-                        <p>
-                            คุณต้องการชำระเงินจำนวน <strong>{formatCurrency(bill.totalAmount)} บาท</strong>
-                            <br />ด้วย<strong>
-                                {paymentMethod === "cash" ? "เงินสด" :
-                                    paymentMethod === "transfer" ? "การโอนเงิน" :
-                                        "พร้อมเพย์"}</strong> ใช่หรือไม่?
-                        </p>
-                        <div className={styles.confirmButtons}>
+                        <div className={styles.actionButtons}>
                             <button
-                                className={styles.confirmButton}
+                                className={styles.payButton}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    handleStartPayment(); // เปลี่ยนเป็นเรียกใช้ handleStartPayment แทน
+                                    handlePrintReceipt();
                                 }}
-                                disabled={isLoading}
+                                disabled={isLoading || showAddFood || showPrintReceipt}
                             >
-                                ยืนยัน
+                                พิมพ์ใบเสร็จ
                             </button>
                             <button
                                 className={styles.cancelButton}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    handleCloseConfirm();
+                                    handleClose();
                                 }}
-                                disabled={isLoading}
+                                disabled={showAddFood || showPrintReceipt}
                             >
                                 ยกเลิก
                             </button>
                         </div>
-                    </div>
+                    )}
                 </div>
-            )}
-            {/* Modal แสดง QR Code สำหรับ PromptPay */}
-            {showQRCode && (
+            </div>
+
+            {/* Modal ใบเสร็จรับเงิน */}
+            {showPrintReceipt && (
                 <div className={styles.qrCodeModal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.qrCodeContent} onClick={handleModalClick}>
-                        <h3>QR Code พร้อมเพย์</h3>
-                        <p>จำนวนเงิน: <strong>{formatCurrency(bill.totalAmount)} บาท</strong></p>
-                        <p>PromptPay: {promptPayNumber}</p>
-                        <div className={styles.qrCodeContainer}>
-                            {qrCodeURL && (
-                                <img
-                                    src={qrCodeURL}
-                                    alt="PromptPay QR Code"
-                                    className={styles.qrCodeImage}
-                                />
-                            )}
+                    <div className={styles.qrCodeContent} onClick={handleModalClick} style={{ maxWidth: '600px' }}>
+                        <h3>ใบเสร็จรับเงิน</h3>
+
+                        <div className={styles.receiptContent} id="receipt-to-print">
+                            <div className={styles.receiptHeader}>
+                                <h2>ร้านอาหาร Fast Shabu</h2>
+                                <p>122/3 หมู่ 20 ต.นิคม อ.สตึก จ.บุรีรัมย์</p>
+                                <p>ร้านเปิดบริการ 11.00-21.30 น.</p>
+                                <p>โทร: 082-2502628</p>
+                            </div>
+
+                            <div className={styles.receiptInfo}>
+                                <p><strong>เลขที่ใบเสร็จ:</strong> {receiptData.receiptNumber}</p>
+                                <p><strong>วันที่:</strong> {receiptData.orderDate}</p>
+                                <p><strong>โต๊ะ:</strong> {tableNumber || bill.tableNumber}</p>
+                            </div>
+
+                            <table className={styles.receiptTable}>
+                                <thead>
+                                    <tr>
+                                        <th>รายการ</th>
+                                        <th>จำนวน</th>
+                                        <th>ราคา/หน่วย</th>
+                                        <th>รวม</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bill.items.filter(item => item.status !== 'V').map((item) => (
+                                        <tr key={item.id}>
+                                            <td>{item.productName}</td>
+                                            <td className={styles.textCenter}>{item.quantity}</td>
+                                            <td className={styles.textRight}>{formatCurrency(item.unitPrice)}</td>
+                                            <td className={styles.textRight}>{formatCurrency(item.amount)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colSpan="3" className={styles.textRight}>ยอดรวมทั้งสิ้น:</th>
+                                        <th className={styles.textRight}>{formatCurrency(bill.totalAmount)} บาท</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+
+                            <div className={styles.qrContainer}>
+                                <div className={styles.qrInfo}>
+                                    <h3>ชำระด้วย PromptPay</h3>
+                                    <p>หมายเลข: {promptPayNumber}</p>
+                                    <p>จำนวนเงิน: {formatCurrency(bill.totalAmount)} บาท</p>
+                                </div>
+                                <div className={styles.qrImage}>
+                                    {qrCodeURL && <img src={qrCodeURL} alt="PromptPay QR Code" width="200" />}
+                                </div>
+                            </div>
+
+                            <div className={styles.receiptFooter}>
+                                <p>ขอบคุณที่ใช้บริการ</p>
+                                <p>Fast Shabu - สวรรค์ของคนรักชาบู</p>
+                            </div>
                         </div>
-                        <div className={styles.qrCodeButtons}>
+
+                        <div className={styles.receiptButtons}>
+                            <button
+                                className={styles.confirmButton}
+                                onClick={handlePrint}
+                            >
+                                พิมพ์
+                            </button>
                             <button
                                 className={styles.downloadButton}
                                 onClick={handleDownloadQRCode}
@@ -666,18 +853,10 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                                 ดาวน์โหลด QR Code
                             </button>
                             <button
-                                className={styles.confirmButton}
-                                onClick={handlePromptPayConfirm}
-                                disabled={isLoading}
-                            >
-                                ชำระเงินเรียบร้อย
-                            </button>
-                            <button
                                 className={styles.cancelButton}
-                                onClick={handleCloseQRCode}
-                                disabled={isLoading}
+                                onClick={handleClosePrintReceipt}
                             >
-                                ยกเลิก
+                                ปิด
                             </button>
                         </div>
                     </div>
@@ -692,6 +871,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                     onItemAdded={handleItemAdded}
                 />
             )}
+
             {/* Modal เลือกเหตุผลในการยกเลิกรายการ */}
             {showCancelDialog && (
                 <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
