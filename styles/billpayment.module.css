@@ -1,7 +1,7 @@
 /* ==========================================
    ส่วนของ Bill Container และพื้นหลัง
    ========================================== */
-   .billContainer {
+.billContainer {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -30,7 +30,8 @@
     backdrop-filter: blur(4px);
     z-index: 999;
     animation: fadeIn 0.3s;
-    overflow: hidden; /* Prevent scrolling within the overlay */
+    overflow: hidden;
+    /* Prevent scrolling within the overlay */
 }
 
 /* ==========================================
@@ -518,7 +519,7 @@
 /* ==========================================
    ส่วนของหน้ายืนยันการชำระเงิน (Confirm Modal)
    ========================================== */
-   .confirmModal {
+.confirmModal {
     position: fixed;
     top: 0;
     left: 0;
@@ -528,10 +529,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1500; /* เพิ่ม z-index ให้สูงกว่า billContainer */
+    z-index: 1500;
+    /* เพิ่ม z-index ให้สูงกว่า billContainer */
     animation: fadeIn 0.3s;
     backdrop-filter: blur(4px);
-    overflow: hidden; /* ป้องกันการเลื่อน */
+    overflow: hidden;
+    /* ป้องกันการเลื่อน */
 }
 
 .confirmContent {
@@ -546,7 +549,8 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    position: relative; /* เพิ่ม position relative */
+    position: relative;
+    /* เพิ่ม position relative */
 }
 
 .confirmContent h3 {
@@ -568,8 +572,10 @@
     justify-content: center;
     gap: 24px;
     margin-top: 30px;
-    position: relative; /* เพิ่ม position relative */
-    z-index: 1600; /* เพิ่ม z-index ให้สูง */
+    position: relative;
+    /* เพิ่ม position relative */
+    z-index: 1600;
+    /* เพิ่ม z-index ให้สูง */
 }
 
 /* ==========================================
@@ -634,6 +640,136 @@
 }
 
 /* ==========================================
+   QR Code Modal Styles
+   ========================================== */
+.qrCodeModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1500;
+    animation: fadeIn 0.3s;
+    backdrop-filter: blur(4px);
+    overflow: hidden;
+}
+
+.qrCodeContent {
+    background-color: white;
+    padding: 32px;
+    border-radius: 16px;
+    width: 85%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.qrCodeContent h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.qrCodeContent h3::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #4CAF50, #66BB6A);
+    border-radius: 2px;
+}
+
+.qrCodeContent p {
+    margin: 16px 0;
+    color: #555;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.qrCodeContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 24px auto;
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #ddd;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    max-width: 320px;
+}
+
+.qrCodeImage {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.qrCodeButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.downloadButton {
+    background: linear-gradient(45deg, #FF9800, #FFC107);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-shadow: 0 6px 15px rgba(255, 152, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.downloadButton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+    transform: translateY(-50%);
+    transition: transform 0.6s;
+}
+
+.downloadButton:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.4);
+}
+
+.downloadButton:hover::after {
+    transform: translateY(0);
+}
+
+.downloadButton:disabled {
+    background: #cccccc;
+    box-shadow: none;
+    transform: none;
+    cursor: not-allowed;
+}
+
+/* ==========================================
    ส่วนของ Animations และ Media Queries
    ========================================== */
 @keyframes zoomIn {
@@ -641,6 +777,7 @@
         opacity: 0;
         transform: translate(-50%, -50%) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
@@ -651,6 +788,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -661,6 +799,7 @@
         opacity: 0;
         transform: translateY(40px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -671,6 +810,7 @@
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }
@@ -678,9 +818,11 @@
 
 /* ส่วนของการพิมพ์ */
 @media print {
+
     .closeButton,
     .paymentSection,
     .confirmModal,
+    .qrCodeModal,
     .modalOverlay {
         display: none;
     }
@@ -710,14 +852,41 @@
     }
 }
 
-.confirmButton, 
+/* Media Queries for Mobile */
+@media (max-width: 600px) {
+    .paymentMethods {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .paymentMethodItem label {
+        width: 100%;
+        min-width: 200px;
+    }
+
+    .qrCodeButtons {
+        flex-direction: column;
+    }
+
+    .confirmButtons {
+        flex-direction: column;
+    }
+
+    .actionButtons {
+        flex-direction: column;
+    }
+}
+
+.confirmButton,
 .confirmContent .cancelButton {
-    position: relative; /* เพิ่ม position relative */
-    z-index: 1600; /* เพิ่ม z-index ให้สูง */
+    position: relative;
+    /* เพิ่ม position relative */
+    z-index: 1600;
+    /* เพิ่ม z-index ให้สูง */
     cursor: pointer;
 }
 
-/* ปรับแต่ง billContainer เมื่อมี confirmModal เปิดอยู่ */
+/* ปรับแต่ง billContainer เมื่อมี confirmModal หรือ qrCodeModal เปิดอยู่ */
 .billContainer.disabled {
     pointer-events: none;
     overflow: hidden;
