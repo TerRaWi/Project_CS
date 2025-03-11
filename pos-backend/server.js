@@ -1113,6 +1113,307 @@ app.get('/api/cancel-reasons', (req, res) => {
 
 /**
  * ============================
+ * API เกี่ยวกับการจัดการโต๊ะ (ย้าย, รวม, ยกเลิก)
+ * ============================
+ */
+
+// ย้ายโต๊ะ (ย้ายออเดอร์ไปยังโต๊ะใหม่)
+app.post('/api/tables/move', async (req, res) => {
+  const { sourceTableId, targetTableId } = req.body;
+
+  if (!sourceTableId || !targetTableId) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'กรุณาระบุรหัสโต๊ะต้นทางและปลายทาง' 
+    });
+  }
+
+  try {
+    // เริ่ม transaction
+    await db.promise().query('START TRANSACTION');
+
+    // 1. ตรวจสอบว่าโต๊ะปลายทางว่างอยู่หรือไม่
+    const [targetTable] = await db.promise().query(
+      'SELECT * FROM dining_table WHERE id = ? AND status_id = 1',
+      [targetTableId]
+    );
+
+    if (targetTable.length === 0) {
+      await db.promise().query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'โต๊ะปลายทางไม่ว่าง ไม่สามารถย้ายได้'
+      });
+    }
+
+    // 2. ดึงออเดอร์ที่เปิดอยู่ของโต๊ะต้นทาง
+    const [activeOrders] = await db.promise().query(
+      'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
+      [sourceTableId]
+    );
+
+    if (activeOrders.length === 0) {
+      await db.promise().query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะต้นทาง'
+      });
+    }
+
+    const orderId = activeOrders[0].id;
+
+    // 3. อัพเดทออเดอร์ไปยังโต๊ะใหม่
+    await db.promise().query(
+      'UPDATE `order` SET table_id = ? WHERE id = ?',
+      [targetTableId, orderId]
+    );
+
+    // 4. อัพเดทสถานะโต๊ะต้นทางเป็นว่าง
+    await db.promise().query(
+      'UPDATE dining_table SET status_id = 1 WHERE id = ?',
+      [sourceTableId]
+    );
+
+    // 5. อัพเดทสถานะโต๊ะปลายทางเป็นไม่ว่าง
+    await db.promise().query(
+      'UPDATE dining_table SET status_id = 2 WHERE id = ?',
+      [targetTableId]
+    );
+
+    // บันทึก transaction
+    await db.promise().query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'ย้ายโต๊ะสำเร็จ',
+      sourceTableId,
+      targetTableId,
+      orderId
+    });
+
+  } catch (error) {
+    await db.promise().query('ROLLBACK');
+    console.error('Error moving table:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการย้ายโต๊ะ'
+    });
+  }
+});
+
+// รวมโต๊ะ (รวมออเดอร์สองโต๊ะ)
+app.post('/api/tables/merge', async (req, res) => {
+  const { sourceTableId, targetTableId } = req.body;
+
+  if (!sourceTableId || !targetTableId) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'กรุณาระบุรหัสโต๊ะทั้งสอง' 
+    });
+  }
+
+  try {
+    // เริ่ม transaction
+    await db.promise().query('START TRANSACTION');
+
+    // 1. ตรวจสอบว่าทั้งสองโต๊ะมีออเดอร์ที่เปิดอยู่
+    const [sourceOrders] = await db.promise().query(
+      'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
+      [sourceTableId]
+    );
+
+    const [targetOrders] = await db.promise().query(
+      'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
+      [targetTableId]
+    );
+
+    if (sourceOrders.length === 0 || targetOrders.length === 0) {
+      await db.promise().query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'ทั้งสองโต๊ะต้องมีออเดอร์ที่เปิดอยู่'
+      });
+    }
+
+    const sourceOrderId = sourceOrders[0].id;
+    const targetOrderId = targetOrders[0].id;
+
+    // 2. ย้ายรายการอาหารทั้งหมดจากต้นทางไปปลายทาง
+    await db.promise().query(
+      'UPDATE order_detail SET order_id = ? WHERE order_id = ?',
+      [targetOrderId, sourceOrderId]
+    );
+
+    // 3. ปิดออเดอร์ของโต๊ะต้นทาง (แต่ไม่ชำระเงิน)
+    await db.promise().query(
+      'UPDATE `order` SET status = "M", end_time = CURRENT_TIMESTAMP WHERE id = ?',
+      [sourceOrderId]
+    );
+
+    // 4. เพิ่มบันทึกการรวมโต๊ะ (สร้างตาราง merge_log ก่อนใช้งาน)
+    try {
+      await db.promise().query(
+        'INSERT INTO merge_log (source_order_id, target_order_id, merge_time) VALUES (?, ?, CURRENT_TIMESTAMP)',
+        [sourceOrderId, targetOrderId]
+      );
+    } catch (logError) {
+      // ถ้าไม่มีตาราง merge_log ก็ข้ามขั้นตอนนี้ไป
+      console.log('Merge log table does not exist, skipping log:', logError);
+    }
+
+    // 5. อัพเดทสถานะโต๊ะต้นทางเป็นว่าง
+    await db.promise().query(
+      'UPDATE dining_table SET status_id = 1 WHERE id = ?',
+      [sourceTableId]
+    );
+
+    // บันทึก transaction
+    await db.promise().query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'รวมโต๊ะสำเร็จ',
+      sourceTableId,
+      targetTableId,
+      sourceOrderId,
+      targetOrderId
+    });
+
+  } catch (error) {
+    await db.promise().query('ROLLBACK');
+    console.error('Error merging tables:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการรวมโต๊ะ'
+    });
+  }
+});
+
+// ยกเลิกโต๊ะ (ยกเลิกออเดอร์และปิดโต๊ะ)
+// ยกเลิกโต๊ะ (ยกเลิกออเดอร์และปิดโต๊ะ)
+app.post('/api/tables/cancel', async (req, res) => {
+  const { tableId } = req.body;
+
+  if (!tableId) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'กรุณาระบุรหัสโต๊ะ' 
+    });
+  }
+
+  try {
+    // เริ่ม transaction
+    await db.promise().query('START TRANSACTION');
+
+    // 1. ตรวจสอบว่าโต๊ะมีออเดอร์ที่เปิดอยู่
+    const [activeOrders] = await db.promise().query(
+      'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
+      [tableId]
+    );
+
+    if (activeOrders.length === 0) {
+      await db.promise().query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้'
+      });
+    }
+
+    const orderId = activeOrders[0].id;
+
+    // 2. ยกเลิกรายการอาหารที่ยังไม่เสร็จทั้งหมด
+    await db.promise().query(
+      'UPDATE order_detail SET status = "V" WHERE order_id = ? AND status IN ("A", "P")',
+      [orderId]
+    );
+
+    // 3. อัพเดทสถานะออเดอร์เป็นยกเลิก
+    await db.promise().query(
+      'UPDATE `order` SET status = "X", end_time = CURRENT_TIMESTAMP WHERE id = ?',
+      [orderId]
+    );
+
+    // 4. อัพเดทสถานะโต๊ะเป็นว่าง
+    await db.promise().query(
+      'UPDATE dining_table SET status_id = 1 WHERE id = ?',
+      [tableId]
+    );
+
+    // บันทึก transaction
+    await db.promise().query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'ยกเลิกโต๊ะสำเร็จ',
+      tableId,
+      orderId
+    });
+
+  } catch (error) {
+    await db.promise().query('ROLLBACK');
+    console.error('Error canceling table:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการยกเลิกโต๊ะ'
+    });
+  }
+});
+
+// สร้างตาราง merge_log ถ้ายังไม่มี
+app.post('/api/system/create-merge-log-table', async (req, res) => {
+  try {
+    await db.promise().query(`
+      CREATE TABLE IF NOT EXISTS merge_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        source_order_id INT NOT NULL,
+        target_order_id INT NOT NULL,
+        merge_time TIMESTAMP NOT NULL,
+        FOREIGN KEY (source_order_id) REFERENCES \`order\`(id),
+        FOREIGN KEY (target_order_id) REFERENCES \`order\`(id)
+      )
+    `);
+    
+    res.json({
+      success: true,
+      message: 'Created merge_log table'
+    });
+  } catch (error) {
+    console.error('Error creating merge_log table:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการสร้างตาราง merge_log'
+    });
+  }
+});
+
+// สร้างตาราง cancellation_log ถ้ายังไม่มี
+app.post('/api/system/create-cancellation-log-table', async (req, res) => {
+  try {
+    await db.promise().query(`
+      CREATE TABLE IF NOT EXISTS cancellation_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        reason TEXT NOT NULL,
+        cancel_time TIMESTAMP NOT NULL,
+        FOREIGN KEY (order_id) REFERENCES \`order\`(id)
+      )
+    `);
+    
+    res.json({
+      success: true,
+      message: 'Created cancellation_log table'
+    });
+  } catch (error) {
+    console.error('Error creating cancellation_log table:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการสร้างตาราง cancellation_log'
+    });
+  }
+});
+
+/**
+ * ============================
  * เริ่มการทำงานของเซิร์ฟเวอร์
  * ============================
  */
