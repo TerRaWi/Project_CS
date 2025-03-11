@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { getBill, checkout, updateOrderDetailStatus } from "../api";
+import { getBill, checkout, updateOrderDetailStatus, getCancelReasons } from "../api";
 import Addfooditem from "./Addfooditem";
 import styles from "../styles/billpayment.module.css";
 import QRCode from "qrcode";
@@ -20,6 +20,10 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     const [showQRCode, setShowQRCode] = useState(false);
     const [promptPayNumber, setPromptPayNumber] = useState("0123456789");
     const qrCanvasRef = useRef(null);
+    const [cancelReasons, setCancelReasons] = useState([]);
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [selectedCancelReasonId, setSelectedCancelReasonId] = useState(null);
+    const [itemToCancel, setItemToCancel] = useState(null);
 
     // ดึงข้อมูลบิล
     const fetchBill = async () => {
@@ -182,6 +186,19 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         }
     }, [showAddFood, showConfirm, showQRCode, styles.billContainer, styles.disabled]);
 
+    useEffect(() => {
+        const loadCancelReasons = async () => {
+            try {
+                const data = await getCancelReasons();
+                setCancelReasons(data);
+            } catch (err) {
+                console.error("Error loading cancel reasons:", err);
+            }
+        };
+
+        loadCancelReasons();
+    }, []);
+
     // ฟังก์ชันเริ่มกระบวนการชำระเงินเมื่อกดปุ่ม "ชำระเงิน"
     const handleStartPayment = async () => {
         // ตรวจสอบว่ามีรายการที่กำลังทำอยู่หรือไม่
@@ -240,17 +257,37 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     };
 
     // ฟังก์ชันลบรายการ
-    const handleRemoveItem = async (itemId) => {
+    const handleRemoveItem = (itemId) => {
+        // ตั้งค่า itemId ที่จะยกเลิกและแสดง dialog
+        setItemToCancel(itemId);
+        setSelectedCancelReasonId(null); // รีเซ็ตตัวเลือกทุกครั้ง
+        setShowCancelDialog(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!selectedCancelReasonId) {
+            alert("กรุณาเลือกเหตุผลในการยกเลิก");
+            return;
+        }
+
         try {
             setIsLoading(true);
-            // อัพเดทสถานะเป็น V (Void)
-            await updateOrderDetailStatus(itemId, 'V');
+            await updateOrderDetailStatus(itemToCancel, 'V', selectedCancelReasonId);
+            setShowCancelDialog(false);
+
             // โหลดข้อมูลบิลใหม่
             await fetchBill();
         } catch (err) {
             setError(err.message || "เกิดข้อผิดพลาดในการลบรายการ");
+        } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleCloseCancelDialog = () => {
+        setShowCancelDialog(false);
+        setSelectedCancelReasonId(null);
+        setItemToCancel(null);
     };
 
     // ฟังก์ชันสำหรับจัดการเมื่อเพิ่มรายการอาหารสำเร็จ
@@ -654,6 +691,45 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                     onClose={handleCloseAddFood}
                     onItemAdded={handleItemAdded}
                 />
+            )}
+            {/* Modal เลือกเหตุผลในการยกเลิกรายการ */}
+            {showCancelDialog && (
+                <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
+                    <div className={styles.confirmContent} onClick={handleModalClick}>
+                        <h3>เหตุผลในการยกเลิกรายการ</h3>
+                        <div className={styles.formGroup}>
+                            <label>กรุณาเลือกเหตุผล:</label>
+                            <select
+                                value={selectedCancelReasonId || ''}
+                                onChange={(e) => setSelectedCancelReasonId(e.target.value ? Number(e.target.value) : null)}
+                                className={styles.formControl}
+                            >
+                                <option value="">-- กรุณาเลือกเหตุผล --</option>
+                                {cancelReasons.map(reason => (
+                                    <option key={reason.id} value={reason.id}>
+                                        {reason.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className={styles.confirmButtons}>
+                            <button
+                                className={styles.confirmButton}
+                                onClick={handleConfirmCancel}
+                                disabled={!selectedCancelReasonId || isLoading}
+                            >
+                                ยืนยันการยกเลิก
+                            </button>
+                            <button
+                                className={styles.cancelButton}
+                                onClick={handleCloseCancelDialog}
+                                disabled={isLoading}
+                            >
+                                ยกเลิก
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     );
