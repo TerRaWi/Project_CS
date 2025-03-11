@@ -502,3 +502,63 @@ export const getCancelReasons = async () => {
     handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลเหตุผลการยกเลิก');
   }
 };
+
+/**
+ * ============================
+ * API เกี่ยวกับการจัดการโต๊ะ (ย้าย, รวม, ยกเลิก)
+ * ============================
+ */
+
+// ย้ายโต๊ะจากต้นทางไปปลายทาง (ย้ายออเดอร์ทั้งหมดไปโต๊ะใหม่)
+export const moveTable = async (sourceTableId, targetTableId) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/tables/move`, {
+      sourceTableId,
+      targetTableId
+    });
+    return data;
+  } catch (error) {
+    // การจัดการข้อผิดพลาด
+  }
+};
+
+// รวมโต๊ะสองโต๊ะเข้าด้วยกัน (รวมออเดอร์)
+export const mergeTable = async (sourceTableId, targetTableId) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/tables/merge`, {
+      sourceTableId,
+      targetTableId
+    });
+    return data;
+  } catch (error) {
+    console.error('Error merging tables:', error);
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการรวมโต๊ะ');
+      } else if (error.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    throw new Error('เกิดข้อผิดพลาดในการรวมโต๊ะ');
+  }
+};
+
+// ยกเลิกโต๊ะ (ยกเลิกออเดอร์ทั้งหมดและปรับสถานะโต๊ะเป็นว่าง)
+export const cancelTable = async (tableId) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/tables/cancel`, {
+      tableId
+    });
+    return data;
+  } catch (error) {
+    console.error('Error canceling table:', error);
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการยกเลิกโต๊ะ');
+      } else if (error.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    throw new Error('เกิดข้อผิดพลาดในการยกเลิกโต๊ะ');
+  }
+};
