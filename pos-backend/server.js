@@ -658,23 +658,23 @@ app.patch('/api/order-detail/:id/status', (req, res) => {
   });
 });
 
-/**
- * ============================
- * API เกี่ยวกับหมวดหมู่ (Categories)
- * ============================
- */
+// /**
+//  * ============================
+//  * API เกี่ยวกับหมวดหมู่ (Categories)
+//  * ============================
+//  */
 
-// ดึงข้อมูล category
-app.get('/api/category', (req, res) => {
-  db.query('SELECT * FROM category ORDER BY id', (err, results) => {
-    if (err) {
-      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
-      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-      return;
-    }
-    res.json(results);
-  });
-});
+// // ดึงข้อมูล category
+// app.get('/api/category', (req, res) => {
+//   db.query('SELECT * FROM category ORDER BY id', (err, results) => {
+//     if (err) {
+//       console.error('เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่:', err);
+//       res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+//       return;
+//     }
+//     res.json(results);
+//   });
+// });
 
 /**
  * ============================
