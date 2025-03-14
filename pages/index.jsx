@@ -32,23 +32,23 @@ const Home = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // ดึงข้อมูลโต๊ะอาหารทั้งหมด
         const tablesData = await getTables();
         setTables(tablesData);
-        
+
         // ดึงข้อมูลออเดอร์ที่กำลังทำงานอยู่
         const orders = await getAllActiveOrders();
         setActiveOrders(orders);
-        
+
         // คำนวณจำนวนโต๊ะที่ไม่ว่าง
         const occupiedTables = tablesData.filter(table => table.status_id === 2).length;
-        
+
         // คำนวณจำนวนรายการอาหารที่รอดำเนินการ
         let pendingItems = 0;
         let totalRevenue = 0;
         let totalCustomers = 0;
-        
+
         // คำนวณจำนวนรายการที่รอดำเนินการและรายได้ทั้งหมด
         orders.forEach(order => {
           order.items.forEach(item => {
@@ -58,11 +58,11 @@ const Home = () => {
             totalRevenue += item.price * item.quantity;
           });
         });
-        
+
         // ค้นหาออเดอร์ใหม่ (ที่สั่งภายใน 5 นาทีล่าสุด)
         const now = new Date();
         const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-        
+
         const recentOrders = orders.filter(order => {
           const hasRecentItems = order.items.some(item => {
             const orderTime = new Date(item.orderTime);
@@ -70,9 +70,9 @@ const Home = () => {
           });
           return hasRecentItems;
         });
-        
+
         setNewOrders(recentOrders);
-        
+
         // อัพเดท stats
         setStats({
           totalTables: tablesData.length,
@@ -83,7 +83,7 @@ const Home = () => {
           totalActiveOrders: orders.length,
           pendingItems
         });
-        
+
         setLoading(false);
       } catch (err) {
         setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -103,7 +103,7 @@ const Home = () => {
   // ข้อมูลสำหรับกราฟสถานะโต๊ะ
   const tableStatusData = [
     { name: 'โต๊ะที่ว่าง', value: stats.availableTables },
-    { name: 'โต๊ะที่ไม่ว่าง', value: stats.occupiedTables }
+    { name: 'โต๊ะที่กำลังใช้งาน', value: stats.occupiedTables }
   ];
 
   // สีสำหรับกราฟ
@@ -140,11 +140,11 @@ const Home = () => {
   return (
     <div className="container-fluid py-4">
       <h1 className="display-5 mb-4">หน้าหลัก</h1>
-      
+
       {/* แถวแรก - ข้อมูลสรุป */}
       <div className="row mb-4">
         {/* โต๊ะทั้งหมด */}
-        <div className="col-md-3">
+        <div className="col-md-4">
           <div className="card shadow-sm bg-light">
             <div className="card-body">
               <div className="d-flex justify-content-between">
@@ -159,43 +159,26 @@ const Home = () => {
             </div>
           </div>
         </div>
-        
-        {/* โต๊ะที่ไม่ว่าง */}
-        <div className="col-md-3">
-          <div className="card shadow-sm bg-danger text-white">
+
+        {/* โต๊ะที่กำลังใช้งาน */}
+        <div className="col-md-4">
+          <div className="card shadow-sm bg-success text-white">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
-                  <h6 className="text-white-50">โต๊ะที่ไม่ว่าง</h6>
+                  <h6 className="text-white-50">โต๊ะที่กำลังใช้งาน</h6>
                   <h2 className="mb-0">{stats.occupiedTables}</h2>
                 </div>
                 <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                  <i className="bi bi-person text-danger" style={{ fontSize: '24px' }}></i>
+                  <i className="bi bi-person text-success" style={{ fontSize: '24px' }}></i>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* ออเดอร์ที่กำลังทำงาน */}
-        <div className="col-md-3">
-          <div className="card shadow-sm bg-warning">
-            <div className="card-body">
-              <div className="d-flex justify-content-between">
-                <div>
-                  <h6 className="text-dark">ออเดอร์ที่กำลังทำงาน</h6>
-                  <h2 className="mb-0">{stats.totalActiveOrders}</h2>
-                </div>
-                <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                  <i className="bi bi-receipt text-warning" style={{ fontSize: '24px' }}></i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
+
         {/* รายการอาหารที่รอดำเนินการ */}
-        <div className="col-md-3">
+        <div className="col-md-4">
           <div className="card shadow-sm bg-info text-white">
             <div className="card-body">
               <div className="d-flex justify-content-between">
@@ -211,7 +194,7 @@ const Home = () => {
           </div>
         </div>
       </div>
-      
+
       {/* แถวที่สอง - กราฟและแจ้งเตือน */}
       <div className="row mb-4">
         {/* กราฟสถานะโต๊ะ */}
@@ -256,7 +239,7 @@ const Home = () => {
             </div>
           </div>
         </div>
-        
+
         {/* แจ้งเตือนออเดอร์ใหม่ */}
         <div className="col-md-8">
           <div className="card shadow-sm">
@@ -281,12 +264,12 @@ const Home = () => {
                     // ค้นหารายการอาหารที่สั่งใหม่
                     const now = new Date();
                     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-                    
+
                     const newItems = order.items.filter(item => {
                       const orderTime = new Date(item.orderTime);
                       return orderTime > fiveMinutesAgo && item.status === 'P';
                     });
-                    
+
                     return (
                       <div key={order.orderId} className="list-group-item list-group-item-action">
                         <div className="d-flex justify-content-between align-items-center">
@@ -316,85 +299,85 @@ const Home = () => {
           </div>
         </div>
       </div>
-      
- {/* แถวที่สาม - รายการโต๊ะ */}
-<div className="row">
-  <div className="col-12">
-    <div className="card shadow-sm">
-      <div className="card-header bg-light d-flex justify-content-between align-items-center">
-        <h5 className="mb-0">โต๊ะทั้งหมด</h5>
-        <button className="btn btn-sm btn-primary" onClick={() => window.location.href = '/tables'}>
-          <i className="bi bi-arrow-right"></i> ไปที่หน้าจัดการโต๊ะ
-        </button>
-      </div>
-      <div className="card-body">
-        {/* แบ่งโต๊ะออกเป็นชุด ชุดละ 4 โต๊ะ */}
-        {chunk(tables, 4).map((tableGroup, groupIndex) => (
-          <div key={`group-${groupIndex}`} className="row mb-4">
-            {/* แต่ละชุดแบ่งเป็น 2 หลัก แต่ละหลักมี 2 โต๊ะ */}
-            <div className="col-md-6">
-              {tableGroup.slice(0, 2).map((table) => (
-                <div key={table.id} className="card mb-3">
-                  <div className={`card-header ${table.status_id === 2 ? 'bg-danger text-white' : 'bg-success text-white'}`}>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span>โต๊ะ {table.table_number}</span>
-                      <span className="badge bg-light text-dark">
-                        {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
-                      </span>
-                    </div>
-                  </div>
-                  {table.status_id === 2 && (
-                    <div className="card-body p-2">
-                      {activeOrders.filter(order => order.tableId === table.id).map(order => (
-                        <div key={order.orderId} className="small">
-                          <div className="fw-bold">ออเดอร์ #{order.orderId}</div>
-                          <div>จำนวนรายการ: {order.items.length}</div>
-                          <div>
-                            รายการที่รอ: {order.items.filter(item => item.status === 'P').length}
+
+      {/* แถวที่สาม - รายการโต๊ะ */}
+      <div className="row">
+        <div className="col-12">
+          <div className="card shadow-sm">
+            <div className="card-header bg-light d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">โต๊ะทั้งหมด</h5>
+              <button className="btn btn-sm btn-primary" onClick={() => window.location.href = '/tables'}>
+                <i className="bi bi-arrow-right"></i> ไปที่หน้าจัดการโต๊ะ
+              </button>
+            </div>
+            <div className="card-body">
+              {/* แบ่งโต๊ะออกเป็นชุด ชุดละ 4 โต๊ะ */}
+              {chunk(tables, 4).map((tableGroup, groupIndex) => (
+                <div key={`group-${groupIndex}`} className="row mb-4">
+                  {/* แต่ละชุดแบ่งเป็น 2 หลัก แต่ละหลักมี 2 โต๊ะ */}
+                  <div className="col-md-6">
+                    {tableGroup.slice(0, 2).map((table) => (
+                      <div key={table.id} className="card mb-3">
+                        <div className={`card-header ${table.status_id === 2 ? 'bg-danger text-white' : 'bg-success text-white'}`}>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span>โต๊ะ {table.table_number}</span>
+                            <span className="badge bg-light text-dark">
+                              {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        {table.status_id === 2 && (
+                          <div className="card-body p-2">
+                            {activeOrders.filter(order => order.tableId === table.id).map(order => (
+                              <div key={order.orderId} className="small">
+                                <div className="fw-bold">ออเดอร์ #{order.orderId}</div>
+                                <div>จำนวนรายการ: {order.items.length}</div>
+                                <div>
+                                  รายการที่รอ: {order.items.filter(item => item.status === 'P').length}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="col-md-6">
+                    {tableGroup.slice(2, 4).map((table) => (
+                      table && (
+                        <div key={table.id} className="card mb-3">
+                          <div className={`card-header ${table.status_id === 2 ? 'bg-danger text-white' : 'bg-success text-white'}`}>
+                            <div className="d-flex justify-content-between align-items-center">
+                              <span>โต๊ะ {table.table_number}</span>
+                              <span className="badge bg-light text-dark">
+                                {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
+                              </span>
+                            </div>
+                          </div>
+                          {table.status_id === 2 && (
+                            <div className="card-body p-2">
+                              {activeOrders.filter(order => order.tableId === table.id).map(order => (
+                                <div key={order.orderId} className="small">
+                                  <div className="fw-bold">ออเดอร์ #{order.orderId}</div>
+                                  <div>จำนวนรายการ: {order.items.length}</div>
+                                  <div>
+                                    รายการที่รอ: {order.items.filter(item => item.status === 'P').length}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
-            
-            <div className="col-md-6">
-              {tableGroup.slice(2, 4).map((table) => (
-                table && (
-                  <div key={table.id} className="card mb-3">
-                    <div className={`card-header ${table.status_id === 2 ? 'bg-danger text-white' : 'bg-success text-white'}`}>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span>โต๊ะ {table.table_number}</span>
-                        <span className="badge bg-light text-dark">
-                          {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
-                        </span>
-                      </div>
-                    </div>
-                    {table.status_id === 2 && (
-                      <div className="card-body p-2">
-                        {activeOrders.filter(order => order.tableId === table.id).map(order => (
-                          <div key={order.orderId} className="small">
-                            <div className="fw-bold">ออเดอร์ #{order.orderId}</div>
-                            <div>จำนวนรายการ: {order.items.length}</div>
-                            <div>
-                              รายการที่รอ: {order.items.filter(item => item.status === 'P').length}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              ))}
-            </div>
           </div>
-        ))}
+        </div>
       </div>
-    </div>
-  </div>
-</div>
 
       {/* แถวที่สี่ - รายได้รวมและข้อมูลสรุปเพิ่มเติม */}
       <div className="row mt-4">
@@ -411,7 +394,7 @@ const Home = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="col-md-6">
           <div className="card shadow-sm h-100">
             <div className="card-header bg-light">
@@ -425,21 +408,21 @@ const Home = () => {
                     <strong>{new Date().toLocaleTimeString('th-TH')}</strong>
                   </div>
                 </div>
-                
+
                 <div className="list-group-item">
                   <div className="d-flex justify-content-between">
                     <span><i className="bi bi-percent text-success me-2"></i> อัตราการใช้โต๊ะ</span>
                     <strong>{stats.totalTables > 0 ? ((stats.occupiedTables / stats.totalTables) * 100).toFixed(1) : 0}%</strong>
                   </div>
                 </div>
-                
+
                 <div className="list-group-item">
                   <div className="d-flex justify-content-between">
                     <span><i className="bi bi-stopwatch text-warning me-2"></i> ออเดอร์รอดำเนินการ</span>
                     <strong>{stats.pendingItems} รายการ</strong>
                   </div>
                 </div>
-                
+
                 <div className="list-group-item">
                   <div className="d-flex justify-content-between">
                     <span><i className="bi bi-bell text-danger me-2"></i> ออเดอร์ใหม่</span>
