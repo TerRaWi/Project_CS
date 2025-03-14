@@ -28,6 +28,11 @@ const Sidebar = () => {
           box-sizing: border-box;
           border-right: none;
           box-shadow: none;
+          /* เพิ่ม z-index เพื่อให้แน่ใจว่า sidebar อยู่ด้านบนของเนื้อหาอื่น */
+          z-index: 1000;
+          /* ลบ border ทั้งหมดที่อาจทำให้เกิดเส้นขอบสีเทา */
+          border: 0;
+          outline: none;
         }
         
         .custom-sidebar a {
@@ -44,6 +49,19 @@ const Sidebar = () => {
         
         .custom-sidebar a svg {
           margin-right: 20px;
+        }
+        
+        /* เพิ่ม CSS เพื่อแก้ไขปัญหา margin ที่อาจทำให้เกิดพื้นที่เกิน */
+        .custom-sidebar:before,
+        .custom-sidebar:after {
+          display: none;
+          content: none;
+        }
+        
+        /* เพิ่ม CSS เพื่อรีเซ็ตค่า Bootstrap ที่อาจมีผลกระทบ */
+        .row, .container-fluid, .col {
+          margin: 0;
+          padding: 0;
         }
       `}</style>
 

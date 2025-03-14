@@ -169,7 +169,7 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
               พิมพ์ QR code
             </button>
             <button 
-              className="btn btn-warning" 
+              className="btn btn-warning text-white" 
               onClick={handleBillButtonClick}
             >
               คิดเงิน

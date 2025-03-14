@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
-// ลบการ import styles และเปลี่ยนเป็น bootstrap
-// import styles from "../styles/product.module.css";
 import { getProduct, getCategories, updateProductStatus } from "../api";
 import Addproduct from "../components/Addproduct";
 import Updateproduct from "../components/Updateproduct";
 import Delproduct from "../components/Delproduct";
-// เพิ่ม import bootstrap (ไม่จำเป็นถ้า import ไว้ใน _app.js หรือ main layout แล้ว)
-// import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -81,6 +77,8 @@ const Products = () => {
       isVisible: true,
       selectedProduct: product,
     });
+    // ล็อค scroll เมื่อเปิด modal
+    document.body.style.overflow = 'hidden';
   };
 
   const handleCloseModal = () => {
@@ -89,6 +87,8 @@ const Products = () => {
       isVisible: false,
       selectedProduct: null,
     });
+    // คืนค่า scroll เมื่อปิด modal
+    document.body.style.overflow = 'auto';
   };
 
   const handleUpdateSuccess = (updatedProduct) => {
@@ -121,10 +121,10 @@ const Products = () => {
   }
 
   return (
-    <div className="container py-4">
-      <div className="row mb-4">
+    <div className="container py-3">
+      <div className="row mb-3">
         <div className="col">
-          <h1 className="bg-warning text-white py-2 px-3 rounded d-inline-block">จัดการเมนู</h1>
+          <h2 className="bg-warning text-white py-1 px-3 rounded d-inline-block">จัดการเมนู</h2>
           
           <button
             onClick={() =>
@@ -135,10 +135,10 @@ const Products = () => {
               })
             }
             className="btn position-absolute"
-            style={{ right: '50px', top: '20px' }}
+            style={{ right: '30px', top: '15px' }}
             title="เพิ่มสินค้าใหม่"
           >
-            <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" width="50" height="50" />
+            <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" width="40" height="40" />
           </button>
         </div>
       </div>
@@ -165,24 +165,24 @@ const Products = () => {
           />
         )}
 
-      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+      <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
         {products.length > 0 ? (
           products.map((product) => (
             <div key={product.id} className="col">
-              <div className={`card h-100 shadow-sm ${product.status === 'I' ? 'bg-light' : ''}`}>
+              <div className={`card h-100 border-0 shadow-sm ${product.status === 'I' ? 'bg-light' : ''}`}>
                 <div className="position-relative">
                   {product.status === 'I' && (
-                    <div className="position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-75 text-white px-3 py-2 rounded fw-bold">
+                    <div className="position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-75 text-white px-2 py-1 rounded-pill fs-7 fw-bold">
                       ระงับการขายชั่วคราว
                     </div>
                   )}
                   <img
                     src={`http://localhost:3001${product.image_url}`}
-                    className={`card-img-top p-3 ${product.status === 'I' ? 'opacity-50' : ''}`}
+                    className={`card-img-top p-2 ${product.status === 'I' ? 'opacity-50' : ''}`}
                     alt={product.name}
-                    style={{ height: '200px', objectFit: 'contain' }}
+                    style={{ height: '120px', objectFit: 'contain' }}
                   />
-                  <div className="position-absolute top-0 end-0 p-2">
+                  <div className="position-absolute top-0 end-0">
                     <Delproduct 
                       productId={product.id}
                       onDelete={handleDeleteSuccess}
@@ -190,28 +190,29 @@ const Products = () => {
                   </div>
                 </div>
                 
-                <div className="card-body">
-                  <p className="card-text"><strong>รหัสสินค้า:</strong> {product.id}</p>
-                  <h5 className="card-title">{product.name}</h5>
-                  <p className="card-text"><strong>หมวดหมู่:</strong> {categories[product.category_id] || 'ไม่ระบุ'}</p>
-                  <p className="card-text">
-                    <strong>ราคา:</strong> ฿
-                    {product.price !== null && !isNaN(product.price)
+                <div className="card-body p-2">
+                  <div className="d-flex justify-content-between align-items-start mb-1">
+                    <small className="text-muted">รหัส: {product.id}</small>
+                    <span className="badge bg-light text-dark border">{categories[product.category_id] || 'ไม่ระบุ'}</span>
+                  </div>
+                  <h6 className="card-title fw-bold mb-1">{product.name}</h6>
+                  <p className="card-text mb-0 text-primary fw-bold">
+                    ฿{product.price !== null && !isNaN(product.price)
                       ? Number(product.price).toFixed(2)
                       : "N/A"}
                   </p>
                 </div>
                 
-                <div className="card-footer bg-transparent border-top-0 d-flex justify-content-between">
+                <div className="card-footer bg-transparent border-top-0 d-flex justify-content-between py-2 px-2">
                   <button
                     onClick={() => handleToggleStatus(product)}
-                    className={`btn ${product.status === 'I' ? 'btn-success' : 'btn-secondary'} btn-sm`}
+                    className={`btn ${product.status === 'I' ? 'btn-success' : 'btn-secondary'} btn-sm py-0 px-2`}
                   >
-                    {product.status === 'A' ? 'ระงับการขาย' : 'เปิดการขาย'}
+                    {product.status === 'A' ? 'ระงับการขายชั่วคราว' : 'เปิด'}
                   </button>
                   <button
                     onClick={() => handleOpenUpdateProduct(product)}
-                    className="btn btn-outline-primary btn-sm"
+                    className="btn btn-outline-primary btn-sm py-0 px-2"
                   >
                     แก้ไข
                   </button>
@@ -220,7 +221,7 @@ const Products = () => {
             </div>
           ))
         ) : (
-          <div className="col-12 text-center p-4">
+          <div className="col-12 text-center p-3">
             <p className="text-muted">ไม่มีข้อมูลสินค้า</p>
           </div>
         )}
