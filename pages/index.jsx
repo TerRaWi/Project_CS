@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { getTables, getAllActiveOrders } from '../api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
+function chunk(array, size) {
+  const chunked = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunked.push(array.slice(i, i + size));
+  }
+  return chunked;
+}
+
+
 const Home = () => {
   const [tables, setTables] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
@@ -308,50 +317,84 @@ const Home = () => {
         </div>
       </div>
       
-      {/* แถวที่สาม - รายการโต๊ะ */}
-      <div className="row">
-        <div className="col-12">
-          <div className="card shadow-sm">
-            <div className="card-header bg-light d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">โต๊ะทั้งหมด</h5>
-              <button className="btn btn-sm btn-primary" onClick={() => window.location.href = '/tables'}>
-                <i className="bi bi-arrow-right"></i> ไปที่หน้าจัดการโต๊ะ
-              </button>
-            </div>
-            <div className="card-body">
-              <div className="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
-                {tables.map((table) => (
-                  <div key={table.id} className="col">
-                    <div className={`card h-100 ${table.status_id === 2 ? 'border-danger' : 'border-success'}`}>
-                      <div className={`card-header ${table.status_id === 2 ? 'bg-danger text-white' : 'bg-success text-white'}`}>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <span>โต๊ะ {table.table_number}</span>
-                          <span className="badge bg-light text-dark">
-                            {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
-                          </span>
-                        </div>
-                      </div>
-                      {table.status_id === 2 && (
-                        <div className="card-body p-2">
-                          {activeOrders.filter(order => order.tableId === table.id).map(order => (
-                            <div key={order.orderId} className="small">
-                              <div className="fw-bold">ออเดอร์ #{order.orderId}</div>
-                              <div>จำนวนรายการ: {order.items.length}</div>
-                              <div>
-                                รายการที่รอ: {order.items.filter(item => item.status === 'P').length}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+ {/* แถวที่สาม - รายการโต๊ะ */}
+<div className="row">
+  <div className="col-12">
+    <div className="card shadow-sm">
+      <div className="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">โต๊ะทั้งหมด</h5>
+        <button className="btn btn-sm btn-primary" onClick={() => window.location.href = '/tables'}>
+          <i className="bi bi-arrow-right"></i> ไปที่หน้าจัดการโต๊ะ
+        </button>
+      </div>
+      <div className="card-body">
+        {/* แบ่งโต๊ะออกเป็นชุด ชุดละ 4 โต๊ะ */}
+        {chunk(tables, 4).map((tableGroup, groupIndex) => (
+          <div key={`group-${groupIndex}`} className="row mb-4">
+            {/* แต่ละชุดแบ่งเป็น 2 หลัก แต่ละหลักมี 2 โต๊ะ */}
+            <div className="col-md-6">
+              {tableGroup.slice(0, 2).map((table) => (
+                <div key={table.id} className="card mb-3">
+                  <div className={`card-header ${table.status_id === 2 ? 'bg-danger text-white' : 'bg-success text-white'}`}>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <span>โต๊ะ {table.table_number}</span>
+                      <span className="badge bg-light text-dark">
+                        {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
+                  {table.status_id === 2 && (
+                    <div className="card-body p-2">
+                      {activeOrders.filter(order => order.tableId === table.id).map(order => (
+                        <div key={order.orderId} className="small">
+                          <div className="fw-bold">ออเดอร์ #{order.orderId}</div>
+                          <div>จำนวนรายการ: {order.items.length}</div>
+                          <div>
+                            รายการที่รอ: {order.items.filter(item => item.status === 'P').length}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <div className="col-md-6">
+              {tableGroup.slice(2, 4).map((table) => (
+                table && (
+                  <div key={table.id} className="card mb-3">
+                    <div className={`card-header ${table.status_id === 2 ? 'bg-danger text-white' : 'bg-success text-white'}`}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span>โต๊ะ {table.table_number}</span>
+                        <span className="badge bg-light text-dark">
+                          {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
+                        </span>
+                      </div>
+                    </div>
+                    {table.status_id === 2 && (
+                      <div className="card-body p-2">
+                        {activeOrders.filter(order => order.tableId === table.id).map(order => (
+                          <div key={order.orderId} className="small">
+                            <div className="fw-bold">ออเดอร์ #{order.orderId}</div>
+                            <div>จำนวนรายการ: {order.items.length}</div>
+                            <div>
+                              รายการที่รอ: {order.items.filter(item => item.status === 'P').length}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              ))}
             </div>
           </div>
-        </div>
+        ))}
       </div>
+    </div>
+  </div>
+</div>
 
       {/* แถวที่สี่ - รายได้รวมและข้อมูลสรุปเพิ่มเติม */}
       <div className="row mt-4">
