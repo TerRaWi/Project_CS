@@ -198,16 +198,28 @@ const Ordermenu = ({ table, onClose }) => {
                                             {getFilteredProducts().map(product => (
                                                 <div className="col" key={product.id}>
                                                     <div 
-                                                        className="card h-100 cursor-pointer shadow-sm"
+                                                        className="card h-100 shadow-sm"
                                                         style={{cursor: 'pointer'}}
                                                         onClick={() => addToOrder(product)}
                                                     >
-                                                        <img
-                                                            src={`http://localhost:3001${product.image_url}`}
-                                                            className="card-img-top"
-                                                            alt={product.name}
-                                                            style={{height: '120px', objectFit: 'cover'}}
-                                                        />
+                                                        <div className="position-relative" style={{height: '150px'}}>
+                                                            <img
+                                                                src={product.image_url ? `http://localhost:3001${product.image_url}` : '/img/default-food.jpg'}
+                                                                alt={product.name}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    objectFit: 'contain'
+                                                                }}
+                                                                onError={(e) => {
+                                                                    e.target.onerror = null;
+                                                                    e.target.src = '/img/default-food.jpg';
+                                                                }}
+                                                            />
+                                                        </div>
                                                         <div className="card-body text-center">
                                                             <h6 className="card-title">{product.name}</h6>
                                                             <p className="card-text text-primary fw-bold">฿{formatPrice(product.price)}</p>
