@@ -122,7 +122,7 @@ const Products = () => {
 
   return (
     <div className="container py-3">
-      <div className="row mb-3">
+      <div className="row mb-4">
         <div className="col">
           <h2 className="bg-warning text-white py-1 px-3 rounded d-inline-block">จัดการเมนู</h2>
           
@@ -143,7 +143,7 @@ const Products = () => {
         </div>
       </div>
 
-      {error && <div className="alert alert-danger text-center">{error}</div>}
+      {error && <div className="alert alert-danger text-center mb-4">{error}</div>}
 
       {modalState.isVisible && modalState.type === "add" && (
         <Addproduct
@@ -165,10 +165,11 @@ const Products = () => {
           />
         )}
 
-      <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+      {/* Improved card layout with better spacing */}
+      <div className="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
         {products.length > 0 ? (
           products.map((product) => (
-            <div key={product.id} className="col">
+            <div key={product.id} className="col mb-3">
               <div className={`card h-100 border-0 shadow-sm ${product.status === 'I' ? 'bg-light' : ''}`}>
                 <div className="position-relative">
                   {product.status === 'I' && (
@@ -178,9 +179,9 @@ const Products = () => {
                   )}
                   <img
                     src={`http://localhost:3001${product.image_url}`}
-                    className={`card-img-top p-2 ${product.status === 'I' ? 'opacity-50' : ''}`}
+                    className={`card-img-top p-3 ${product.status === 'I' ? 'opacity-50' : ''}`}
                     alt={product.name}
-                    style={{ height: '120px', objectFit: 'contain' }}
+                    style={{ height: '150px', objectFit: 'contain' }}
                   />
                   <div className="position-absolute top-0 end-0">
                     <Delproduct 
@@ -190,29 +191,29 @@ const Products = () => {
                   </div>
                 </div>
                 
-                <div className="card-body p-2">
-                  <div className="d-flex justify-content-between align-items-start mb-1">
+                <div className="card-body p-3">
+                  <div className="d-flex justify-content-between align-items-start mb-2">
                     <small className="text-muted">รหัส: {product.id}</small>
                     <span className="badge bg-light text-dark border">{categories[product.category_id] || 'ไม่ระบุ'}</span>
                   </div>
-                  <h6 className="card-title fw-bold mb-1">{product.name}</h6>
-                  <p className="card-text mb-0 text-primary fw-bold">
+                  <h6 className="card-title fw-bold mb-2">{product.name}</h6>
+                  <p className="card-text mb-2 text-primary fw-bold">
                     ฿{product.price !== null && !isNaN(product.price)
                       ? Number(product.price).toFixed(2)
                       : "N/A"}
                   </p>
                 </div>
                 
-                <div className="card-footer bg-transparent border-top-0 d-flex justify-content-between py-2 px-2">
+                <div className="card-footer bg-transparent d-flex justify-content-between py-3">
                   <button
                     onClick={() => handleToggleStatus(product)}
-                    className={`btn ${product.status === 'I' ? 'btn-success' : 'btn-secondary'} btn-sm py-0 px-2`}
+                    className={`btn ${product.status === 'I' ? 'btn-success' : 'btn-secondary'} btn-sm`}
                   >
-                    {product.status === 'A' ? 'ระงับการขายชั่วคราว' : 'เปิด'}
+                    {product.status === 'A' ? 'ระงับการขาย' : 'เปิด'}
                   </button>
                   <button
                     onClick={() => handleOpenUpdateProduct(product)}
-                    className="btn btn-outline-primary btn-sm py-0 px-2"
+                    className="btn btn-outline-primary btn-sm"
                   >
                     แก้ไข
                   </button>
@@ -221,7 +222,7 @@ const Products = () => {
             </div>
           ))
         ) : (
-          <div className="col-12 text-center p-3">
+          <div className="col-12 text-center p-4">
             <p className="text-muted">ไม่มีข้อมูลสินค้า</p>
           </div>
         )}

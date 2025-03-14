@@ -220,7 +220,7 @@ const Reports = () => {
       '10:00-12:00', '12:00-14:00', '14:00-16:00',
       '16:00-18:00', '18:00-20:00', '20:00-22:00'
     ];
-    
+
     const salesByTime = timeSlots.reduce((acc, slot) => {
       acc[slot] = 0;
       return acc;
@@ -248,29 +248,38 @@ const Reports = () => {
   };
 
   // สร้างข้อมูลสำหรับสินค้าขายดี
-  const getTopProductsData = () => {
-    const salesByProduct = {};
+  // สร้างข้อมูลสำหรับสินค้าขายดี
+const getTopProductsData = () => {
+  const salesByProduct = {};
+  
+  // กำหนดรายชื่อสินค้าประเภทลูกค้าที่ต้องการกรองออก
+  const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก', 'หมูเด้งทะมิส', 'หมูพม่ากุ้ม', 'หมูเด้ง', 'เบคอนสไลด์', 'สันคอสไลด์'];
 
-    filteredOrderDetails.forEach(item => {
-      if (!salesByProduct[item.productName]) {
-        salesByProduct[item.productName] = {
-          quantity: 0,
-          amount: 0
-        };
-      }
-      salesByProduct[item.productName].quantity += item.quantity;
-      salesByProduct[item.productName].amount += item.amount;
-    });
+  filteredOrderDetails.forEach(item => {
+    // ข้ามรายการที่เป็นประเภทลูกค้า
+    if (customerProductNames.includes(item.productName)) {
+      return;
+    }
+    
+    if (!salesByProduct[item.productName]) {
+      salesByProduct[item.productName] = {
+        quantity: 0,
+        amount: 0
+      };
+    }
+    salesByProduct[item.productName].quantity += item.quantity;
+    salesByProduct[item.productName].amount += item.amount;
+  });
 
-    return Object.keys(salesByProduct)
-      .map(name => ({
-        name,
-        value: salesByProduct[name].quantity,
-        amount: salesByProduct[name].amount
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  };
+  return Object.keys(salesByProduct)
+    .map(name => ({
+      name,
+      value: salesByProduct[name].quantity,
+      amount: salesByProduct[name].amount
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+};
 
   // สร้างข้อมูลสำหรับสัดส่วนประเภทลูกค้า
   const getCustomerTypeData = () => {
@@ -296,15 +305,22 @@ const Reports = () => {
   // สร้างข้อมูลสำหรับจำนวนลูกค้าตามวัน
   const getCustomersByDayData = () => {
     const customersByDay = {};
-
-    filteredPayments.forEach(payment => {
-      const date = new Date(payment.payment_date).toISOString().split('T')[0];
-      if (!customersByDay[date]) {
-        customersByDay[date] = 0;
+    const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก'];
+  
+    filteredOrderDetails.forEach(item => {
+      // เลือกเฉพาะรายการที่เป็นประเภทลูกค้า
+      if (customerProductNames.includes(item.productName)) {
+        const date = new Date(item.paymentDate).toISOString().split('T')[0];
+        
+        if (!customersByDay[date]) {
+          customersByDay[date] = 0;
+        }
+        
+        // เพิ่มจำนวนตามจำนวนสินค้า (quantity)
+        customersByDay[date] += item.quantity;
       }
-      customersByDay[date] += 1;
     });
-
+  
     return Object.keys(customersByDay).map(date => ({
       day: date,
       customers: customersByDay[date]
@@ -376,7 +392,7 @@ const Reports = () => {
         <div className="col-12">
           <div className="card shadow border-0">
             <div className="card-header bg-primary text-white">
-              <h3 className="mb-0">รายงานผลการดำเนินงาน</h3>
+              <h3 className="mb-0">รายงานร้านค้า</h3>
             </div>
             <div className="card-body">
               {/* ปุ่มเลือกช่วงเวลา */}
@@ -492,8 +508,8 @@ const Reports = () => {
               <div className="rounded-circle bg-success bg-opacity-10 p-3 d-inline-flex mb-3">
                 <i className="bi bi-people text-success fs-3"></i>
               </div>
-              <h5 className="card-title">จำนวนลูกค้า</h5>
-              <h2 className="fw-bold text-success">{customerCount} คน</h2>
+              <h5 className="card-title">จำนวนบิล</h5>
+              <h2 className="fw-bold text-success">{customerCount} </h2>
               <p className="card-text text-muted">บิลทั้งหมด</p>
             </div>
           </div>
@@ -518,9 +534,9 @@ const Reports = () => {
               <div className="rounded-circle bg-info bg-opacity-10 p-3 d-inline-flex mb-3">
                 <i className="bi bi-table text-info fs-3"></i>
               </div>
-              <h5 className="card-title">จำนวนโต๊ะ</h5>
-              <h2 className="fw-bold text-info">{tables.length}</h2>
-              <p className="card-text text-muted">ทั้งหมด ({activeTableCount} โต๊ะกำลังใช้งาน)</p>
+              <h5 className="card-title">โต๊ะที่กำลังใช้งาน</h5>
+              <h2 className="fw-bold text-info">{activeTableCount}</h2>
+              <p className="card-text text-muted">จากทั้งหมด {tables.length} โต๊ะ</p>
             </div>
           </div>
         </div>
@@ -649,14 +665,14 @@ const Reports = () => {
 
       {reportType === 'products' && (
         <>
-          {/* สินค้าขายดี 10 อันดับ */}
+          {/* สินค้าขายดี */}
           <div className="row mb-4">
             <div className="col-12">
               <div className="card border-0 shadow-sm">
                 <div className="card-header bg-white">
                   <h5 className="card-title mb-0">
                     <i className="bi bi-trophy me-2 text-warning"></i>
-                    สินค้าขายดี 10 อันดับ
+                    สินค้าขายดี
                   </h5>
                 </div>
                 <div className="card-body">
@@ -685,50 +701,7 @@ const Reports = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* สัดส่วนยอดขายตามหมวดหมู่ */}
-          <div className="row mb-4">
-            <div className="col-12">
-              <div className="card border-0 shadow-sm">
-                <div className="card-header bg-white">
-                  <h5 className="card-title mb-0">
-                    <i className="bi bi-pie-chart me-2 text-primary"></i>
-                    สัดส่วนยอดขายตามหมวดหมู่
-                  </h5>
-                </div>
-                <div className="card-body">
-                  <div style={{ height: '300px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={salesByCategoryData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={true}
-                          outerRadius={100}
-                          dataKey="amount"
-                          nameKey="name"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
-                        >
-                          {salesByCategoryData.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[`category${(index % 4) + 1}`]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value) => formatCurrency(value)}
-                        />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </div>  
         </>
       )}
 
