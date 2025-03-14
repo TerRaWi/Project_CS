@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import styles from "../styles/ordertable.module.css";
 import Ordermenu from "./Ordermenu";
 import Billpayment from "./Billpayment";
 import Tablemanage from "./Tablemanage";
 import { getOrdersByTable } from "../api";
+// นำเข้า Bootstrap (ต้องแน่ใจว่าได้ติดตั้ง Bootstrap ในโปรเจค)
+// npm install bootstrap หรือเพิ่ม <link> ใน index.html
 
 const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
   const [showOrdermenu, setShowOrdermenu] = useState(false);
@@ -122,35 +123,60 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
     alert(message);
   };
 
+  // กำหนด CSS เพิ่มเติมสำหรับ sidebar
+  const sidebarStyle = {
+    height: '100%',
+    position: 'fixed',
+    right: 0,
+    top: 0,
+    width: '300px',
+    zIndex: 1000
+  };
+
   return (
     <>
-      <div className={styles.sidebar}>
-        <button className={styles.closeButton} onClick={onClose}>
-          X
-        </button>
-        <div className={styles.tableInfo}>โต๊ะ: {table ? table.table_number : "N/A"}</div>
+      <div className="bg-light d-flex flex-column border-start shadow-sm p-3" style={sidebarStyle}>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h5 className="mb-0">โต๊ะ: {table ? table.table_number : "N/A"}</h5>
+          <button 
+            className="btn btn-danger" 
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
         
         {isLoading ? (
-          <div>กำลังโหลดข้อมูล...</div>
+          <div className="d-flex justify-content-center my-4">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">กำลังโหลดข้อมูล...</span>
+            </div>
+          </div>
         ) : error ? (
-          <div className={styles.error}>{error}</div>
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
         ) : (
-          <div>
+          <div className="d-grid gap-3">
             <button 
-              className={styles.orderButton}
+              className="btn btn-success" 
               onClick={() => setShowOrdermenu(true)}
             >
               สั่งอาหาร
             </button>
-            <button className={styles.qrButton}>พิมพ์ QR code</button>
+            <button className="btn btn-primary">
+              พิมพ์ QR code
+            </button>
             <button 
-              className={styles.billButton}
+              className="btn btn-warning" 
               onClick={handleBillButtonClick}
             >
               คิดเงิน
             </button>
             <button 
-              className={styles.editButton}
+              className="btn btn-purple"
+              style={{ backgroundColor: '#9c27b0', color: 'white' }}
               onClick={() => setShowTablemanage(true)}
             >
               แก้ไข

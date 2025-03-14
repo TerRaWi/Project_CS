@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getProduct, addOrderItem, getCategories } from "../api";
-import styles from "../styles/addfooditem.module.css";
+import { Modal, Button, Form, Container, Row, Col, Card, Badge, InputGroup } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
     const [products, setProducts] = useState([]);
@@ -195,200 +196,189 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
         }
     };
 
-    // ป้องกันการส่งต่อเหตุการณ์ (event propagation)
-    const handleModalContainerClick = (e) => {
-        // ป้องกันไม่ให้ click event ไปยัง element อื่น
-        e.stopPropagation();
-    };
-
-    // เพิ่มฟังก์ชันป้องกันการเลื่อนของ modal ด้านหลัง
-    const handleButtonClick = (e) => {
-        // ป้องกันการเลื่อนของหน้าหลัก
-        e.stopPropagation();
-    };
-
-    if (loading && products.length === 0) {
-        return (
-            <div className={styles.modalContainer}>
-                <div className={styles.modalContent}>
-                    <div className={styles.loading}>กำลังโหลด...</div>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className={styles.modalContainer}>
-                <div className={styles.modalContent}>
-                    <div className={styles.error}>{error}</div>
-                    <button className={styles.closeButton} onClick={onClose}>ปิด</button>
-                </div>
-            </div>
-        );
-    }
-
+    // Main render for the modal
     return (
-        <div className={styles.modalContainer} onClick={handleModalContainerClick}>
-            <div className={styles.modalContent}>
-                <div className={styles.modalHeader}>
-                    <h2>เพิ่มรายการอาหาร</h2>
-                    <button className={styles.closeButton} onClick={onClose}>×</button>
-                </div>
+        <Modal 
+            show={true} 
+            onHide={onClose} 
+            centered 
+            size="xl" 
+            backdrop="static" 
+            keyboard={false}
+        >
+            <Modal.Header className="bg-warning text-white">
+                <Modal.Title className="w-100 text-center">เพิ่มรายการอาหาร</Modal.Title>
+                <Button 
+                    variant="light" 
+                    className="rounded-circle position-absolute" 
+                    style={{ right: '15px', width: '35px', height: '35px', padding: '0' }}
+                    onClick={onClose}
+                >
+                    &times;
+                </Button>
+            </Modal.Header>
 
-                <div className={styles.modalBody}>
-                    <div className={styles.tabs}>
-                        <div className={styles.tabControl}>
-                            <button
-                                className={`${styles.tabButton} ${selectedCategory === "all" ? styles.active : ""}`}
-                                onClick={() => setSelectedCategory("all")}
+            <Modal.Body className="px-3 pt-3 pb-0">
+                <div className="mb-3 d-flex flex-column flex-md-row align-items-start align-items-md-center">
+                    <div className="nav nav-pills mb-2 mb-md-0 flex-nowrap overflow-auto" style={{ maxWidth: '100%' }}>
+                        <Button 
+                            variant={selectedCategory === "all" ? "warning" : "light"}
+                            className="me-2 text-nowrap" 
+                            onClick={() => setSelectedCategory("all")}
+                        >
+                            ทั้งหมด
+                        </Button>
+                        {categories.map(categoryId => (
+                            <Button
+                                key={categoryId}
+                                variant={selectedCategory === categoryId.toString() ? "warning" : "light"}
+                                className="me-2 text-nowrap"
+                                onClick={() => setSelectedCategory(categoryId.toString())}
                             >
-                                ทั้งหมด
-                            </button>
-                            {categories.map(categoryId => (
-                                <button
-                                    key={categoryId}
-                                    className={`${styles.tabButton} ${selectedCategory === categoryId.toString() ? styles.active : ""}`}
-                                    onClick={() => setSelectedCategory(categoryId.toString())}
-                                >
-                                    {getCategoryName(categoryId)}
-                                </button>
-                            ))}
-                        </div>
+                                {getCategoryName(categoryId)}
+                            </Button>
+                        ))}
+                    </div>
 
-                        <div className={styles.searchBox}>
-                            <input
-                                type="text"
+                    <div className="ms-md-auto mt-2 mt-md-0 w-100 w-md-auto" style={{ maxWidth: '300px' }}>
+                        <InputGroup>
+                            <InputGroup.Text><i className="bi bi-search"></i></InputGroup.Text>
+                            <Form.Control
                                 placeholder="ค้นหาอาหาร"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                aria-label="ค้นหาอาหาร"
                                 autoComplete="off"
                             />
                             {searchTerm && (
-                                <button 
-                                    className={styles.clearSearch}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSearchTerm('');
-                                    }}
-                                    aria-label="ล้างการค้นหา"
+                                <Button 
+                                    variant="outline-secondary" 
+                                    onClick={() => setSearchTerm('')}
                                 >
-                                    ×
-                                </button>
+                                    &times;
+                                </Button>
                             )}
-                        </div>
+                        </InputGroup>
                     </div>
+                </div>
 
-                    <div className={styles.menuContainer}>
-                        <div className={styles.menuList}>
-                            <h3>รายการอาหาร</h3>
-                            <div className={styles.menuGrid}>
-                                {filteredProducts.map(product => (
-                                    <div
-                                        key={product.id}
-                                        className={styles.menuItem}
-                                        onClick={() => handleAddToOrder(product)}
-                                    >
-                                        {product.image_url ? (
-                                            <img
-                                                src={product.image_url.startsWith('/') ? `http://localhost:3001${product.image_url}` : product.image_url}
-                                                alt={product.name}
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.parentNode.innerHTML = `<div class="${styles.placeholderImage}">${product.name.substring(0, 1)}</div>`;
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className={styles.placeholderImage}>{product.name.substring(0, 1)}</div>
-                                        )}
-                                        <div className={styles.menuItemInfo}>
-                                            <h4>{product.name}</h4>
-                                            <p>฿{parseFloat(product.price).toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className={styles.orderSummary}>
-                            <h3>รายการที่เลือก</h3>
-
-                            {selectedItems.length === 0 ? (
-                                <p className={styles.emptyOrder}>ยังไม่มีรายการที่เลือก</p>
-                            ) : (
-                                <div className={styles.orderItems}>
-                                    {selectedItems.map(item => (
-                                        <div key={item.id} className={styles.orderItem}>
-                                            <div className={styles.orderItemInfo}>
-                                                <span>{item.name}</span>
-                                                <span>฿{parseFloat(item.price).toFixed(2)}</span>
-                                            </div>
-                                            <div className={styles.orderItemQuantity}>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleChangeQuantity(item.id, item.quantity - 1);
-                                                    }}
-                                                >
-                                                    -
-                                                </button>
-                                                <span>{item.quantity}</span>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleChangeQuantity(item.id, item.quantity + 1);
-                                                    }}
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
-                                            <button
-                                                className={styles.removeButton}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleRemoveFromOrder(item.id);
-                                                }}
-                                            >
-                                                ลบ
-                                            </button>
-                                        </div>
+                <Container fluid className="px-0">
+                    <Row>
+                        <Col md={8} className="mb-3 mb-md-0">
+                            <h5 className="mb-3">รายการอาหาร</h5>
+                            <div className="overflow-auto" style={{ maxHeight: '60vh' }}>
+                                <Row xs={2} sm={3} md={3} lg={4} className="g-3">
+                                    {filteredProducts.map(product => (
+                                        <Col key={product.id}>
+                                            <Card className="h-100 shadow-sm" onClick={() => handleAddToOrder(product)} style={{ cursor: 'pointer' }}>
+                                                {product.image_url ? (
+                                                    <Card.Img 
+                                                        variant="top" 
+                                                        src={product.image_url.startsWith('/') ? `http://localhost:3001${product.image_url}` : product.image_url}
+                                                        style={{ height: '130px', objectFit: 'cover' }}
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f8f9fa'/%3E%3Ctext x='50' y='50' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23adb5bd'%3E" + product.name.substring(0, 1) + "%3C/text%3E%3C/svg%3E";
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="bg-light d-flex align-items-center justify-content-center" style={{ height: '130px' }}>
+                                                        <span className="display-4 text-muted">{product.name.substring(0, 1)}</span>
+                                                    </div>
+                                                )}
+                                                <Card.Body className="py-2">
+                                                    <Card.Title className="fs-6 text-truncate mb-1">{product.name}</Card.Title>
+                                                    <Card.Text className="text-warning fw-bold mb-0">
+                                                        ฿{parseFloat(product.price).toFixed(2)}
+                                                    </Card.Text>
+                                                </Card.Body>
+                                            </Card>
+                                        </Col>
                                     ))}
+                                </Row>
+                            </div>
+                        </Col>
 
-                                    <div className={styles.totalAmount}>
-                                        <span>รวมทั้งสิ้น:</span>
-                                        <span>฿{total.toFixed(2)}</span>
+                        <Col md={4}>
+                            <div className="bg-light rounded p-3 h-100 d-flex flex-column">
+                                <h5 className="mb-3">รายการที่เลือก</h5>
+                                
+                                {selectedItems.length === 0 ? (
+                                    <div className="text-center text-muted my-4">ยังไม่มีรายการที่เลือก</div>
+                                ) : (
+                                    <div className="overflow-auto flex-grow-1" style={{ maxHeight: '50vh' }}>
+                                        {selectedItems.map(item => (
+                                            <div key={item.id} className="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                                <div className="d-flex flex-column" style={{ width: '40%' }}>
+                                                    <span className="text-truncate">{item.name}</span>
+                                                    <span className="text-muted small">฿{parseFloat(item.price).toFixed(2)}</span>
+                                                </div>
+                                                <div className="d-flex align-items-center">
+                                                    <Button 
+                                                        variant="outline-secondary" 
+                                                        size="sm" 
+                                                        className="px-2 py-0" 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChangeQuantity(item.id, item.quantity - 1);
+                                                        }}
+                                                    >
+                                                        -
+                                                    </Button>
+                                                    <span className="mx-2">{item.quantity}</span>
+                                                    <Button 
+                                                        variant="outline-secondary" 
+                                                        size="sm" 
+                                                        className="px-2 py-0" 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChangeQuantity(item.id, item.quantity + 1);
+                                                        }}
+                                                    >
+                                                        +
+                                                    </Button>
+                                                </div>
+                                                <Button 
+                                                    variant="danger" 
+                                                    size="sm" 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleRemoveFromOrder(item.id);
+                                                    }}
+                                                >
+                                                    ลบ
+                                                </Button>
+                                            </div>
+                                        ))}
                                     </div>
+                                )}
+                                
+                                <div className="d-flex justify-content-between fw-bold pt-3 mt-auto border-top">
+                                    <span>รวมทั้งสิ้น:</span>
+                                    <span>฿{total.toFixed(2)}</span>
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                            </div>
+                        </Col>
+                    </Row>
+                </Container>
+            </Modal.Body>
 
-                <div className={styles.modalFooter}>
-                    <button
-                        className={styles.submitButton}
-                        onClick={(e) => {
-                            handleButtonClick(e);
-                            handleSubmit();
-                        }}
-                        disabled={selectedItems.length === 0 || loading}
-                    >
-                        {loading ? 'กำลังบันทึก...' : 'เพิ่มรายการ'}
-                    </button>
-                    <button
-                        className={styles.cancelButton}
-                        onClick={(e) => {
-                            handleButtonClick(e);
-                            onClose();
-                        }}
-                        disabled={loading}
-                    >
-                        ยกเลิก
-                    </button>
-                </div>
-            </div>
-        </div>
+            <Modal.Footer className="justify-content-center">
+                <Button 
+                    variant="success" 
+                    disabled={selectedItems.length === 0 || loading} 
+                    onClick={handleSubmit}
+                >
+                    {loading ? 'กำลังบันทึก...' : 'เพิ่มรายการ'}
+                </Button>
+                <Button 
+                    variant="danger" 
+                    disabled={loading} 
+                    onClick={onClose}
+                >
+                    ยกเลิก
+                </Button>
+            </Modal.Footer>
+        </Modal>
     );
 };
 

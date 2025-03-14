@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
-import styles from "../styles/product.module.css";
+// ลบการ import styles และเปลี่ยนเป็น bootstrap
+// import styles from "../styles/product.module.css";
 import { getProduct, getCategories, updateProductStatus } from "../api";
 import Addproduct from "../components/Addproduct";
 import Updateproduct from "../components/Updateproduct";
 import Delproduct from "../components/Delproduct";
+// เพิ่ม import bootstrap (ไม่จำเป็นถ้า import ไว้ใน _app.js หรือ main layout แล้ว)
+// import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -107,30 +110,40 @@ const Products = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center p-4">กำลังโหลด...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center p-4">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">กำลังโหลด...</span>
+        </div>
+        <span className="ms-2">กำลังโหลด...</span>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1 className={styles["heading-background"]}>จัดการเมนู</h1>
-
-      <div className={styles["button-container"]}>
-        <button
-          onClick={() =>
-            setModalState({
-              type: "add",
-              isVisible: true,
-              selectedProduct: null,
-            })
-          }
-          className={styles["image-add-button"]}
-          title="เพิ่มสินค้าใหม่"
-        >
-          <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" />
-        </button>
+    <div className="container py-4">
+      <div className="row mb-4">
+        <div className="col">
+          <h1 className="bg-warning text-white py-2 px-3 rounded d-inline-block">จัดการเมนู</h1>
+          
+          <button
+            onClick={() =>
+              setModalState({
+                type: "add",
+                isVisible: true,
+                selectedProduct: null,
+              })
+            }
+            className="btn position-absolute"
+            style={{ right: '50px', top: '20px' }}
+            title="เพิ่มสินค้าใหม่"
+          >
+            <img src="/images/+.png" alt="เพิ่มสินค้าใหม่" width="50" height="50" />
+          </button>
+        </div>
       </div>
 
-      {error && <div className="text-red-500 text-center p-4">{error}</div>}
+      {error && <div className="alert alert-danger text-center">{error}</div>}
 
       {modalState.isVisible && modalState.type === "add" && (
         <Addproduct
@@ -152,63 +165,64 @@ const Products = () => {
           />
         )}
 
-      <div className={styles["product-list"]}>
+      <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
         {products.length > 0 ? (
           products.map((product) => (
-            <div 
-              key={product.id} 
-              className={`${styles["product-item"]} ${
-                product.status === 'I' ? styles["product-inactive"] : ''
-              }`}
-            >
-              <div 
-                className={styles["status-badge"]} 
-                style={{ display: product.status === 'I' ? 'block' : 'none' }}
-              >
-                ระงับการขายชั่วคราว
-              </div>
-              
-              <img
-                src={`http://localhost:3001${product.image_url}`}
-                className={styles["product-image"]}
-                alt={product.name}
-              />
-              
-              <Delproduct 
-                productId={product.id}
-                onDelete={handleDeleteSuccess}
-              />
-              
-              <p><strong>รหัสสินค้า:</strong> {product.id}</p>
-              <p><strong>ชื่อสินค้า:</strong> {product.name}</p>
-              <p><strong>หมวดหมู่:</strong> {categories[product.category_id] || 'ไม่ระบุ'}</p>
-              <p>
-                <strong>ราคา:</strong>฿
-                {product.price !== null && !isNaN(product.price)
-                  ? Number(product.price).toFixed(2)
-                  : "N/A"}
-              </p>
-              
-              <div className={styles["button-container"]}>
-                <button
-                  onClick={() => handleToggleStatus(product)}
-                  className={`${styles["status-button"]} ${
-                    product.status === 'I' ? styles["status-inactive"] : ''
-                  }`}
-                >
-                  {product.status === 'A' ? 'ระงับการขาย' : 'เปิดการขาย'}
-                </button>
-                <button
-                  onClick={() => handleOpenUpdateProduct(product)}
-                  className={styles["edit-product"]}
-                >
-                  แก้ไข
-                </button>
+            <div key={product.id} className="col">
+              <div className={`card h-100 shadow-sm ${product.status === 'I' ? 'bg-light' : ''}`}>
+                <div className="position-relative">
+                  {product.status === 'I' && (
+                    <div className="position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-75 text-white px-3 py-2 rounded fw-bold">
+                      ระงับการขายชั่วคราว
+                    </div>
+                  )}
+                  <img
+                    src={`http://localhost:3001${product.image_url}`}
+                    className={`card-img-top p-3 ${product.status === 'I' ? 'opacity-50' : ''}`}
+                    alt={product.name}
+                    style={{ height: '200px', objectFit: 'contain' }}
+                  />
+                  <div className="position-absolute top-0 end-0 p-2">
+                    <Delproduct 
+                      productId={product.id}
+                      onDelete={handleDeleteSuccess}
+                    />
+                  </div>
+                </div>
+                
+                <div className="card-body">
+                  <p className="card-text"><strong>รหัสสินค้า:</strong> {product.id}</p>
+                  <h5 className="card-title">{product.name}</h5>
+                  <p className="card-text"><strong>หมวดหมู่:</strong> {categories[product.category_id] || 'ไม่ระบุ'}</p>
+                  <p className="card-text">
+                    <strong>ราคา:</strong> ฿
+                    {product.price !== null && !isNaN(product.price)
+                      ? Number(product.price).toFixed(2)
+                      : "N/A"}
+                  </p>
+                </div>
+                
+                <div className="card-footer bg-transparent border-top-0 d-flex justify-content-between">
+                  <button
+                    onClick={() => handleToggleStatus(product)}
+                    className={`btn ${product.status === 'I' ? 'btn-success' : 'btn-secondary'} btn-sm`}
+                  >
+                    {product.status === 'A' ? 'ระงับการขาย' : 'เปิดการขาย'}
+                  </button>
+                  <button
+                    onClick={() => handleOpenUpdateProduct(product)}
+                    className="btn btn-outline-primary btn-sm"
+                  >
+                    แก้ไข
+                  </button>
+                </div>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-center p-4">ไม่มีข้อมูลสินค้า</p>
+          <div className="col-12 text-center p-4">
+            <p className="text-muted">ไม่มีข้อมูลสินค้า</p>
+          </div>
         )}
       </div>
     </div>

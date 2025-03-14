@@ -1,17 +1,21 @@
 import Sidebar from './Sidebar';
-import styles from '../styles/Layout.module.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Layout = ({ children }) => {
   return (
-    <div className={styles.container}>
-      <Sidebar />
-      <main className={styles.main}>
-        {children} 
-      </main>
+    <div className="container-fluid">
+      <div className="row">
+        <div className="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+          <Sidebar />
+        </div>
+        <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
 
 export default Layout;
-// 7 import Sidebar มาใส่
-//9 หน้าของ Page นั้นๆ
+// Sidebar อยู่ทางซ้าย
+// หน้าของ Page นั้นๆ อยู่ทางขวา

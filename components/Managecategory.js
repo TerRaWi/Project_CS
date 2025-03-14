@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import styles from '../styles/ManageCategory.module.css';
 import { getCategories, addCategory, updateCategory, deleteCategory } from '../api';
+// ไม่จำเป็นต้องนำเข้า CSS Module อีกต่อไป
+// import styles from '../styles/ManageCategory.module.css';
+
+// หมายเหตุ: ต้องตรวจสอบให้แน่ใจว่าได้ติดตั้ง Bootstrap ใน project ของคุณแล้ว
+// คุณสามารถติดตั้งได้โดยใช้: npm install bootstrap
+// และนำเข้าในไฟล์หลักของคุณ: import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Managecategory = () => {
     // States สำหรับเก็บข้อมูลและการทำงาน
@@ -124,131 +129,182 @@ const Managecategory = () => {
 
     // แสดงข้อความกำลังโหลด
     if (isLoading && categories.length === 0) {
-        return <div className={styles.loading}>กำลังโหลดข้อมูล...</div>;
+        return (
+            <div className="d-flex justify-content-center align-items-center p-4">
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">กำลังโหลดข้อมูล...</span>
+                </div>
+                <span className="ms-2">กำลังโหลดข้อมูล...</span>
+            </div>
+        );
     }
 
     return (
-        <div className={styles.container}>
+        <div className="container py-4">
             {/* แสดงข้อความเตือน */}
-            {error && <div className={styles.error}>{error}</div>}
+            {error && (
+                <div className="alert alert-danger" role="alert">
+                    {error}
+                </div>
+            )}
 
             {/* ฟอร์มเพิ่มหมวดหมู่ใหม่ */}
-            <div className={styles.addCategoryForm}>
-                <h2>เพิ่มหมวดหมู่ใหม่</h2>
-                <form onSubmit={handleAddCategory}>
-                    <input
-                        type="text"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="ชื่อหมวดหมู่"
-                        className={styles.input}
-                        required
-                    />
-                    <button type="submit" className={styles.addButton} disabled={isLoading}>
-                        {isLoading ? 'กำลังเพิ่ม...' : 'เพิ่มหมวดหมู่'}
-                    </button>
-                </form>
+            <div className="card mb-4 shadow-sm">
+                <div className="card-body">
+                    <h2 className="card-title mb-3">เพิ่มหมวดหมู่ใหม่</h2>
+                    <form onSubmit={handleAddCategory} className="row g-3">
+                        <div className="col-md-8">
+                            <input
+                                type="text"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                placeholder="ชื่อหมวดหมู่"
+                                className="form-control"
+                                required
+                            />
+                        </div>
+                        <div className="col-md-4">
+                            <button type="submit" className="btn btn-success w-100" disabled={isLoading}>
+                                {isLoading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        <span className="ms-2">กำลังเพิ่ม...</span>
+                                    </>
+                                ) : (
+                                    'เพิ่มหมวดหมู่'
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             {/* ตารางแสดงหมวดหมู่ */}
-            <div className={styles.categoriesTable}>
-                <h2>รายการหมวดหมู่ทั้งหมด</h2>
-                {categories.length === 0 ? (
-                    <p>ไม่พบหมวดหมู่</p>
-                ) : (
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ชื่อหมวดหมู่</th>
-                                <th>การจัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {categories.map((category) => (
-                                <tr key={category.id}>
-                                    <td>
-                                        {editingCategoryId === category.id ? (
-                                            <input
-                                                type="text"
-                                                value={editCategoryName}
-                                                onChange={(e) => setEditCategoryName(e.target.value)}
-                                                className={styles.editInput}
-                                                autoFocus
-                                            />
-                                        ) : (
-                                            category.name
-                                        )}
-                                    </td>
-                                    <td>
-                                        {editingCategoryId === category.id ? (
-                                            <div className={styles.editActions}>
-                                                <button
-                                                    onClick={handleUpdateCategory}
-                                                    className={styles.saveButton}
-                                                    disabled={isLoading}
-                                                >
-                                                    บันทึก
-                                                </button>
-                                                <button
-                                                    onClick={cancelEditing}
-                                                    className={styles.cancelButton}
-                                                >
-                                                    ยกเลิก
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className={styles.actions}>
-                                                <button
-                                                    onClick={() => startEditing(category)}
-                                                    className={styles.editButton}
-                                                >
-                                                    แก้ไข
-                                                </button>
-                                                <button
-                                                    onClick={() => confirmDelete(category.id)}
-                                                    className={styles.deleteButton}
-                                                >
-                                                    ลบ
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
+            <div className="card shadow-sm">
+                <div className="card-body">
+                    <h2 className="card-title mb-3">รายการหมวดหมู่ทั้งหมด</h2>
+                    {categories.length === 0 ? (
+                        <p className="text-muted">ไม่พบหมวดหมู่</p>
+                    ) : (
+                        <div className="table-responsive">
+                            <table className="table table-hover">
+                                <thead className="table-light">
+                                    <tr>
+                                        <th>ชื่อหมวดหมู่</th>
+                                        <th>การจัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {categories.map((category) => (
+                                        <tr key={category.id}>
+                                            <td>
+                                                {editingCategoryId === category.id ? (
+                                                    <input
+                                                        type="text"
+                                                        value={editCategoryName}
+                                                        onChange={(e) => setEditCategoryName(e.target.value)}
+                                                        className="form-control"
+                                                        autoFocus
+                                                    />
+                                                ) : (
+                                                    category.name
+                                                )}
+                                            </td>
+                                            <td>
+                                                {editingCategoryId === category.id ? (
+                                                    <div className="d-flex gap-2">
+                                                        <button
+                                                            onClick={handleUpdateCategory}
+                                                            className="btn btn-success btn-sm"
+                                                            disabled={isLoading}
+                                                        >
+                                                            {isLoading ? (
+                                                                <>
+                                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                                    <span className="ms-1">บันทึก</span>
+                                                                </>
+                                                            ) : (
+                                                                'บันทึก'
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={cancelEditing}
+                                                            className="btn btn-secondary btn-sm"
+                                                        >
+                                                            ยกเลิก
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="d-flex gap-2">
+                                                        <button
+                                                            onClick={() => startEditing(category)}
+                                                            className="btn btn-primary btn-sm"
+                                                        >
+                                                            แก้ไข
+                                                        </button>
+                                                        <button
+                                                            onClick={() => confirmDelete(category.id)}
+                                                            className="btn btn-danger btn-sm"
+                                                        >
+                                                            ลบ
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Modal ยืนยันการลบ */}
+            {/* Modal ยืนยันการลบ - ใช้ Bootstrap Modal */}
             {showDeleteModal && (
-                <div className={styles.modalBackdrop}>
-                    <div className={styles.modal}>
-                        <h2>ยืนยันการลบ</h2>
-                        <p>คุณแน่ใจหรือไม่ว่าต้องการลบหมวดหมู่นี้?</p>
-                        <p className={styles.warning}>
-                            คำเตือน: การลบหมวดหมู่อาจส่งผลต่อสินค้าที่ใช้หมวดหมู่นี้อยู่
-                        </p>
-                        <div className={styles.modalActions}>
-                            <button
-                                onClick={handleDeleteCategory}
-                                className={styles.confirmDeleteButton}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? 'กำลังลบ...' : 'ยืนยันการลบ'}
-                            </button>
-                            <button
-                                onClick={cancelDelete}
-                                className={styles.cancelDeleteButton}
-                            >
-                                ยกเลิก
-                            </button>
+                <>
+                    <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog" role="document">
+                            <div className="modal-content">
+                                <div className="modal-header">
+                                    <h5 className="modal-title">ยืนยันการลบ</h5>
+                                    <button type="button" className="btn-close" onClick={cancelDelete} aria-label="Close"></button>
+                                </div>
+                                <div className="modal-body">
+                                    <p>คุณแน่ใจหรือไม่ว่าต้องการลบหมวดหมู่นี้?</p>
+                                    <p className="text-danger fw-bold">
+                                        คำเตือน: การลบหมวดหมู่อาจส่งผลต่อสินค้าที่ใช้หมวดหมู่นี้อยู่
+                                    </p>
+                                </div>
+                                <div className="modal-footer">
+                                    <button
+                                        onClick={handleDeleteCategory}
+                                        className="btn btn-danger"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                <span className="ms-1">กำลังลบ...</span>
+                                            </>
+                                        ) : (
+                                            'ยืนยันการลบ'
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={cancelDelete}
+                                        className="btn btn-secondary"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );
 };
 
-export default Managecategory;
+export default Managecategory;  

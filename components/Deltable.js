@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../styles/tablelayout.module.css';
+import { Button } from 'react-bootstrap';
 import { deleteTable } from '../api';
 
 const Deltable = ({ tables, isDeleteMode, onTableDelete, onDeleteModeToggle }) => {
@@ -20,24 +20,13 @@ const Deltable = ({ tables, isDeleteMode, onTableDelete, onDeleteModeToggle }) =
 
   return (
     <div>
-      <button 
-        onClick={() => onDeleteModeToggle(!isDeleteMode)} 
-        className={`${styles.imagedel} ${isDeleteMode ? styles.active : ''}`}
+      <Button 
+        variant="link"
+        className={`p-0 border-0 ${isDeleteMode ? 'active' : ''}`}
+        onClick={() => onDeleteModeToggle(!isDeleteMode)}
       >
-        <img src="/images/-.png" alt="ปุ่มลบโต๊ะ" />
-      </button>
-      
-      {/* Pass handleDeleteTable function up to parent */}
-      {isDeleteMode && (
-        <div style={{ display: 'none' }}>
-          {tables.map(table => (
-            <div
-              key={table.table_number}
-              onClick={() => handleDeleteTable(table.table_number)}
-            />
-          ))}
-        </div>
-      )}
+        <img src="/images/-.png" alt="ปุ่มลบโต๊ะ" width="50" height="50" />
+      </Button>
     </div>
   );
 };

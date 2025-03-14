@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { updateProduct, getCategories } from "../api";
-import styles from "../styles/updateproduct.module.css";
+// ไม่จำเป็นต้องนำเข้า CSS module อีกต่อไป
+// import styles from "../styles/updateproduct.module.css";
 
 const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
   const [formData, setFormData] = useState({
@@ -27,6 +28,14 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
       );
     }
     fetchCategories();
+    
+    // ป้องกันการ scroll ของ body เมื่อ modal เปิด
+    document.body.style.overflow = 'hidden';
+    
+    // คืนค่า scroll ให้ body เมื่อ component ถูก unmount
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
   }, [product]);
 
   const fetchCategories = async () => {
@@ -87,105 +96,126 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
     }
   };
 
+  // ป้องกันการ propagation ของเหตุการณ์ wheel
+  const preventScroll = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
   return (
-    <div className={styles.modal}>
-      <div className={styles["modal-content"]}>
-        <h2 className={styles["modal-title"]}>แก้ไขสินค้า</h2>
-        
-        {error && <div className={styles.error}>{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className={styles["form-group"]}>
-            <label className={styles["form-label"]}>
-              ชื่อสินค้า
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className={styles["form-input"]}
-                required
-              />
-            </label>
+    <div 
+      className="modal show d-block" 
+      tabIndex="-1" 
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+      onWheel={preventScroll}
+    >
+      <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">แก้ไขสินค้า</h5>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
           </div>
+          
+          <div className="modal-body">
+            {error && <div className="alert alert-danger">{error}</div>}
 
-          <div className={styles["form-group"]}>
-            <label className={styles["form-label"]}>
-              ราคา
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                className={styles["form-input"]}
-                min="0"
-                step="0.01"
-                required
-              />
-            </label>
-          </div>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-3">
+                <label htmlFor="name" className="form-label">ชื่อสินค้า</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
 
-          <div className={styles["form-group"]}>
-            <label className={styles["form-label"]}>
-              หมวดหมู่
-              <select
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleInputChange}
-                className={styles["form-input"]}
-                required
-              >
-                <option value="">เลือกหมวดหมู่</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+              <div className="mb-3">
+                <label htmlFor="price" className="form-label">ราคา</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="price"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
 
-          <div className={styles["form-group"]}>
-            <label className={styles["form-label"]}>
-              รูปภาพ
-              <div className={styles["file-input-container"]}>
+              <div className="mb-3">
+                <label htmlFor="category" className="form-label">หมวดหมู่</label>
+                <select
+                  className="form-select"
+                  id="category"
+                  name="category_id"
+                  value={formData.category_id}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">เลือกหมวดหมู่</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="image" className="form-label">รูปภาพ</label>
                 <input
                   type="file"
+                  className="form-control"
+                  id="image"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className={styles["file-input"]}
                 />
               </div>
-            </label>
-            {previewImage && (
-              <div className={styles["preview-container"]}>
-                <img
-                  src={previewImage}
-                  alt="Preview"
-                  className={styles["preview-image"]}
-                />
-              </div>
-            )}
-          </div>
 
-          <div className={styles["button-group"]}>
-            <button
-              type="submit"
-              className={`${styles.button} ${styles.submit}`}
-              disabled={isLoading}
-            >
-              {isLoading ? "กำลังบันทึก..." : "บันทึก"}
-            </button>
+              {previewImage && (
+                <div className="mb-3">
+                  <img
+                    src={previewImage}
+                    alt="Preview"
+                    className="img-thumbnail"
+                    style={{ maxWidth: '200px' }}
+                  />
+                </div>
+              )}
+            </form>
+          </div>
+          
+          <div className="modal-footer">
             <button
               type="button"
+              className="btn btn-secondary"
               onClick={onClose}
-              className={`${styles.button} ${styles.cancel}`}
               disabled={isLoading}
             >
               ยกเลิก
             </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  กำลังบันทึก...
+                </>
+              ) : "บันทึก"}
+            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

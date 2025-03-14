@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getAllActiveOrders, getTables, updateOrderDetailStatus } from '../api';
-import styles from "../styles/orders.module.css";
 import Cancelreason from '../components/Cancelreason';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Orders = () => {
   const [tables, setTables] = useState([]);
@@ -171,9 +171,9 @@ const Orders = () => {
   const getStatusClass = (status) => {
     switch (status) {
       case 'A':
-      case 'P': return styles.statusActive;
-      case 'C': return styles.statusCompleted;
-      case 'V': return styles.statusVoid;
+      case 'P': return 'bg-warning text-dark';
+      case 'C': return 'bg-success text-white';
+      case 'V': return 'bg-danger text-white';
       default: return '';
     }
   };
@@ -241,11 +241,22 @@ const Orders = () => {
   };
 
   if (loading && allOrders.length === 0) {
-    return <div className={styles.loading}>กำลังโหลดข้อมูล...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center p-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">กำลังโหลดข้อมูล...</span>
+        </div>
+        <span className="ms-3">กำลังโหลดข้อมูล...</span>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return (
+      <div className="alert alert-danger m-3" role="alert">
+        {error}
+      </div>
+    );
   }
 
   // กรองเฉพาะโต๊ะที่ไม่ว่าง (มีลูกค้าใช้บริการอยู่)
@@ -258,316 +269,304 @@ const Orders = () => {
   const hasOrders = allOrders.length > 0;
 
   return (
-    <div className={styles.ordersContainer}>
-      <h1 className={styles.pageTitle}>จัดการออเดอร์</h1>
+    <div className="container-fluid py-4">
+      <h1 className="display-5 mb-4">จัดการออเดอร์</h1>
 
-      <div className={styles.contentWrapper}>
-        <div className={styles.tablesList}>
-          <h2 className={styles.sectionTitle}>สถานะโต๊ะอาหาร</h2>
+      <div className="row">
+        {/* Left sidebar - Table List */}
+        <div className="col-md-3">
+          <div className="card shadow-sm mb-4">
+            <div className="card-header bg-light">
+              <h5 className="mb-0">สถานะโต๊ะอาหาร</h5>
+            </div>
+            <div className="card-body p-0">
+              {/* Show All Orders Button */}
+              <div 
+                className={`list-group-item list-group-item-action ${showAllOrders ? 'active' : ''}`}
+                onClick={handleShowAllOrders}
+                style={{cursor: 'pointer'}}
+              >
+                <span>แสดงออเดอร์ทั้งหมด</span>
+              </div>
 
-          {/* เพิ่มปุ่มแสดงออเดอร์ทั้งหมด */}
-          <div
-            className={`${styles.tableStatusItem} ${showAllOrders ? styles.activeTable : ''}`}
-            onClick={handleShowAllOrders}
-            style={{
-              cursor: 'pointer',
-              backgroundColor: showAllOrders ? '#e3f2fd' : '#f8f8f8',
-              marginBottom: '10px',
-              borderLeft: showAllOrders ? '4px solid #2196F3' : '4px solid #ddd'
-            }}
-          >
-            <span className={styles.tableNumber}>แสดงออเดอร์ทั้งหมด</span>
-          </div>
-
-          {tables.length === 0 ? (
-            <div className={styles.noTables}>ไม่พบข้อมูลโต๊ะ</div>
-          ) : (
-            <div className={styles.tableStatus}>
-              {tables.map((table) => (
-                <div
-                  key={table.id}
-                  className={styles.tableStatusItem}
-                  onClick={() => handleTableSelect(table.id)}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: selectedTable === table.id ? '#e3f2fd' : '#f8f8f8',
-                    borderLeft: selectedTable === table.id ? '4px solid #2196F3' : '4px solid #ddd'
-                  }}
-                >
-                  <span className={styles.tableNumber}>โต๊ะ {table.table_number}</span>
-                  <span className={`${styles.statusBadge} ${table.status_id === 2 ? styles.statusBusy : styles.statusFree}`}>
-                    {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
-                  </span>
+              {/* Table List */}
+              {tables.length === 0 ? (
+                <div className="p-3 text-center text-muted">ไม่พบข้อมูลโต๊ะ</div>
+              ) : (
+                <div className="list-group list-group-flush">
+                  {tables.map((table) => (
+                    <div
+                      key={table.id}
+                      className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${selectedTable === table.id && !showAllOrders ? 'active' : ''}`}
+                      onClick={() => handleTableSelect(table.id)}
+                      style={{cursor: 'pointer'}}
+                    >
+                      <span>โต๊ะ {table.table_number}</span>
+                      <span className={`badge ${table.status_id === 2 ? 'bg-danger' : 'bg-success'}`}>
+                        {table.status_id === 2 ? 'ไม่ว่าง' : 'ว่าง'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-
-          <div className={styles.tableStats}>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>จำนวนโต๊ะทั้งหมด:</span>
-              <span className={styles.statValue}>{tables.length}</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>โต๊ะที่ไม่ว่าง:</span>
-              <span className={styles.statValue}>{busyTables.length}</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>โต๊ะว่าง:</span>
-              <span className={styles.statValue}>{tables.length - busyTables.length}</span>
+            <div className="card-footer bg-white">
+              <div className="row text-center">
+                <div className="col-4">
+                  <div className="fw-bold">{tables.length}</div>
+                  <small className="text-muted">ทั้งหมด</small>
+                </div>
+                <div className="col-4">
+                  <div className="fw-bold">{busyTables.length}</div>
+                  <small className="text-muted">ไม่ว่าง</small>
+                </div>
+                <div className="col-4">
+                  <div className="fw-bold">{tables.length - busyTables.length}</div>
+                  <small className="text-muted">ว่าง</small>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className={styles.ordersList}>
-          <div className={styles.ordersHeader}>
-            <h2 className={styles.sectionTitle}>
-              {showAllOrders
-                ? 'ออเดอร์ทั้งหมด'
-                : `ออเดอร์โต๊ะ ${selectedTableGroup?.tableNumber || ''}`
-              }
-            </h2>
-
-            <div className={styles.orderControls}>
-              <div className={styles.orderTimeSort}>
-                <label htmlFor="sortOrder">เรียงตาม: </label>
-                <select
-                  id="sortOrder"
-                  value={sortOrder}
-                  onChange={handleSortChange}
-                  className={styles.sortSelect}
+        {/* Main content - Orders */}
+        <div className="col-md-9">
+          <div className="card shadow-sm">
+            <div className="card-header bg-light d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">
+                {showAllOrders
+                  ? 'ออเดอร์ทั้งหมด'
+                  : `ออเดอร์โต๊ะ ${selectedTableGroup?.tableNumber || ''}`
+                }
+              </h5>
+              <div className="d-flex align-items-center">
+                <div className="me-3">
+                  <label htmlFor="sortOrder" className="me-2">เรียงตาม: </label>
+                  <select
+                    id="sortOrder"
+                    value={sortOrder}
+                    onChange={handleSortChange}
+                    className="form-select form-select-sm"
+                  >
+                    <option value="newest">ล่าสุดก่อน</option>
+                    <option value="oldest">เก่าสุดก่อน</option>
+                  </select>
+                </div>
+                <button
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={fetchData}
                 >
-                  <option value="newest">ล่าสุดก่อน</option>
-                  <option value="oldest">เก่าสุดก่อน</option>
-                </select>
+                  <i className="bi bi-arrow-clockwise me-1"></i> รีเฟรช
+                </button>
               </div>
-              
-              {/* เพิ่มปุ่มรีเฟรชกลับมา เนื่องจากเราไม่มีการรีเฟรชอัตโนมัติแล้ว */}
-              <button
-                className={styles.refreshButton}
-                onClick={fetchData}
-              >
-                รีเฟรช
-              </button>
             </div>
-          </div>
-
-          {!hasOrders ? (
-            <div className={styles.noOrders}>ไม่พบออเดอร์ที่กำลังทำอยู่</div>
-          ) : (
-            <div className={styles.ordersListContainer}>
-              {/* แสดงออเดอร์ทั้งหมดเมื่อ showAllOrders เป็น true */}
-              {showAllOrders ? (
-                // แสดงออเดอร์ทุกโต๊ะ
-                allOrders.map(tableGroup => (
-                  <div key={tableGroup.tableId} className={styles.selectedTableOrders} style={{ marginBottom: '20px' }}>
-                    <div className={styles.tableHeader}>
-                      <h3 className={styles.tableTitle}>
-                        โต๊ะ {tableGroup.tableNumber}
-                        <span className={styles.orderCount}>{tableGroup.orders.length} ออเดอร์</span>
-                      </h3>
-                    </div>
-
-                    {tableGroup.orders.map((order, orderIndex) => {
-                      // จัดกลุ่มรายการอาหารตามเวลาที่สั่ง
-                      const orderedGroups = groupOrderItemsByTime(order.items);
-
-                      return (
-                        <div key={order.orderId} className={styles.orderContainer}>
-                          <div className={styles.orderHeader}>
-                            <div className={styles.orderTitle}>
-                              โต๊ะ {tableGroup.tableNumber}
-                            </div>
-                            <div className={styles.orderBadgeBlue}>
-                              ออเดอร์ #{order.orderId}
-                            </div>
-                          </div>
-
-                          {orderedGroups.map((group, groupIndex) => (
-                            <div key={groupIndex} className={styles.orderGroup}>
-                              <div className={styles.orderTimeHeader}>
-                                ครั้งที่ {orderedGroups.length - groupIndex}: {formatDateTime(group.time)}
-                              </div>
-
-                              <table className={styles.itemsTable}>
-                                <thead>
-                                  <tr>
-                                    <th>รายการ</th>
-                                    <th>จำนวน</th>
-                                    <th>ราคา</th>
-                                    <th>เวลาสั่ง</th>
-                                    <th>สถานะ</th>
-                                    <th>การจัดการ</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {group.items.map((item) => (
-                                    <tr
-                                      key={item.orderDetailId}
-                                      className={item.status === 'P' ? styles.activeItem : ''}
-                                    >
-                                      <td>{item.productName}</td>
-                                      <td className={styles.centered}>{item.quantity}</td>
-                                      <td className={styles.priceColumn}>{item.price.toFixed(2)} บาท</td>
-                                      <td className={styles.centered}>{formatTime(item.orderTime)}</td>
-                                      <td className={styles.centered}>
-                                        <span className={`${styles.statusBadge} ${getStatusClass(item.status)}`}>
-                                          {getStatusLabel(item.status)}
-                                        </span>
-                                      </td>
-                                      <td className={styles.actionsColumn}>
-                                        {item.status === 'P' && (
-                                          <div className={styles.actionButtons}>
-                                            <button
-                                              className={`${styles.actionButton} ${styles.completeButton}`}
-                                              onClick={() => handleStatusChange(item.orderDetailId, 'C')}
-                                            >
-                                              สำเร็จ
-                                            </button>
-                                            <button
-                                              className={`${styles.actionButton} ${styles.cancelButton}`}
-                                              onClick={() => handleStatusChange(item.orderDetailId, 'V')}
-                                            >
-                                              ยกเลิก
-                                            </button>
-                                          </div>
-                                        )}
-                                        {item.status === 'C' && <span className={styles.statusText}>สำเร็จ</span>}
-                                        {item.status === 'V' && <span className={styles.statusText}>ยกเลิก</span>}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-
-                              <div className={styles.groupSummary}>
-                                <div className={styles.subtotalAmount}>
-                                  รวมครั้งนี้: {group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                          <div className={styles.orderSummary}>
-                            <div className={styles.totalAmount}>
-                              รวมทั้งหมด: {order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))
+            <div className="card-body">
+              {!hasOrders ? (
+                <div className="text-center text-muted p-5">
+                  ไม่พบออเดอร์ที่กำลังทำอยู่
+                </div>
               ) : (
-                // แสดงเฉพาะโต๊ะที่เลือก
-                !selectedTableGroup ? (
-                  <div className={styles.noOrders}>กรุณาเลือกโต๊ะเพื่อดูออเดอร์</div>
-                ) : (
-                  <div className={styles.selectedTableOrders}>
-                    <div className={styles.tableHeader}>
-                      <h3 className={styles.tableTitle}>
-                        โต๊ะ {selectedTableGroup.tableNumber}
-                        <span className={styles.orderCount}>{selectedTableGroup.orders.length} ออเดอร์</span>
-                      </h3>
-                    </div>
-
-                    {selectedTableGroup.orders.map((order, orderIndex) => {
-                      // จัดกลุ่มรายการอาหารตามเวลาที่สั่ง
-                      const orderedGroups = groupOrderItemsByTime(order.items);
-
-                      return (
-                        <div key={order.orderId} className={styles.orderContainer}>
-                          <div className={styles.orderHeader}>
-                            <div className={styles.orderTitle}>
-                              โต๊ะ {selectedTableGroup.tableNumber} <span className={styles.orderBadge}>{selectedTableGroup.orders.length} ออเดอร์</span>
-                            </div>
-                            <div className={styles.orderBadgeBlue}>
-                              ออเดอร์ #{order.orderId}
-                            </div>
-                          </div>
-
-                          {orderedGroups.map((group, groupIndex) => (
-                            <div key={groupIndex} className={styles.orderGroup}>
-                              <div className={styles.orderTimeHeader}>
-                                ครั้งที่ {orderedGroups.length - groupIndex}: {formatDateTime(group.time)}
-                              </div>
-
-                              <table className={styles.itemsTable}>
-                                <thead>
-                                  <tr>
-                                    <th>รายการ</th>
-                                    <th>จำนวน</th>
-                                    <th>ราคา</th>
-                                    <th>เวลาสั่ง</th>
-                                    <th>สถานะ</th>
-                                    <th>การจัดการ</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {group.items.map((item) => (
-                                    <tr
-                                      key={item.orderDetailId}
-                                      className={item.status === 'P' ? styles.activeItem : ''}
-                                    >
-                                      <td>{item.productName}</td>
-                                      <td className={styles.centered}>{item.quantity}</td>
-                                      <td className={styles.priceColumn}>{item.price.toFixed(2)} บาท</td>
-                                      <td className={styles.centered}>{formatTime(item.orderTime)}</td>
-                                      <td className={styles.centered}>
-                                        <span className={`${styles.statusBadge} ${getStatusClass(item.status)}`}>
-                                          {getStatusLabel(item.status)}
-                                        </span>
-                                      </td>
-                                      <td className={styles.actionsColumn}>
-                                        {item.status === 'P' && (
-                                          <div className={styles.actionButtons}>
-                                            <button
-                                              className={`${styles.actionButton} ${styles.completeButton}`}
-                                              onClick={() => handleStatusChange(item.orderDetailId, 'C')}
-                                            >
-                                              สำเร็จ
-                                            </button>
-                                            <button
-                                              className={`${styles.actionButton} ${styles.cancelButton}`}
-                                              onClick={() => handleStatusChange(item.orderDetailId, 'V')}
-                                            >
-                                              ยกเลิก
-                                            </button>
-                                          </div>
-                                        )}
-                                        {item.status === 'C' && <span className={styles.statusText}>สำเร็จ</span>}
-                                        {item.status === 'V' && <span className={styles.statusText}>ยกเลิก</span>}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-
-                              <div className={styles.groupSummary}>
-                                <div className={styles.subtotalAmount}>
-                                  รวมครั้งนี้: {group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                          <div className={styles.orderSummary}>
-                            <div className={styles.totalAmount}>
-                              รวมทั้งหมด: {order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
-                            </div>
-                          </div>
+                <div className="orders-container">
+                  {/* All Orders Display */}
+                  {showAllOrders ? (
+                    allOrders.map(tableGroup => (
+                      <div key={tableGroup.tableId} className="mb-4">
+                        <div className="bg-light p-2 rounded mb-3">
+                          <h5 className="d-flex justify-content-between align-items-center mb-0">
+                            <span>โต๊ะ {tableGroup.tableNumber}</span>
+                            <span className="badge bg-info">{tableGroup.orders.length} ออเดอร์</span>
+                          </h5>
                         </div>
-                      );
-                    })}
-                  </div>
-                )
+
+                        {tableGroup.orders.map((order) => {
+                          const orderedGroups = groupOrderItemsByTime(order.items);
+
+                          return (
+                            <div key={order.orderId} className="card mb-3">
+                              <div className="card-header bg-primary text-white d-flex justify-content-between">
+                                <div>โต๊ะ {tableGroup.tableNumber}</div>
+                                <div>ออเดอร์ #{order.orderId}</div>
+                              </div>
+
+                              {orderedGroups.map((group, groupIndex) => (
+                                <div key={groupIndex} className="mb-3">
+                                  <div className="bg-light p-2">
+                                    <strong>ครั้งที่ {orderedGroups.length - groupIndex}:</strong> {formatDateTime(group.time)}
+                                  </div>
+
+                                  <div className="table-responsive">
+                                    <table className="table table-hover">
+                                      <thead>
+                                        <tr>
+                                          <th>รายการ</th>
+                                          <th className="text-center">จำนวน</th>
+                                          <th className="text-end">ราคา</th>
+                                          <th className="text-center">เวลาสั่ง</th>
+                                          <th className="text-center">สถานะ</th>
+                                          <th className="text-center">การจัดการ</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {group.items.map((item) => (
+                                          <tr
+                                            key={item.orderDetailId}
+                                            className={item.status === 'P' ? 'table-warning' : ''}
+                                          >
+                                            <td>{item.productName}</td>
+                                            <td className="text-center">{item.quantity}</td>
+                                            <td className="text-end">{item.price.toFixed(2)} บาท</td>
+                                            <td className="text-center">{formatTime(item.orderTime)}</td>
+                                            <td className="text-center">
+                                              <span className={`badge ${getStatusClass(item.status)}`}>
+                                                {getStatusLabel(item.status)}
+                                              </span>
+                                            </td>
+                                            <td className="text-center">
+                                              {item.status === 'P' && (
+                                                <div className="btn-group btn-group-sm">
+                                                  <button
+                                                    className="btn btn-success"
+                                                    onClick={() => handleStatusChange(item.orderDetailId, 'C')}
+                                                  >
+                                                    สำเร็จ
+                                                  </button>
+                                                  <button
+                                                    className="btn btn-danger"
+                                                    onClick={() => handleStatusChange(item.orderDetailId, 'V')}
+                                                  >
+                                                    ยกเลิก
+                                                  </button>
+                                                </div>
+                                              )}
+                                              {item.status === 'C' && <span className="text-success">สำเร็จ</span>}
+                                              {item.status === 'V' && <span className="text-danger">ยกเลิก</span>}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  <div className="d-flex justify-content-end p-2 bg-light">
+                                    <strong>รวมครั้งนี้: {group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท</strong>
+                                  </div>
+                                </div>
+                              ))}
+
+                              <div className="card-footer d-flex justify-content-end">
+                                <h5 className="mb-0">รวมทั้งหมด: {order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท</h5>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                  ) : (
+                    !selectedTableGroup ? (
+                      <div className="text-center text-muted p-5">
+                        กรุณาเลือกโต๊ะเพื่อดูออเดอร์
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="bg-light p-2 rounded mb-3">
+                          <h5 className="d-flex justify-content-between align-items-center mb-0">
+                            <span>โต๊ะ {selectedTableGroup.tableNumber}</span>
+                            <span className="badge bg-info">{selectedTableGroup.orders.length} ออเดอร์</span>
+                          </h5>
+                        </div>
+
+                        {selectedTableGroup.orders.map((order) => {
+                          const orderedGroups = groupOrderItemsByTime(order.items);
+
+                          return (
+                            <div key={order.orderId} className="card mb-3">
+                              <div className="card-header bg-primary text-white d-flex justify-content-between">
+                                <div>โต๊ะ {selectedTableGroup.tableNumber}</div>
+                                <div>ออเดอร์ #{order.orderId}</div>
+                              </div>
+
+                              {orderedGroups.map((group, groupIndex) => (
+                                <div key={groupIndex} className="mb-3">
+                                  <div className="bg-light p-2">
+                                    <strong>ครั้งที่ {orderedGroups.length - groupIndex}:</strong> {formatDateTime(group.time)}
+                                  </div>
+
+                                  <div className="table-responsive">
+                                    <table className="table table-hover">
+                                      <thead>
+                                        <tr>
+                                          <th>รายการ</th>
+                                          <th className="text-center">จำนวน</th>
+                                          <th className="text-end">ราคา</th>
+                                          <th className="text-center">เวลาสั่ง</th>
+                                          <th className="text-center">สถานะ</th>
+                                          <th className="text-center">การจัดการ</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {group.items.map((item) => (
+                                          <tr
+                                            key={item.orderDetailId}
+                                            className={item.status === 'P' ? 'table-warning' : ''}
+                                          >
+                                            <td>{item.productName}</td>
+                                            <td className="text-center">{item.quantity}</td>
+                                            <td className="text-end">{item.price.toFixed(2)} บาท</td>
+                                            <td className="text-center">{formatTime(item.orderTime)}</td>
+                                            <td className="text-center">
+                                              <span className={`badge ${getStatusClass(item.status)}`}>
+                                                {getStatusLabel(item.status)}
+                                              </span>
+                                            </td>
+                                            <td className="text-center">
+                                              {item.status === 'P' && (
+                                                <div className="btn-group btn-group-sm">
+                                                  <button
+                                                    className="btn btn-success"
+                                                    onClick={() => handleStatusChange(item.orderDetailId, 'C')}
+                                                  >
+                                                    สำเร็จ
+                                                  </button>
+                                                  <button
+                                                    className="btn btn-danger"
+                                                    onClick={() => handleStatusChange(item.orderDetailId, 'V')}
+                                                  >
+                                                    ยกเลิก
+                                                  </button>
+                                                </div>
+                                              )}
+                                              {item.status === 'C' && <span className="text-success">สำเร็จ</span>}
+                                              {item.status === 'V' && <span className="text-danger">ยกเลิก</span>}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  <div className="d-flex justify-content-end p-2 bg-light">
+                                    <strong>รวมครั้งนี้: {group.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท</strong>
+                                  </div>
+                                </div>
+                              ))}
+
+                              <div className="card-footer d-flex justify-content-end">
+                                <h5 className="mb-0">รวมทั้งหมด: {order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท</h5>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Modal สำหรับเลือกเหตุผลการยกเลิก */}
+      {/* Modal for cancellation reasons - This component should be updated to use Bootstrap Modal */}
       <Cancelreason
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
