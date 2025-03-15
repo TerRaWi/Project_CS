@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { updateProduct, getCategories } from "../api";
-// ไม่จำเป็นต้องนำเข้า CSS module อีกต่อไป
-// import styles from "../styles/updateproduct.module.css";
+import { updateProduct, getCategories, getImageUrl } from "../api"; // เพิ่ม getImageUrl
 
 const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
   const [formData, setFormData] = useState({
@@ -24,7 +22,7 @@ const Updateproduct = ({ product, onClose, onUpdateSuccess }) => {
         image: null,
       });
       setPreviewImage(
-        product.image_url ? `http://localhost:3001${product.image_url}` : ""
+        product.image_url ? getImageUrl(product.image_url) : ""
       );
     }
     fetchCategories();
