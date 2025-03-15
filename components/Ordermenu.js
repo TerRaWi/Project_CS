@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProduct, getCategories, createOrder } from '../api';
+import { getProduct, getCategories, createOrder, getImageUrl } from '../api';
 import Orderview from './Orderview';
 
 // เปลี่ยนจาก CSS Module เป็น Bootstrap
@@ -203,8 +203,9 @@ const Ordermenu = ({ table, onClose }) => {
                                                         onClick={() => addToOrder(product)}
                                                     >
                                                         <div className="position-relative" style={{height: '150px'}}>
-                                                            <img
-                                                                src={product.image_url ? `http://localhost:3001${product.image_url}` : '/img/default-food.jpg'}
+                                                            <img 
+                                                                src={getImageUrl(product.image_url)}
+                                                                className={`card-img-top p-3 ${product.status === 'I' ? 'opacity-50' : ''}`}
                                                                 alt={product.name}
                                                                 style={{
                                                                     position: 'absolute',
@@ -215,8 +216,9 @@ const Ordermenu = ({ table, onClose }) => {
                                                                     objectFit: 'contain'
                                                                 }}
                                                                 onError={(e) => {
-                                                                    e.target.onerror = null;
-                                                                    e.target.src = '/img/default-food.jpg';
+                                                                    e.target.onerror = null; // ป้องกันการวนซ้ำ
+                                                                    e.target.src = '/images/no-image.png'; // กำหนดรูปแทนเมื่อโหลดไม่สำเร็จ
+                                                                    console.log('Failed to load image:', product.image_url);
                                                                 }}
                                                             />
                                                         </div>
