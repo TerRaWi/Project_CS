@@ -29,7 +29,8 @@ const upload = multer({ storage: storage });
 
 // สร้าง Express app และกำหนดพอร์ต
 const app = express();
-const PORT = 3001;
+//const PORT = 3001;
+const PORT = 4000;
 
 // กำหนด middleware
 app.use(cors());
@@ -38,9 +39,10 @@ app.use('/uploads', express.static('uploads'));
 
 // เชื่อมต่อฐานข้อมูล MySQL
 const db = mysql.createConnection({
-  host: 'localhost',
+  host: 'mysql-db',
   user: 'root',
-  password: '6101',
+  port: '3306',
+  password: 'root',
   database: 'posdb'
 });
 

@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  express-app:
+    container_name: pos_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=production
+    command: ["sh", "-c", "sleep 10 && node server.js"]
+    depends_on:
+      - mysql-db
+    mem_limit: 512m  # Increase memory limit to 512MB (or more if needed)
+    cpu_count: 1 
+
+  mysql-db:
+    image: mysql:5.7
+    container_name: pos_database
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: posdb
+    volumes:
+      - mysql-data:/var/lib/mysql
+    mem_limit: 512m  # Increase memory limit to 512MB (or more if needed)
+    cpu_count: 1 
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql-db  # Host of the MySQL container
+      PMA_PORT: 3306      # Port for MySQL
+      MYSQL_ROOT_PASSWORD: root  # Root password for MySQL
+    ports:
+      - "8080:80"  # Expose phpMyAdmin on port 8080
+    depends_on:
+      - mysql-db  # Make sure MySQL is up before phpMyAdmin starts
+
+volumes:
+  express-data:
+    driver: local
+  mysql-data:
+    driver: local
