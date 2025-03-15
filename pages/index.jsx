@@ -139,7 +139,7 @@ const Home = () => {
 
   return (
     <div className="container-fluid py-4">
-      <h1 className="display-5 mb-4">หน้าหลัก</h1>
+      <h1 className="display-5 mb-4">หน้าหลักtest</h1>
 
       {/* แถวแรก - ข้อมูลสรุป */}
       <div className="row mb-4">
@@ -162,7 +162,7 @@ const Home = () => {
 
         {/* โต๊ะที่กำลังใช้งาน */}
         <div className="col-md-4">
-          <div className="card shadow-sm bg-success text-white">
+          <div className="card shadow-sm bg-danger text-white">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
@@ -170,7 +170,7 @@ const Home = () => {
                   <h2 className="mb-0">{stats.occupiedTables}</h2>
                 </div>
                 <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                  <i className="bi bi-person text-success" style={{ fontSize: '24px' }}></i>
+                  <i className="bi bi-person text-danger" style={{ fontSize: '24px' }}></i>
                 </div>
               </div>
             </div>
