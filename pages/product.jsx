@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getProduct, getCategories, updateProductStatus } from "../api";
+import { getProduct, getCategories, updateProductStatus, getImageUrl } from "../api"; // เพิ่ม import getImageUrl
 import Addproduct from "../components/Addproduct";
 import Updateproduct from "../components/Updateproduct";
 import Delproduct from "../components/Delproduct";
@@ -51,7 +51,7 @@ const Products = () => {
       setIsLoading(true);
       const newStatus = product.status === 'A' ? 'I' : 'A';
       const updatedProduct = await updateProductStatus(product.id, newStatus);
-      
+
       setProducts(prevProducts =>
         prevProducts.map(p =>
           p.id === product.id ? { ...p, status: updatedProduct.status } : p
@@ -96,13 +96,13 @@ const Products = () => {
       prevProducts.map((product) =>
         product.id === updatedProduct.id
           ? {
-              ...product,
-              ...updatedProduct,
-              name: updatedProduct.name,
-              price: updatedProduct.price,
-              category_id: updatedProduct.category_id,
-              image_url: updatedProduct.image_url || product.image_url
-            }
+            ...product,
+            ...updatedProduct,
+            name: updatedProduct.name,
+            price: updatedProduct.price,
+            category_id: updatedProduct.category_id,
+            image_url: updatedProduct.image_url || product.image_url
+          }
           : product
       )
     );
@@ -125,7 +125,7 @@ const Products = () => {
       <div className="row mb-4">
         <div className="col">
           <h2 className="bg-warning text-white py-1 px-3 rounded d-inline-block">จัดการเมนู</h2>
-          
+
           <button
             onClick={() =>
               setModalState({
@@ -178,19 +178,24 @@ const Products = () => {
                     </div>
                   )}
                   <img
-                    src={`http://localhost:3001${product.image_url}`}
+                    src={getImageUrl(product.image_url)} // ใช้ฟังก์ชัน getImageUrl แทนการแปลง URL โดยตรง
                     className={`card-img-top p-3 ${product.status === 'I' ? 'opacity-50' : ''}`}
                     alt={product.name}
                     style={{ height: '150px', objectFit: 'contain' }}
+                    onError={(e) => {
+                      e.target.onerror = null; // ป้องกันการวนซ้ำ
+                      e.target.src = '/images/no-image.png'; // กำหนดรูปแทนเมื่อโหลดไม่สำเร็จ
+                      console.log('Failed to load image:', product.image_url);
+                    }}
                   />
                   <div className="position-absolute top-0 end-0">
-                    <Delproduct 
+                    <Delproduct
                       productId={product.id}
                       onDelete={handleDeleteSuccess}
                     />
                   </div>
                 </div>
-                
+
                 <div className="card-body p-3">
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <small className="text-muted">รหัส: {product.id}</small>
@@ -203,7 +208,7 @@ const Products = () => {
                       : "N/A"}
                   </p>
                 </div>
-                
+
                 <div className="card-footer bg-transparent d-flex justify-content-between py-3">
                   <button
                     onClick={() => handleToggleStatus(product)}

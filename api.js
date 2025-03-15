@@ -147,6 +147,20 @@ export const updateProduct = async (id, productData) => {
   }
 };
 
+// เพิ่มฟังก์ชั่นช่วยสำหรับการจัดการกับ URL รูปภาพ
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  // ถ้าเป็น URL เต็มอยู่แล้ว ให้ใช้ค่านั้นเลย
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // ถ้าเป็น path สัมพัทธ์ ให้แปลงเป็น URL เต็ม
+  const baseUrl = API_URL.replace('/api', '');
+  return `${baseUrl}${imagePath}`;
+};
+
 // อัพเดทสถานะสินค้า (ระงับการขาย)
 export const updateProductStatus = async (id, newStatus) => {
   try {
