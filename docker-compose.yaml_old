@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  nextjs-app:
+    container_name: Cs_web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: "npm run dev"
+
+
+volumes:
+  nextjs-data:
+    driver: local
