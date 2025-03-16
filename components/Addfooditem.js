@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getProduct, addOrderItem, getCategories } from "../api";
+import { getProduct, addOrderItem, getCategories, getImageUrl } from "../api";  // เพิ่ม import getImageUrl
 import { Modal, Button, Form, Container, Row, Col, Card, Badge, InputGroup } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -270,21 +270,15 @@ const Addfooditem = ({ orderId, onClose, onItemAdded }) => {
                                     {filteredProducts.map(product => (
                                         <Col key={product.id}>
                                             <Card className="h-100 shadow-sm" onClick={() => handleAddToOrder(product)} style={{ cursor: 'pointer' }}>
-                                                {product.image_url ? (
-                                                    <Card.Img 
-                                                        variant="top" 
-                                                        src={product.image_url.startsWith('/') ? `http://localhost:3001${product.image_url}` : product.image_url}
-                                                        style={{ height: '130px', objectFit: 'cover' }}
-                                                        onError={(e) => {
-                                                            e.target.onerror = null;
-                                                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f8f9fa'/%3E%3Ctext x='50' y='50' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23adb5bd'%3E" + product.name.substring(0, 1) + "%3C/text%3E%3C/svg%3E";
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <div className="bg-light d-flex align-items-center justify-content-center" style={{ height: '130px' }}>
-                                                        <span className="display-4 text-muted">{product.name.substring(0, 1)}</span>
-                                                    </div>
-                                                )}
+                                                <Card.Img 
+                                                    variant="top" 
+                                                    src={getImageUrl(product.image_path || product.image_url)}
+                                                    style={{ height: '130px', objectFit: 'cover' }}
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f8f9fa'/%3E%3Ctext x='50' y='50' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23adb5bd'%3E" + product.name.substring(0, 1) + "%3C/text%3E%3C/svg%3E";
+                                                    }}
+                                                />
                                                 <Card.Body className="py-2">
                                                     <Card.Title className="fs-6 text-truncate mb-1">{product.name}</Card.Title>
                                                     <Card.Text className="text-warning fw-bold mb-0">
