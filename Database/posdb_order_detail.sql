@@ -40,7 +40,7 @@ CREATE TABLE `order_detail` (
   CONSTRAINT `fk_detail_cancel_reason` FOREIGN KEY (`cancel_reason_id`) REFERENCES `cancel_reason` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_detail_order` FOREIGN KEY (`order_id`) REFERENCES `order` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_detail_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=650 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ตารางเก็บรายละเอียดการสั่งอาหาร';
+) ENGINE=InnoDB AUTO_INCREMENT=650 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='ตารางเก็บรายละเอียดการสั่งอาหาร';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

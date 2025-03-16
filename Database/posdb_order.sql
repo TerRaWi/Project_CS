@@ -33,7 +33,7 @@ CREATE TABLE `order` (
   PRIMARY KEY (`id`),
   KEY `fk_order_table_idx` (`table_id`),
   CONSTRAINT `fk_order_table` FOREIGN KEY (`table_id`) REFERENCES `dining_table` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=197 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ตารางเก็บข้อมูลการสั่งอาหาร';
+) ENGINE=InnoDB AUTO_INCREMENT=197 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='ตารางเก็บข้อมูลการสั่งอาหาร';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

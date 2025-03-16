@@ -17,7 +17,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema posdb
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `posdb` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
+CREATE SCHEMA IF NOT EXISTS `posdb` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci ;
 USE `posdb` ;
 
 -- -----------------------------------------------------
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`cancel_reason` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 5
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บเหตุผลในการยกเลิกรายการอาหาร';
 
 
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`category` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 13
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บหมวดหมู่สินค้า';
 
 
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`table_status` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 9
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บสถานะของโต๊ะอาหาร';
 
 
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`dining_table` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 55
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บข้อมูลโต๊ะอาหาร';
 
 
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`order` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 197
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บข้อมูลการสั่งอาหาร';
 
 
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`product` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 19
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บข้อมูลสินค้า';
 
 
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`order_detail` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 650
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บรายละเอียดการสั่งอาหาร';
 
 
@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`order_status` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 5
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci
+COLLATE = utf8mb4_general_ci
 COMMENT = 'ตารางเก็บสถานะของรายการอาหาร';
 
 
@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`payment` (
 ENGINE = InnoDB
 AUTO_INCREMENT = 88
 DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci;
+COLLATE = utf8mb4_general_ci;
 
 
 SET SQL_MODE=@OLD_SQL_MODE;

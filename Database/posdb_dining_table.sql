@@ -32,7 +32,7 @@ CREATE TABLE `dining_table` (
   UNIQUE KEY `table_number_UNIQUE` (`table_number`),
   KEY `fk_table_status_idx` (`status_id`),
   CONSTRAINT `fk_table_status` FOREIGN KEY (`status_id`) REFERENCES `table_status` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ตารางเก็บข้อมูลโต๊ะอาหาร';
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='ตารางเก็บข้อมูลโต๊ะอาหาร';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
