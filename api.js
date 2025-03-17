@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-//const API_URL = 'http://localhost:3001/api';
-const API_URL = "http://203.159.93.245:3001/api"
+const API_URL = 'http://localhost:3001/api';
+// const API_URL = "http://203.159.93.245:3001/api" // Server
 
 
 /**

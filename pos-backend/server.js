@@ -29,20 +29,28 @@ const upload = multer({ storage: storage });
 
 // สร้าง Express app และกำหนดพอร์ต
 const app = express();
-//const PORT = 3001;
-const PORT = 4000;
+const PORT = 3001;
+// const PORT = 4000; //server
 
 // กำหนด middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
+// // เชื่อมต่อฐานข้อมูล MySQL //server
+// const db = mysql.createConnection({
+//   host: 'mysql-db',
+//   user: 'root',
+//   port: '3306',
+//   password: 'root',
+//   database: 'posdb'
+// });
+
 // เชื่อมต่อฐานข้อมูล MySQL
 const db = mysql.createConnection({
-  host: 'mysql-db',
+  host: 'localhost',
   user: 'root',
-  port: '3306',
-  password: 'root',
+  password: '6101',
   database: 'posdb'
 });
 
