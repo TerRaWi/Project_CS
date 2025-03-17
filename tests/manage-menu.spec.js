@@ -100,5 +100,4 @@ test('TC04 ลบสินค้า', async ({ page }) => {
         .locator('button.btn-danger.rounded-circle')
         .first()
         .click();
-
 });
