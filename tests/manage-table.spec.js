@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('ทดสอบจัดการผังโต๊ะ', () => {
-
     test('TC01 เพิ่มโต๊ะ', async ({ page }) => {
         await page.goto('http://localhost:3000/tablelayout');
 
@@ -42,4 +40,3 @@ test.describe('ทดสอบจัดการผังโต๊ะ', () => {
         // ตรวจสอบว่าโต๊ะถูกลบ
         await expect(tableSpan).not.toBeVisible();
     });
-});
