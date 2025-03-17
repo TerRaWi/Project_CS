@@ -2,14 +2,22 @@ import React, { useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react'; // ใช้ QRCodeSVG แทน QRCode
 import html2canvas from 'html2canvas';
 
-const OrderQRGenerator = ({ orderId, tableNumber }) => {
+const OrderQRGenerator = ({ orderId, tableNumber, urlType = 'customer' }) => {
     const [size, setSize] = useState(180);
     const qrRef = useRef(null);
 
     // สร้าง URL สำหรับการสั่งอาหาร
-    const orderUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/order/${orderId}`
-        : `/order/${orderId}`;
+    // urlType ใช้สำหรับกำหนดว่าจะชี้ไปที่ URL ไหน (customer หรือ order)
+    const getQrUrl = () => {
+        if (typeof window === 'undefined') {
+            return `/${urlType}/${orderId}`;
+        }
+
+        // สร้าง URL แบบเต็มรูปแบบ
+        return `${window.location.origin}/${urlType}/${orderId}`;
+    };
+
+    const orderUrl = getQrUrl();
 
     // ดาวน์โหลด QR Code เป็นรูปภาพ
     const downloadQRCode = () => {
@@ -18,7 +26,7 @@ const OrderQRGenerator = ({ orderId, tableNumber }) => {
         html2canvas(qrRef.current).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = `order-qr-table-${tableNumber}.png`;
+            link.download = `${urlType}-qr-table-${tableNumber}.png`;
             link.href = imgData;
             link.click();
         });
@@ -36,6 +44,10 @@ const OrderQRGenerator = ({ orderId, tableNumber }) => {
                 alert('กรุณาอนุญาตให้เปิดหน้าต่างป๊อปอัพเพื่อพิมพ์ QR Code');
                 return;
             }
+
+            const titleText = urlType === 'customer'
+                ? 'หน้าควบคุมสำหรับลูกค้า'
+                : 'สั่งอาหาร';
 
             const htmlContent = `
         <!DOCTYPE html>
@@ -99,7 +111,7 @@ const OrderQRGenerator = ({ orderId, tableNumber }) => {
           </head>
           <body>
             <div class="print-container">
-              <h2>สแกนเพื่อสั่งอาหาร</h2>
+              <h2>สแกนเพื่อ${titleText}</h2>
               <p>โต๊ะ ${tableNumber}</p>
               <img src="${imgData}" class="qr-image" alt="QR Code" />
               <div class="url-text">${orderUrl}</div>
@@ -152,6 +164,14 @@ const OrderQRGenerator = ({ orderId, tableNumber }) => {
         );
     };
 
+    const headerTitle = urlType === 'customer'
+        ? 'QR Code สำหรับหน้าควบคุมลูกค้า'
+        : 'QR Code สำหรับสั่งอาหาร';
+
+    const scanText = urlType === 'customer'
+        ? 'สแกนเพื่อเข้าหน้าควบคุม'
+        : 'สแกนเพื่อสั่งอาหาร';
+
     return (
         <div>
             <div className="text-center mb-3">
@@ -168,7 +188,7 @@ const OrderQRGenerator = ({ orderId, tableNumber }) => {
                         includeMargin={true}
                         className="mx-auto d-block"
                     />
-                    <div className="small text-muted mt-2">สแกนเพื่อสั่งอาหาร</div>
+                    <div className="small text-muted mt-2">{scanText}</div>
                 </div>
             </div>
 
@@ -221,7 +241,7 @@ const OrderQRGenerator = ({ orderId, tableNumber }) => {
                     <i className="bi bi-clipboard"></i>
                 </button>
             </div>
-            <div className="form-text text-center">ลิงก์สำหรับการสั่งอาหาร</div>
+            <div className="form-text text-center">ลิงก์สำหรับ{urlType === 'customer' ? 'หน้าควบคุม' : 'การสั่งอาหาร'}</div>
         </div>
     );
 };

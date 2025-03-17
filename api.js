@@ -578,3 +578,79 @@ export const cancelTable = async (tableId) => {
     throw new Error('เกิดข้อผิดพลาดในการยกเลิกโต๊ะ');
   }
 };
+
+// เพิ่มฟังก์ชันนี้ในไฟล์ api.js ของคุณ
+
+/**
+ * ส่งคำขอบริการของลูกค้า
+ * @param {number} tableId - รหัสโต๊ะ
+ * @param {number} orderId - รหัสออเดอร์
+ * @param {string} serviceType - ประเภทของบริการที่ต้องการ
+ * @param {string} note - บันทึกเพิ่มเติม (ถ้ามี)
+ * @returns {Promise<object>} - ข้อมูลการตอบกลับจากเซิร์ฟเวอร์
+ */
+export const requestCustomerService = async (tableId, orderId, serviceType, note = '') => {
+  try {
+    const response = await axios.post(`${API_URL}/service-requests`, {
+      tableId,
+      orderId,
+      serviceType,
+      note,
+      requestTime: new Date().toISOString()
+    });
+    
+    return response.data;
+  } catch (err) {
+    console.error('Error sending service request:', err);
+    
+    if (axios.isAxiosError(err)) {
+      if (err.response) {
+        throw new Error(err.response.data?.error || 'เกิดข้อผิดพลาดในการส่งคำขอบริการ');
+      } else if (err.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    
+    throw new Error('เกิดข้อผิดพลาดในการส่งคำขอบริการ');
+  }
+};
+
+/**
+ * ดึงข้อมูลคำขอบริการของโต๊ะ
+ * @param {number} tableId - รหัสโต๊ะ
+ * @returns {Promise<Array>} - รายการคำขอบริการ
+ */
+export const getServiceRequestsByTable = async (tableId) => {
+  try {
+    const response = await axios.get(`${API_URL}/service-requests`, {
+      params: { tableId }
+    });
+    
+    return response.data;
+  } catch (err) {
+    console.error('Error fetching service requests:', err);
+    handleApiError(err, 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอบริการ');
+  }
+};
+
+/**
+ * อัพเดตสถานะคำขอบริการ
+ * @param {number} requestId - รหัสคำขอบริการ
+ * @param {string} status - สถานะใหม่ (pending, in-progress, completed, canceled)
+ * @param {string} note - บันทึกเพิ่มเติม (ถ้ามี)
+ * @returns {Promise<object>} - ข้อมูลคำขอบริการที่อัพเดต
+ */
+export const updateServiceRequestStatus = async (requestId, status, note = '') => {
+  try {
+    const response = await axios.patch(`${API_URL}/service-requests/${requestId}/status`, {
+      status,
+      note,
+      updatedAt: new Date().toISOString()
+    });
+    
+    return response.data;
+  } catch (err) {
+    console.error('Error updating service request status:', err);
+    handleApiError(err, 'เกิดข้อผิดพลาดในการอัพเดตสถานะคำขอบริการ');
+  }
+};
