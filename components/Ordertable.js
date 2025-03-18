@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import Ordermenu from "./Ordermenu";
 import Billpayment from "./Billpayment";
 import Tablemanage from "./Tablemanage";
+import OrderQRGenerator from "./OrderQRGenerator";
 import { getOrdersByTable } from "../api";
-// นำเข้า Bootstrap (ต้องแน่ใจว่าได้ติดตั้ง Bootstrap ในโปรเจค)
-// npm install bootstrap หรือเพิ่ม <link> ใน index.html
 
 const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
   const [showOrdermenu, setShowOrdermenu] = useState(false);
   const [showBillpayment, setShowBillpayment] = useState(false);
   const [showTablemanage, setShowTablemanage] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,25 +18,25 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
   useEffect(() => {
     const fetchActiveOrder = async () => {
       if (!table) return;
-      
+
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const orders = await getOrdersByTable(table.id);
-        console.log("Orders for table:", orders); // เพิ่ม log เพื่อดูข้อมูล
-        
+        console.log("Orders for table:", orders);
+
         // กรองเฉพาะออเดอร์ที่มีสถานะ Active
         const activeOrders = orders.filter(order => order.status === 'A');
-        
+
         if (activeOrders.length > 0) {
           // เรียงลำดับตามเวลาล่าสุด
           activeOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
           setActiveOrder(activeOrders[0]);
-          console.log("Active order found:", activeOrders[0]); // เพิ่ม log
+          console.log("Active order found:", activeOrders[0]);
         } else {
           setActiveOrder(null);
-          console.log("No active orders found"); // เพิ่ม log
+          console.log("No active orders found");
         }
       } catch (err) {
         console.error("Error fetching active order:", err);
@@ -51,61 +51,60 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
 
   // จัดการเมื่อชำระเงินสำเร็จ
   const handlePaymentSuccess = (result) => {
-    console.log("Payment successful:", result); // เพิ่ม log
-    
+    console.log("Payment successful:", result);
+
     // ปิด modal การชำระเงิน
     setShowBillpayment(false);
-    
+
     // แจ้ง component หลักว่าชำระเงินสำเร็จ
     if (onPaymentSuccess) {
       onPaymentSuccess(result);
     }
-    
+
     // รีเฟรชข้อมูลหรือปิดหน้าต่าง
     if (onClose) {
       onClose();
     }
-    
+
     // แสดงข้อความสำเร็จ (อาจใช้ modal หรือ toast notification)
     alert(`ชำระเงินสำเร็จ: ${result.totalAmount} บาท`);
   };
 
   // จัดการเมื่อกดปุ่มคิดเงิน
   const handleBillButtonClick = () => {
-    console.log("Bill button clicked, activeOrder:", activeOrder); // เพิ่ม log
-    
+    console.log("Bill button clicked, activeOrder:", activeOrder);
+
     if (!activeOrder) {
       alert("ไม่พบออเดอร์ที่เปิดอยู่");
       return;
     }
-    
+
     setShowBillpayment(true);
   };
 
   // จัดการเมื่อจัดการโต๊ะสำเร็จ
   const handleTablemanageSuccess = (result) => {
-    console.log("Table management successful:", result); // เพิ่ม log
-    
+    console.log("Table management successful:", result);
+
     // ปิด modal จัดการโต๊ะ
     setShowTablemanage(false);
-    
-    // แจ้ง component หลักว่ามีการเปลี่ยนแปลงโต๊ะ (ใช้ onPaymentSuccess เพื่อทำให้ parent component รีเฟรชข้อมูล)
+
+    // แจ้ง component หลักว่ามีการเปลี่ยนแปลงโต๊ะ
     if (onPaymentSuccess) {
       onPaymentSuccess({
         action: result.action,
         tableId: table.id,
-        // เพิ่มข้อมูลอื่นๆ ตามต้องการ
       });
     }
-    
+
     // ปิดหน้าต่าง Ordertable เนื่องจากโต๊ะอาจถูกย้ายหรือยกเลิกไปแล้ว
     if (onClose) {
       onClose();
     }
-    
+
     // แสดงข้อความสำเร็จตามประเภทการจัดการ
     let message = "";
-    
+
     switch (result.action) {
       case 'move':
         message = `ย้ายโต๊ะเรียบร้อยแล้ว`;
@@ -119,7 +118,7 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
       default:
         message = `ดำเนินการเรียบร้อยแล้ว`;
     }
-    
+
     alert(message);
   };
 
@@ -133,20 +132,44 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
     zIndex: 1000
   };
 
+  // จัดการการแสดง QR Code
+  const handleQRCodeButtonClick = () => {
+    if (!activeOrder) {
+      alert("ไม่พบออเดอร์ที่เปิดอยู่ ไม่สามารถสร้าง QR Code ได้");
+      return;
+    }
+
+    // ปิด modals อื่นๆ ก่อนแสดง QR Code
+    setShowOrdermenu(false);
+    setShowBillpayment(false);
+    setShowTablemanage(false);
+
+    // เปิด QR Code modal
+    setShowQRCode(true);
+  };
+
+  // ปิดทุก modal
+  const closeAllModals = () => {
+    setShowOrdermenu(false);
+    setShowBillpayment(false);
+    setShowTablemanage(false);
+    setShowQRCode(false);
+  };
+
   return (
     <>
       <div className="bg-light d-flex flex-column border-start shadow-sm p-3" style={sidebarStyle}>
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h5 className="mb-0">โต๊ะ: {table ? table.table_number : "N/A"}</h5>
-          <button 
-            className="btn btn-danger" 
+          <button
+            className="btn btn-danger"
             onClick={onClose}
             aria-label="Close"
           >
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        
+
         {isLoading ? (
           <div className="d-flex justify-content-center my-4">
             <div className="spinner-border text-primary" role="status">
@@ -159,36 +182,91 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
           </div>
         ) : (
           <div className="d-grid gap-3">
-            <button 
-              className="btn btn-success" 
-              onClick={() => setShowOrdermenu(true)}
+            <button
+              className="btn btn-success"
+              onClick={() => {
+                closeAllModals();
+                setShowOrdermenu(true);
+              }}
             >
+              <i className="bi bi-cart-plus me-2"></i>
               สั่งอาหาร
             </button>
-            <button className="btn btn-primary">
-              พิมพ์ QR code
-            </button>
-            <button 
-              className="btn btn-warning text-white" 
-              onClick={handleBillButtonClick}
+
+            <button
+              className="btn btn-info text-white"
+              onClick={handleQRCodeButtonClick}
+              disabled={!activeOrder}
             >
+              <i className="bi bi-qr-code me-2"></i>
+              QR Code สั่งอาหาร
+            </button>
+
+            <button
+              className="btn btn-warning text-white"
+              onClick={() => {
+                closeAllModals();
+                handleBillButtonClick();
+              }}
+              disabled={!activeOrder}
+            >
+              <i className="bi bi-cash-coin me-2"></i>
               คิดเงิน
             </button>
-            <button 
+
+            <button
               className="btn btn-purple"
               style={{ backgroundColor: '#9c27b0', color: 'white' }}
-              onClick={() => setShowTablemanage(true)}
+              onClick={() => {
+                closeAllModals();
+                setShowTablemanage(true);
+              }}
             >
+              <i className="bi bi-gear me-2"></i>
               แก้ไข
             </button>
           </div>
         )}
       </div>
 
+      {/* QR Code Modal */}
+      {showQRCode && activeOrder && (
+        <div className="qr-code-modal">
+          <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ zIndex: 1050, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+            <div className="bg-white rounded-3 shadow" style={{ maxWidth: '500px', width: '90%' }}>
+              <div className="modal-header bg-primary text-white p-3 rounded-top-3">
+                <h5 className="modal-title mb-0">QR Code สำหรับลูกค้าสั่งอาหาร</h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowQRCode(false)}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body p-4">
+                <OrderQRGenerator
+                  orderId={activeOrder.orderId}
+                  tableNumber={table ? table.table_number : ""}
+                />
+              </div>
+              <div className="modal-footer bg-light p-3 rounded-bottom-3">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowQRCode(false)}
+                >
+                  ปิด
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showOrdermenu && (
-        <Ordermenu 
-          table={table} 
-          onClose={() => setShowOrdermenu(false)} 
+        <Ordermenu
+          table={table}
+          onClose={() => setShowOrdermenu(false)}
         />
       )}
 

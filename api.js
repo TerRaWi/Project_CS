@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-//const API_URL = 'http://localhost:3001/api';
-const API_URL = "http://203.159.93.245:3001/api"
+const API_URL = 'http://localhost:3001/api';
+// const API_URL = "http://203.159.93.245:3001/api" // Server
 
 
 /**
@@ -576,5 +576,136 @@ export const cancelTable = async (tableId) => {
       }
     }
     throw new Error('เกิดข้อผิดพลาดในการยกเลิกโต๊ะ');
+  }
+};
+
+export const getPaymentsByStatus = async (status, startDate, endDate) => {
+  try {
+    // ถ้าเลือกสถานะ "ทั้งหมด" ให้ดึงข้อมูลทั้งหมด ไม่ต้องกรอง status
+    const url = `${API_URL}/payments${status === 'all' ? '' : `/${status}`}`;
+    
+    // สร้าง params สำหรับช่วงวันที่
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    
+    const { data } = await axios.get(url, { params });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการชำระเงิน');
+  }
+};
+
+export const getCanceledBills = async (startDate, endDate) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/canceled-orders`, {
+      params: { startDate, endDate }
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงข้อมูลบิลที่ถูกยกเลิก');
+  }
+};
+
+// คำขอบริการของลูกค้า
+
+/**
+ * ส่งคำขอบริการของลูกค้า
+ * @param {number} tableId - รหัสโต๊ะ
+ * @param {number} orderId - รหัสออเดอร์
+ * @param {string} serviceType - ประเภทของบริการที่ต้องการ
+ * @param {string} note - บันทึกเพิ่มเติม (ถ้ามี)
+ * @returns {Promise<object>} - ข้อมูลการตอบกลับจากเซิร์ฟเวอร์
+ */
+export const requestCustomerService = async (tableId, orderId, serviceType, note = '') => {
+  try {
+    const response = await axios.post(`${API_URL}/service-requests`, {
+      tableId,
+      orderId,
+      serviceType,
+      note,
+      requestTime: new Date().toISOString()
+    });
+    
+    return response.data;
+  } catch (err) {
+    console.error('Error sending service request:', err);
+    
+    if (axios.isAxiosError(err)) {
+      if (err.response) {
+        throw new Error(err.response.data?.error || 'เกิดข้อผิดพลาดในการส่งคำขอบริการ');
+      } else if (err.request) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    }
+    
+    throw new Error('เกิดข้อผิดพลาดในการส่งคำขอบริการ');
+  }
+};
+
+/**
+ * ดึงข้อมูลคำขอบริการของโต๊ะ
+ * @param {number} tableId - รหัสโต๊ะ
+ * @returns {Promise<Array>} - รายการคำขอบริการ
+ */
+export const getServiceRequestsByTable = async (tableId) => {
+  try {
+    const response = await axios.get(`${API_URL}/service-requests`, {
+      params: { tableId }
+    });
+    
+    return response.data;
+  } catch (err) {
+    console.error('Error fetching service requests:', err);
+    handleApiError(err, 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอบริการ');
+  }
+};
+
+/**
+ * อัพเดตสถานะคำขอบริการ
+ * @param {number} requestId - รหัสคำขอบริการ
+ * @param {string} status - สถานะใหม่ (pending, in-progress, completed, canceled)
+ * @param {string} note - บันทึกเพิ่มเติม (ถ้ามี)
+ * @returns {Promise<object>} - ข้อมูลคำขอบริการที่อัพเดต
+ */
+export const updateServiceRequestStatus = async (requestId, status, note = '') => {
+  try {
+    const response = await axios.patch(`${API_URL}/service-requests/${requestId}/status`, {
+      status,
+      note,
+      updatedAt: new Date().toISOString()
+    });
+    
+    return response.data;
+  } catch (err) {
+    console.error('Error updating service request status:', err);
+    handleApiError(err, 'เกิดข้อผิดพลาดในการอัพเดตสถานะคำขอบริการ');
+  }
+};
+
+/**
+ * ดึงประวัติบิลทั้งหมด (ทั้งที่ชำระแล้วและที่ยกเลิก)
+ * @param {string} startDate - วันที่เริ่มต้น (yyyy-MM-dd)
+ * @param {string} endDate - วันที่สิ้นสุด (yyyy-MM-dd)
+ * @param {string} status - สถานะที่ต้องการ ('all', 'completed', 'canceled')
+ * @returns {Promise<Array>} - รายการบิลทั้งหมด
+ */
+export const getBillHistory = async (startDate, endDate, status = 'all') => {
+  try {
+    // สร้าง query parameters
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (status !== 'all') params.append('status', status);
+    
+    // ส่งคำขอไปยัง API
+    const url = `${API_URL}/bill-history?${params.toString()}`;
+    console.log('Fetching bill history from:', url);
+    
+    const { data } = await axios.get(url);
+    return data;
+  } catch (error) {
+    console.error('Error fetching bill history:', error);
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติบิล');
   }
 };

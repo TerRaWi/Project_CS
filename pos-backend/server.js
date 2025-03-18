@@ -29,20 +29,28 @@ const upload = multer({ storage: storage });
 
 // สร้าง Express app และกำหนดพอร์ต
 const app = express();
-//const PORT = 3001;
-const PORT = 4000;
+const PORT = 3001;
+// const PORT = 4000; //server
 
 // กำหนด middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
+// // เชื่อมต่อฐานข้อมูล MySQL //server
+// const db = mysql.createConnection({
+//   host: 'mysql-db',
+//   user: 'root',
+//   port: '3306',
+//   password: 'root',
+//   database: 'posdb'
+// });
+
 // เชื่อมต่อฐานข้อมูล MySQL
 const db = mysql.createConnection({
-  host: 'mysql-db',
+  host: 'localhost',
   user: 'root',
-  port: '3306',
-  password: 'root',
+  password: '6101',
   database: 'posdb'
 });
 
@@ -988,7 +996,7 @@ app.get('/api/order/:orderId/bill', async (req, res) => {
 app.get('/api/payments', async (req, res) => {
   try {
     const [payments] = await db.promise().query(
-      `SELECT p.*, o.table_id, dt.table_number
+      `SELECT p.*, o.table_id, dt.table_number, o.status AS order_status
         FROM payment p
         JOIN \`order\` o ON p.order_id = o.id
         JOIN dining_table dt ON o.table_id = dt.id
@@ -1413,6 +1421,374 @@ app.post('/api/system/create-cancellation-log-table', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการสร้างตาราง cancellation_log'
+    });
+  }
+});
+
+/**
+ * ============================
+ * API เกี่ยวกับคำขอบริการลูกค้า (Service Requests)
+ * ============================
+ */
+
+// สร้างตาราง service_requests หากยังไม่มี
+app.post('/api/system/create-service-requests-table', async (req, res) => {
+  try {
+    await db.promise().query(`
+      CREATE TABLE IF NOT EXISTS service_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        table_id INT NOT NULL,
+        order_id INT NOT NULL,
+        service_type VARCHAR(100) NOT NULL,
+        note TEXT,
+        status ENUM('pending', 'in-progress', 'completed', 'canceled') DEFAULT 'pending',
+        request_time TIMESTAMP NOT NULL,
+        complete_time TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (table_id) REFERENCES dining_table(id),
+        FOREIGN KEY (order_id) REFERENCES \`order\`(id)
+      )
+    `);
+    
+    res.json({
+      success: true,
+      message: 'Created service_requests table'
+    });
+  } catch (error) {
+    console.error('Error creating service_requests table:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการสร้างตาราง service_requests'
+    });
+  }
+});
+
+// สร้างคำขอบริการใหม่
+app.post('/api/service-requests', async (req, res) => {
+  const { tableId, orderId, serviceType, note, requestTime } = req.body;
+
+  if (!tableId || !orderId || !serviceType) {
+    return res.status(400).json({
+      success: false,
+      message: 'กรุณาระบุข้อมูลให้ครบถ้วน'
+    });
+  }
+
+  try {
+    // ตรวจสอบว่าโต๊ะและออเดอร์มีอยู่จริง
+    const [tableCheck] = await db.promise().query(
+      'SELECT id FROM dining_table WHERE id = ?',
+      [tableId]
+    );
+
+    const [orderCheck] = await db.promise().query(
+      'SELECT id FROM `order` WHERE id = ? AND status = "A"',
+      [orderId]
+    );
+
+    if (tableCheck.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลโต๊ะที่ระบุ'
+      });
+    }
+
+    if (orderCheck.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลออเดอร์ที่ระบุหรือออเดอร์ไม่ได้มีสถานะเปิดใช้งาน'
+      });
+    }
+
+    // บันทึกคำขอบริการ
+    const [result] = await db.promise().query(
+      `INSERT INTO service_requests 
+        (table_id, order_id, service_type, note, request_time) 
+        VALUES (?, ?, ?, ?, ?)`,
+      [tableId, orderId, serviceType, note || null, requestTime || new Date()]
+    );
+
+    res.status(201).json({
+      success: true,
+      id: result.insertId,
+      message: 'บันทึกคำขอบริการเรียบร้อยแล้ว'
+    });
+
+  } catch (error) {
+    console.error('Error creating service request:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการบันทึกคำขอบริการ'
+    });
+  }
+});
+
+// ดึงข้อมูลคำขอบริการตามโต๊ะ
+app.get('/api/service-requests', async (req, res) => {
+  const { tableId, status } = req.query;
+
+  try {
+    let query = `
+      SELECT sr.*, dt.table_number
+      FROM service_requests sr
+      JOIN dining_table dt ON sr.table_id = dt.id
+    `;
+
+    const queryParams = [];
+
+    // เพิ่มเงื่อนไขการค้นหา
+    if (tableId) {
+      query += ' WHERE sr.table_id = ?';
+      queryParams.push(tableId);
+      
+      if (status) {
+        query += ' AND sr.status = ?';
+        queryParams.push(status);
+      }
+    } else if (status) {
+      query += ' WHERE sr.status = ?';
+      queryParams.push(status);
+    }
+
+    // เรียงลำดับตามเวลาล่าสุด
+    query += ' ORDER BY sr.request_time DESC';
+
+    const [results] = await db.promise().query(query, queryParams);
+
+    res.json(results);
+
+  } catch (error) {
+    console.error('Error fetching service requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอบริการ'
+    });
+  }
+});
+
+// อัพเดตสถานะคำขอบริการ
+app.patch('/api/service-requests/:id/status', async (req, res) => {
+  const requestId = req.params.id;
+  const { status, note } = req.body;
+
+  if (!requestId || !status) {
+    return res.status(400).json({
+      success: false,
+      message: 'กรุณาระบุรหัสคำขอและสถานะใหม่'
+    });
+  }
+
+  // ตรวจสอบค่าสถานะ
+  const validStatuses = ['pending', 'in-progress', 'completed', 'canceled'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: 'สถานะไม่ถูกต้อง'
+    });
+  }
+
+  try {
+    // อัพเดตสถานะ
+    const updateData = {
+      status,
+      note: note || null
+    };
+
+    // เพิ่มเวลาเสร็จสิ้นถ้าสถานะเป็น completed
+    if (status === 'completed') {
+      updateData.complete_time = new Date();
+    }
+
+    const query = `
+      UPDATE service_requests 
+      SET ? 
+      WHERE id = ?
+    `;
+
+    const [result] = await db.promise().query(query, [updateData, requestId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบคำขอบริการที่ระบุ'
+      });
+    }
+
+    // ดึงข้อมูลคำขอที่อัพเดตแล้ว
+    const [updatedRequest] = await db.promise().query(
+      'SELECT * FROM service_requests WHERE id = ?',
+      [requestId]
+    );
+
+    res.json({
+      success: true,
+      data: updatedRequest[0],
+      message: 'อัพเดตสถานะคำขอบริการเรียบร้อยแล้ว'
+    });
+
+  } catch (error) {
+    console.error('Error updating service request status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการอัพเดตสถานะคำขอบริการ'
+    });
+  }
+});
+
+// API สำหรับดึงข้อมูลบิลที่ถูกยกเลิก
+app.get('/api/canceled-orders', async (req, res) => {
+  const { startDate, endDate } = req.query;
+  
+  try {
+    let query = `
+      SELECT o.*, dt.table_number
+      FROM \`order\` o
+      JOIN dining_table dt ON o.table_id = dt.id
+      WHERE o.status = 'X'
+    `;
+    
+    const queryParams = [];
+    
+    // เพิ่มเงื่อนไขการกรองตามวันที่
+    if (startDate && endDate) {
+      query += ` AND o.end_time BETWEEN ? AND ?`;
+      queryParams.push(startDate, endDate);
+    }
+    
+    query += ` ORDER BY o.end_time DESC`;
+    
+    const [canceledOrders] = await db.promise().query(query, queryParams);
+    
+    // สำหรับแต่ละออเดอร์ที่ถูกยกเลิก ให้ดึงรายละเอียดด้วย
+    for (const order of canceledOrders) {
+      const [orderDetails] = await db.promise().query(
+        `SELECT od.*, p.name as product_name
+         FROM order_detail od
+         JOIN product p ON od.product_id = p.id
+         WHERE od.order_id = ?`,
+        [order.id]
+      );
+      
+      // คำนวณยอดรวมจากรายการทั้งหมด
+      let totalAmount = 0;
+      orderDetails.forEach(item => {
+        if (item.status !== 'V') { // นับเฉพาะรายการที่ไม่ได้ถูกยกเลิก
+          totalAmount += item.quantity * item.unit_price;
+        }
+      });
+      
+      order.items = orderDetails;
+      order.totalAmount = totalAmount;
+    }
+    
+    res.json(canceledOrders);
+    
+  } catch (error) {
+    console.error('Error fetching canceled orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลบิลที่ถูกยกเลิก'
+    });
+  }
+});
+
+/**
+ * API สำหรับดึงประวัติบิลทั้งหมด (ทั้งที่ชำระแล้วและที่ยกเลิก)
+ */
+app.get('/api/bill-history', async (req, res) => {
+  const { startDate, endDate, status } = req.query;
+
+  try {
+    // 1. ดึงข้อมูลบิลที่ชำระแล้วจากตาราง payment
+    const paymentQuery = `
+      SELECT 
+        p.id,  
+        p.order_id, 
+        p.amount, 
+        p.payment_method, 
+        p.payment_date, 
+        p.status AS payment_status,
+        o.status AS order_status,
+        o.start_time,
+        o.end_time,
+        dt.table_number
+      FROM payment p
+      JOIN \`order\` o ON p.order_id = o.id
+      JOIN dining_table dt ON o.table_id = dt.id
+    `;
+
+    let paymentParams = [];
+    
+    // เพิ่มเงื่อนไขการกรองตามวันที่สำหรับ payment
+    let paymentDateFilter = '';
+    if (startDate && endDate) {
+      paymentDateFilter = ' WHERE p.payment_date BETWEEN ? AND ?';
+      paymentParams.push(startDate, endDate);
+    }
+
+    // ดึงข้อมูลการชำระเงิน
+    const [paymentResults] = await db.promise().query(
+      paymentQuery + paymentDateFilter, 
+      paymentParams
+    );
+
+    // 2. ดึงข้อมูลบิลที่ถูกยกเลิกจากตาราง order (เฉพาะที่ไม่มีในตาราง payment)
+    const canceledQuery = `
+      SELECT 
+        o.id AS order_id,
+        NULL AS id,
+        0 AS amount,
+        'ยกเลิก' AS payment_method,
+        o.end_time AS payment_date,
+        'X' AS payment_status,
+        o.status AS order_status,
+        o.start_time,
+        o.end_time,
+        dt.table_number
+      FROM \`order\` o
+      JOIN dining_table dt ON o.table_id = dt.id
+      LEFT JOIN payment p ON o.id = p.order_id
+      WHERE o.status = 'X' AND p.id IS NULL
+    `;
+
+    let canceledParams = [];
+    
+    // เพิ่มเงื่อนไขการกรองตามวันที่สำหรับออเดอร์ที่ยกเลิก
+    let canceledDateFilter = '';
+    if (startDate && endDate) {
+      canceledDateFilter = ' AND o.end_time BETWEEN ? AND ?';
+      canceledParams.push(startDate, endDate);
+    }
+
+    // ดึงข้อมูลออเดอร์ที่ถูกยกเลิก
+    const [canceledResults] = await db.promise().query(
+      canceledQuery + canceledDateFilter,
+      canceledParams
+    );
+
+    // 3. รวมผลลัพธ์ทั้งสองชุด
+    let allBills = [...paymentResults, ...canceledResults];
+
+    // 4. กรองตามสถานะที่ต้องการ (ถ้ามีการระบุ)
+    if (status && status !== 'all') {
+      if (status === 'completed') {
+        allBills = allBills.filter(bill => bill.order_status === 'C');
+      } else if (status === 'canceled') {
+        allBills = allBills.filter(bill => bill.order_status === 'X');
+      }
+    }
+
+    // 5. เรียงลำดับตามวันที่ล่าสุด
+    allBills.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
+
+    res.json(allBills);
+
+  } catch (error) {
+    console.error('Error fetching bill history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงประวัติบิล'
     });
   }
 });

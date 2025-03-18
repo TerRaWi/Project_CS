@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BillHistory from '../components/BillHistory';
 import {
   getCategories,
   getProduct,
@@ -22,6 +23,7 @@ import {
   LineChart,
   Line
 } from 'recharts';
+
 
 // สีที่ใช้ในกราฟ
 const COLORS = {
@@ -67,7 +69,9 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
+  const [showBillHistory, setShowBillHistory] = useState(false); // State เพื่อควบคุมการแสดงประวัติบิล
 
+  // ฟังก์ชันสำหรับตั้งค่าวันที่ตามช่วงเวลาที่เลือก
   // ฟังก์ชันสำหรับตั้งค่าวันที่ตามช่วงเวลาที่เลือก
   const handleDateRangeShortcut = (range) => {
     const today = new Date();
@@ -99,6 +103,10 @@ const Reports = () => {
         return;
     }
 
+    // ตั้งค่าเวลาให้ครอบคลุมทั้งวัน
+    startDate.setHours(0, 0, 0, 0); // เริ่มต้นวันที่ 00:00:00.000
+    endDate.setHours(23, 59, 59, 999); // สิ้นสุดวันที่ 23:59:59.999
+
     setSelectedDateRange(range);
     setDateRange({
       start: startDate.toISOString().split('T')[0],
@@ -109,11 +117,33 @@ const Reports = () => {
   // จัดการเมื่อเปลี่ยนช่วงวันที่
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    setSelectedDateRange('custom');
-    setDateRange({
+    const selectedDate = new Date(value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // รีเซ็ตเวลาเพื่อการเปรียบเทียบที่ถูกต้อง
+
+    // ตรวจสอบว่าวันที่ที่เลือกอยู่ในอนาคตหรือไม่
+    if (selectedDate > today) {
+      // แสดงข้อความแจ้งเตือน
+      alert('ไม่สามารถเลือกวันที่ในอนาคตได้');
+      return; // ไม่อัปเดตสถานะหากมีการเลือกวันที่ในอนาคต
+    }
+
+    const updatedDateRange = {
       ...dateRange,
       [name]: value
-    });
+    };
+
+    // ตรวจสอบว่าวันที่สิ้นสุดไม่น้อยกว่าวันที่เริ่มต้น
+    if (name === 'end' && new Date(value) < new Date(dateRange.start)) {
+      // ถ้าวันสิ้นสุดน้อยกว่าวันเริ่มต้น ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
+      updatedDateRange.end = dateRange.start;
+    } else if (name === 'start' && new Date(value) > new Date(dateRange.end)) {
+      // ถ้าวันเริ่มต้นมากกว่าวันสิ้นสุด ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
+      updatedDateRange.end = value;
+    }
+
+    setSelectedDateRange('custom');
+    setDateRange(updatedDateRange);
   };
 
   // fetch ข้อมูลเมื่อคอมโพเนนต์โหลด
@@ -178,16 +208,18 @@ const Reports = () => {
   const filteredPayments = payments.filter(payment => {
     const paymentDate = new Date(payment.payment_date);
     const startDate = new Date(dateRange.start);
+    startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
     const endDate = new Date(dateRange.end);
-    endDate.setHours(23, 59, 59);
+    endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
     return paymentDate >= startDate && paymentDate <= endDate;
   });
 
   const filteredOrderDetails = orderDetails.filter(item => {
     const itemDate = new Date(item.paymentDate);
     const startDate = new Date(dateRange.start);
+    startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
     const endDate = new Date(dateRange.end);
-    endDate.setHours(23, 59, 59);
+    endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
     return itemDate >= startDate && itemDate <= endDate;
   });
 
@@ -200,6 +232,16 @@ const Reports = () => {
   // สร้างข้อมูลสำหรับกราฟตามวัน
   const getDailySalesData = () => {
     const salesByDay = {};
+
+    // สร้างรายการวันว่างเปล่าสำหรับทุกวันในช่วงที่เลือก
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+    for (let day = new Date(startDate); day <= endDate; day.setDate(day.getDate() + 1)) {
+      const dateStr = day.toISOString().split('T')[0];
+      salesByDay[dateStr] = 0; // เริ่มต้นที่ 0 บาทสำหรับทุกวัน
+    }
+
+    // เพิ่มข้อมูลจริงเข้าไป
     filteredPayments.forEach(payment => {
       const date = new Date(payment.payment_date).toISOString().split('T')[0];
       if (!salesByDay[date]) {
@@ -248,83 +290,36 @@ const Reports = () => {
   };
 
   // สร้างข้อมูลสำหรับสินค้าขายดี
-  // สร้างข้อมูลสำหรับสินค้าขายดี
-const getTopProductsData = () => {
-  const salesByProduct = {};
-  
-  // กำหนดรายชื่อสินค้าประเภทลูกค้าที่ต้องการกรองออก
-  const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก', 'หมูเด้งทะมิส', 'หมูพม่ากุ้ม', 'หมูเด้ง', 'เบคอนสไลด์', 'สันคอสไลด์'];
+  const getTopProductsData = () => {
+    const salesByProduct = {};
 
-  filteredOrderDetails.forEach(item => {
-    // ข้ามรายการที่เป็นประเภทลูกค้า
-    if (customerProductNames.includes(item.productName)) {
-      return;
-    }
-    
-    if (!salesByProduct[item.productName]) {
-      salesByProduct[item.productName] = {
-        quantity: 0,
-        amount: 0
-      };
-    }
-    salesByProduct[item.productName].quantity += item.quantity;
-    salesByProduct[item.productName].amount += item.amount;
-  });
-
-  return Object.keys(salesByProduct)
-    .map(name => ({
-      name,
-      value: salesByProduct[name].quantity,
-      amount: salesByProduct[name].amount
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 10);
-};
-
-  // สร้างข้อมูลสำหรับสัดส่วนประเภทลูกค้า
-  const getCustomerTypeData = () => {
-    const customerTypes = {};
+    // กำหนดรายชื่อสินค้าประเภทลูกค้าที่ต้องการกรองออก
+    const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก', 'หมูเด้งทะมิส', 'หมูพม่ากุ้ม', 'หมูเด้ง', 'เบคอนสไลด์', 'สันคอสไลด์'];
 
     filteredOrderDetails.forEach(item => {
-      if (item.productName === 'ผู้ใหญ่' || item.productName === 'เด็กโต' || item.productName === 'เด็กเล็ก') {
-        if (!customerTypes[item.productName]) {
-          customerTypes[item.productName] = 0;
-        }
-        customerTypes[item.productName] += item.quantity;
-      }
-    });
-
-    const total = Object.values(customerTypes).reduce((sum, count) => sum + count, 0);
-
-    return Object.keys(customerTypes).map(type => ({
-      name: type,
-      value: Math.round((customerTypes[type] / total) * 100)
-    }));
-  };
-
-  // สร้างข้อมูลสำหรับจำนวนลูกค้าตามวัน
-  const getCustomersByDayData = () => {
-    const customersByDay = {};
-    const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก'];
-  
-    filteredOrderDetails.forEach(item => {
-      // เลือกเฉพาะรายการที่เป็นประเภทลูกค้า
+      // ข้ามรายการที่เป็นประเภทลูกค้า
       if (customerProductNames.includes(item.productName)) {
-        const date = new Date(item.paymentDate).toISOString().split('T')[0];
-        
-        if (!customersByDay[date]) {
-          customersByDay[date] = 0;
-        }
-        
-        // เพิ่มจำนวนตามจำนวนสินค้า (quantity)
-        customersByDay[date] += item.quantity;
+        return;
       }
+
+      if (!salesByProduct[item.productName]) {
+        salesByProduct[item.productName] = {
+          quantity: 0,
+          amount: 0
+        };
+      }
+      salesByProduct[item.productName].quantity += item.quantity;
+      salesByProduct[item.productName].amount += item.amount;
     });
-  
-    return Object.keys(customersByDay).map(date => ({
-      day: date,
-      customers: customersByDay[date]
-    })).sort((a, b) => new Date(a.day) - new Date(b.day));
+
+    return Object.keys(salesByProduct)
+      .map(name => ({
+        name,
+        value: salesByProduct[name].quantity,
+        amount: salesByProduct[name].amount
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
   };
 
   // สร้างข้อมูลสำหรับยอดขายตามหมวดหมู่
@@ -351,6 +346,52 @@ const getTopProductsData = () => {
 
     return Object.values(salesByCategory)
       .sort((a, b) => b.amount - a.amount);
+  };
+
+  // สร้างข้อมูลสำหรับสัดส่วนประเภทลูกค้า
+  const getCustomerTypeData = () => {
+    const customerTypes = {};
+
+    filteredOrderDetails.forEach(item => {
+      if (item.productName === 'ผู้ใหญ่' || item.productName === 'เด็กโต' || item.productName === 'เด็กเล็ก') {
+        if (!customerTypes[item.productName]) {
+          customerTypes[item.productName] = 0;
+        }
+        customerTypes[item.productName] += item.quantity;
+      }
+    });
+
+    const total = Object.values(customerTypes).reduce((sum, count) => sum + count, 0);
+
+    return Object.keys(customerTypes).map(type => ({
+      name: type,
+      value: Math.round((customerTypes[type] / total) * 100)
+    }));
+  };
+
+  // สร้างข้อมูลสำหรับจำนวนลูกค้าตามวัน
+  const getCustomersByDayData = () => {
+    const customersByDay = {};
+    const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก'];
+
+    filteredOrderDetails.forEach(item => {
+      // เลือกเฉพาะรายการที่เป็นประเภทลูกค้า
+      if (customerProductNames.includes(item.productName)) {
+        const date = new Date(item.paymentDate).toISOString().split('T')[0];
+
+        if (!customersByDay[date]) {
+          customersByDay[date] = 0;
+        }
+
+        // เพิ่มจำนวนตามจำนวนสินค้า (quantity)
+        customersByDay[date] += item.quantity;
+      }
+    });
+
+    return Object.keys(customersByDay).map(date => ({
+      day: date,
+      customers: customersByDay[date]
+    })).sort((a, b) => new Date(a.day) - new Date(b.day));
   };
 
   // แสดงสถานะกำลังโหลด
@@ -437,6 +478,7 @@ const getTopProductsData = () => {
                       name="start"
                       value={dateRange.start}
                       onChange={handleDateChange}
+                      max={new Date().toISOString().split('T')[0]} // ตั้งค่าวันที่สูงสุดเป็นวันนี้
                     />
                     <label htmlFor="start-date">ตั้งแต่วันที่</label>
                   </div>
@@ -450,6 +492,7 @@ const getTopProductsData = () => {
                       name="end"
                       value={dateRange.end}
                       onChange={handleDateChange}
+                      max={new Date().toISOString().split('T')[0]} // ตั้งค่าวันที่สูงสุดเป็นวันนี้
                     />
                     <label htmlFor="end-date">ถึงวันที่</label>
                   </div>
@@ -462,21 +505,39 @@ const getTopProductsData = () => {
                 <div className="nav nav-pills">
                   <button
                     className={`nav-link ${reportType === 'sales' ? 'active' : ''}`}
-                    onClick={() => setReportType('sales')}
+                    onClick={() => {
+                      setReportType('sales');
+                      setShowBillHistory(false);
+                    }}
                   >
                     <i className="bi bi-cash-coin me-1"></i> ยอดขาย
                   </button>
                   <button
                     className={`nav-link ${reportType === 'products' ? 'active' : ''}`}
-                    onClick={() => setReportType('products')}
+                    onClick={() => {
+                      setReportType('products');
+                      setShowBillHistory(false);
+                    }}
                   >
                     <i className="bi bi-box-seam me-1"></i> สินค้าขายดี
                   </button>
                   <button
                     className={`nav-link ${reportType === 'customers' ? 'active' : ''}`}
-                    onClick={() => setReportType('customers')}
+                    onClick={() => {
+                      setReportType('customers');
+                      setShowBillHistory(false);
+                    }}
                   >
                     <i className="bi bi-people me-1"></i> ลูกค้า
+                  </button>
+                  <button
+                    className={`nav-link ${reportType === 'bills' ? 'active' : ''}`}
+                    onClick={() => {
+                      setReportType('bills');
+                      setShowBillHistory(true);
+                    }}
+                  >
+                    <i className="bi bi-receipt me-1"></i> ประวัติบิล
                   </button>
                 </div>
               </div>
@@ -485,65 +546,72 @@ const getTopProductsData = () => {
         </div>
       </div>
 
-      {/* การ์ดสรุปข้อมูลสำคัญ */}
-      <div className="row mb-4">
-        <div className="col-lg-3 col-md-6 mb-4">
-          <div className="card h-100 border-0 shadow-sm">
-            <div className="card-body text-center">
-              <div className="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-flex mb-3">
-                <i className="bi bi-cash text-primary fs-3"></i>
+      {/* การ์ดสรุปข้อมูลสำคัญ แสดงเฉพาะเมื่อไม่ได้อยู่ในหน้าประวัติบิล */}
+      {!showBillHistory && (
+        <div className="row mb-4">
+          <div className="col-lg-3 col-md-6 mb-4">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body text-center">
+                <div className="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-flex mb-3">
+                  <i className="bi bi-cash text-primary fs-3"></i>
+                </div>
+                <h5 className="card-title">ยอดขายรวม</h5>
+                <h2 className="fw-bold text-primary">{totalSales.toFixed(2)}</h2>
+                <p className="card-text text-muted">
+                  {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
+                </p>
               </div>
-              <h5 className="card-title">ยอดขายรวม</h5>
-              <h2 className="fw-bold text-primary">{totalSales.toFixed(2)}</h2>
-              <p className="card-text text-muted">
-                {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
-              </p>
             </div>
           </div>
-        </div>
 
-        <div className="col-lg-3 col-md-6 mb-4">
-          <div className="card h-100 border-0 shadow-sm">
-            <div className="card-body text-center">
-              <div className="rounded-circle bg-success bg-opacity-10 p-3 d-inline-flex mb-3">
-                <i className="bi bi-people text-success fs-3"></i>
+          <div className="col-lg-3 col-md-6 mb-4">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body text-center">
+                <div className="rounded-circle bg-success bg-opacity-10 p-3 d-inline-flex mb-3">
+                  <i className="bi bi-people text-success fs-3"></i>
+                </div>
+                <h5 className="card-title">จำนวนบิล</h5>
+                <h2 className="fw-bold text-success">{customerCount} </h2>
+                <p className="card-text text-muted">บิลทั้งหมด</p>
               </div>
-              <h5 className="card-title">จำนวนบิล</h5>
-              <h2 className="fw-bold text-success">{customerCount} </h2>
-              <p className="card-text text-muted">บิลทั้งหมด</p>
             </div>
           </div>
-        </div>
 
-        <div className="col-lg-3 col-md-6 mb-4">
-          <div className="card h-100 border-0 shadow-sm">
-            <div className="card-body text-center">
-              <div className="rounded-circle bg-warning bg-opacity-10 p-3 d-inline-flex mb-3">
-                <i className="bi bi-receipt text-warning fs-3"></i>
+          <div className="col-lg-3 col-md-6 mb-4">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body text-center">
+                <div className="rounded-circle bg-warning bg-opacity-10 p-3 d-inline-flex mb-3">
+                  <i className="bi bi-receipt text-warning fs-3"></i>
+                </div>
+                <h5 className="card-title">เฉลี่ยต่อบิล</h5>
+                <h2 className="fw-bold text-warning">{averagePerBill.toFixed(2)}</h2>
+                <p className="card-text text-muted">ค่าเฉลี่ยต่อบิล</p>
               </div>
-              <h5 className="card-title">เฉลี่ยต่อบิล</h5>
-              <h2 className="fw-bold text-warning">{averagePerBill.toFixed(2)}</h2>
-              <p className="card-text text-muted">ค่าเฉลี่ยต่อบิล</p>
             </div>
           </div>
-        </div>
 
-        <div className="col-lg-3 col-md-6 mb-4">
-          <div className="card h-100 border-0 shadow-sm">
-            <div className="card-body text-center">
-              <div className="rounded-circle bg-info bg-opacity-10 p-3 d-inline-flex mb-3">
-                <i className="bi bi-table text-info fs-3"></i>
+          <div className="col-lg-3 col-md-6 mb-4">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body text-center">
+                <div className="rounded-circle bg-info bg-opacity-10 p-3 d-inline-flex mb-3">
+                  <i className="bi bi-table text-info fs-3"></i>
+                </div>
+                <h5 className="card-title">โต๊ะที่กำลังใช้งาน</h5>
+                <h2 className="fw-bold text-info">{activeTableCount}</h2>
+                <p className="card-text text-muted">จากทั้งหมด {tables.length} โต๊ะ</p>
               </div>
-              <h5 className="card-title">โต๊ะที่กำลังใช้งาน</h5>
-              <h2 className="fw-bold text-info">{activeTableCount}</h2>
-              <p className="card-text text-muted">จากทั้งหมด {tables.length} โต๊ะ</p>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* แสดงประวัติบิล */}
+      {showBillHistory && (
+        <BillHistory />
+      )}
 
       {/* แสดงรายงานตามประเภทที่เลือก */}
-      {reportType === 'sales' && (
+      {reportType === 'sales' && !showBillHistory && (
         <>
           {/* กราฟยอดขายตามวัน */}
           <div className="row mb-4">
@@ -663,7 +731,7 @@ const getTopProductsData = () => {
         </>
       )}
 
-      {reportType === 'products' && (
+      {reportType === 'products' && !showBillHistory && (
         <>
           {/* สินค้าขายดี */}
           <div className="row mb-4">
@@ -701,11 +769,11 @@ const getTopProductsData = () => {
                 </div>
               </div>
             </div>
-          </div>  
+          </div>
         </>
       )}
 
-      {reportType === 'customers' && (
+      {reportType === 'customers' && !showBillHistory && (
         <>
           {/* สัดส่วนประเภทลูกค้า */}
           <div className="row mb-4">
