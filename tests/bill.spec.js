@@ -10,8 +10,8 @@ test('TC01 ชำระเงิน', async ({ page, context }) => {
         await dialog.accept();
     });
 
-    // Click on table 45
-    const table45 = page.locator('div[style="font-weight: bold; font-size: 1.5rem;"]:has-text("45")');
+    // Click on table 8
+    const table45 = page.locator('div[style="font-weight: bold; font-size: 1.5rem;"]:has-text("8")');
     await expect(table45).toBeVisible();
     await table45.click();
 
@@ -38,7 +38,6 @@ test('TC01 ชำระเงิน', async ({ page, context }) => {
     // Verify receipt content is visible
     await expect(newPage.locator('text=ร้านอาหาร Fast Shabu')).toBeVisible();
 
-    // // Optional: Take a screenshot of the receipt
     // await newPage.screenshot({ path: 'receipt.png' });
 
     // Close the new tab (receipt page)

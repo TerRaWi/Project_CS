@@ -59,8 +59,8 @@ test('TC02 แก้ไขเมนู', async ({ page }) => {
 
     // หมวดหมู่
     const categorySelect = page.locator('#category');
-    await categorySelect.selectOption('13');
-    await expect(categorySelect).toHaveValue('13');
+    await categorySelect.selectOption('25');
+    await expect(categorySelect).toHaveValue('25');
 
     // ใส่รูปภาพ
     const fileInput = page.locator('#image'); // แก้ไข selector ให้ตรงกับ id ในเอกสาร HTML
