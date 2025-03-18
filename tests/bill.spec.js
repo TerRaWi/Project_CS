@@ -4,7 +4,7 @@ test('TC01 ชำระเงิน', async ({ page, context }) => {
     // Go to tables page
     await page.goto('http://localhost:3000/tables');
 
-    // Handle dialog events (alert/confirm/prompt)
+    // Handle dialog events
     page.on('dialog', async (dialog) => {
         console.log('Dialog message:', dialog.message());
         await dialog.accept();
@@ -15,7 +15,7 @@ test('TC01 ชำระเงิน', async ({ page, context }) => {
     await expect(table45).toBeVisible();
     await table45.click();
 
-    // Click on "คิดเงิน" (bill) button
+    // Click on "คิดเงิน"
     const billButton = page.locator('button.btn.btn-warning.text-white:has-text("คิดเงิน")');
     await expect(billButton).toBeVisible();
     await billButton.click();

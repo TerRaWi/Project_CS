@@ -1,9 +1,10 @@
 const { test, expect } = require('@playwright/test'), path = require('path');
 
 test('TC01 เพิ่มสินค้า', async ({ page }) => {
+    // Go to product page
     await page.goto('http://localhost:3000/product');
 
-    // คลิกปุ่ม เพิ่มสินค้า
+    // Click on เพิ่มสินค้า
     const addProductButton = page.locator('img[alt="เพิ่มสินค้าใหม่"]');
     await expect(addProductButton).toBeVisible();
     await addProductButton.click();
@@ -30,7 +31,7 @@ test('TC01 เพิ่มสินค้า', async ({ page }) => {
     const files = await fileInput.evaluate(input => input.files[0].name);
     expect(files).toBe('test.png');
 
-    // คลิกปุ่ม บันทึก
+    // Click on บันทึก
     await page.locator('button.btn.btn-primary', { hasText: 'บันทึก' }).click();
 
     // ตรวจสอบว่ามีสินค้าชื่อ "ทดสอบ"
@@ -39,6 +40,7 @@ test('TC01 เพิ่มสินค้า', async ({ page }) => {
 });
 
 test('TC02 แก้ไขเมนู', async ({ page }) => {
+    // Go to product page
     await page.goto('http://localhost:3000/product');
 
     // ค้นหาข้อความ "ทดสอบ" แล้วไปที่ปุ่มแก้ไขที่อยู่ในส่วนเดียวกัน
@@ -69,7 +71,7 @@ test('TC02 แก้ไขเมนู', async ({ page }) => {
     const files = await fileInput.evaluate(input => input.files[0].name);
     expect(files).toBe('no-image.png'); // แก้ไขชื่อไฟล์ในการตรวจสอบด้วย
 
-    // คลิกปุ่ม บันทึก
+    // Click on บันทึก
     await page.locator('button.btn.btn-primary', { hasText: 'บันทึก' }).click();
 
     // ตรวจสอบว่ามีสินค้าชื่อ "ทดสอบชื่อ"
@@ -78,6 +80,7 @@ test('TC02 แก้ไขเมนู', async ({ page }) => {
 });
 
 test('TC03 ระงับการขายสินค้า', async ({ page }) => {
+    // Go to product page
     await page.goto('http://localhost:3000/product');
 
     await page.locator('div', { hasText: 'ทดสอบชื่อ' })
@@ -87,14 +90,15 @@ test('TC03 ระงับการขายสินค้า', async ({ page }
 });
 
 test('TC04 ลบสินค้า', async ({ page }) => {
+    // Go to product page
     await page.goto('http://localhost:3000/product');
 
-    // จัดการ dialog event ล่วงหน้า
+    // Handle dialog events
     page.on('dialog', async (dialog) => {
         console.log('Dialog message:', dialog.message());
         await dialog.accept();
     });
-    // คลิกปุ่ม ลบสินค้า
+    //  Click ลบสินค้า
     await page.locator('div')
         .filter({ hasText: 'ทดสอบชื่อ' })
         .locator('button.btn-danger.rounded-circle')

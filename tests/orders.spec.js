@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('TC01 เปิดออร์เดอร์', async ({ page }) => {
-
+    // Go to tables page
     await page.goto('http://localhost:3000/tables');
 
     // Click on table 46
@@ -23,27 +23,27 @@ test('TC01 เปิดออร์เดอร์', async ({ page }) => {
     await adultInput.click();
     await page.locator('button.btn.btn-light:has-text("1")').first().click();
 
-    // Confirm - "ตกลง" is the green button
+    // Confirm - "ตกลง"
     await page.locator('button.btn-success').click();
 });
 
 test('TC02 สั่งอาหาร', async ({ page }) => {
-
+    // Go to tables page
     await page.goto('http://localhost:3000/tables');
 
     // Click on table 46
     const table45 = page.locator('div[style="font-weight: bold; font-size: 1.5rem;"]:has-text("46")');
     await table45.click();
 
-    // คลิกปุ่ม "สั่งอาหาร"
+    // Click on "สั่งอาหาร"
     const orderFoodButton = page.locator('button.btn.btn-success:has-text("สั่งอาหาร")');
     await orderFoodButton.click();
 
-    // คลิกที่รูปอาหาร "หมูหมักนุ่ม"
+    // Click on รูปอาหาร "หมูหมักนุ่ม"
     const foodImage = page.locator('img[alt="หมูหมักนุ่ม"]');
     await foodImage.click();
 
-    // คลิกปุ่ม "ยืนยันการสั่งอาหาร"
+    // Click on "ยืนยันการสั่งอาหาร"
     const confirmOrderButton = page.locator('button.btn.btn-success.w-100:has-text("ยืนยันการสั่งอาหาร")');
     await confirmOrderButton.click();
 

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('TC01 เพิ่มหมวดหมู่', async ({ page }) => {
 
+    // Go to category page
     await page.goto('http://localhost:3000/category');
 
     await page.fill('input[placeholder="ชื่อหมวดหมู่"]', 'ทดสอบ');
@@ -10,6 +11,7 @@ test('TC01 เพิ่มหมวดหมู่', async ({ page }) => {
 
 test('TC02 แก้ไขหมวดหมู่', async ({ page }) => {
 
+    // Go to category page
     await page.goto('http://localhost:3000/category');
 
     await page.click('button:has-text("แก้ไข")');
@@ -18,7 +20,8 @@ test('TC02 แก้ไขหมวดหมู่', async ({ page }) => {
 });
 
 test('TC03 ลบหมวดหมู่', async ({ page }) => {
-
+        
+    // Go to category page
     await page.goto('http://localhost:3000/category');
 
     await page.click('button:has-text("ลบ")');

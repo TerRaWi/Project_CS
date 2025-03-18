@@ -39,12 +39,12 @@ test('TC02 รวมโต๊ะ', async ({ page, context }) => {
     await expect(table42).toBeVisible();
     await table42.click();
 
-    // Click on Edit button
+    // Click on แก้ไข
     const editButton = page.locator('button.btn.btn-purple', { hasText: 'แก้ไข' });
     await expect(editButton).toBeVisible();
     await editButton.click();
 
-    // Click on รวมโต๊ะ button
+    // Click on รวมโต๊ะ
     const mergeButton = page.locator('button.nav-link', { hasText: 'รวมโต๊ะ' });
     await expect(mergeButton).toBeVisible();
     await mergeButton.click();
@@ -54,12 +54,12 @@ test('TC02 รวมโต๊ะ', async ({ page, context }) => {
     await expect(table44).toBeVisible();
     await table44.click();
 
-    // Click on ดำเนินการต่อ button
+    // Click on ดำเนินการต่อ
     const proceedButton = page.locator('button.btn.btn-primary', { hasText: 'ดำเนินการต่อ' });
     await expect(proceedButton).toBeVisible();
     await proceedButton.click();
 
-    // Click on ยืนยัน button
+    // Click on ยืนยัน
     const confirmButton = page.locator('button.btn.btn-primary', { hasText: 'ยืนยัน' });
     await expect(confirmButton).toBeVisible();
     await confirmButton.click();
@@ -69,27 +69,27 @@ test('TC03  ยกเลิกโต๊ะ', async ({ page, context }) => {
     // Go to tables page
     await page.goto('http://localhost:3000/tables');
 
-    // Click on table 44
+    // Click on โต๊ะ 44
     const table42 = page.locator('div[style="font-weight: bold; font-size: 1.5rem;"]:has-text("44")');
     await expect(table42).toBeVisible();
     await table42.click();
 
-    // Click on Edit button
+    // Click on แก้ไข
     const editButton = page.locator('button.btn.btn-purple', { hasText: 'แก้ไข' });
     await expect(editButton).toBeVisible();
     await editButton.click();
 
-    // Click on รวมโต๊ะ button
+    // Click on รวมโต๊ะ
     const mergeButton = page.locator('button.nav-link', { hasText: 'ยกเลิกโต๊ะ' });
     await expect(mergeButton).toBeVisible();
     await mergeButton.click();
 
-    // Click on ดำเนินการต่อ button
+    // Click on ดำเนินการต่อ
     const proceedButton = page.locator('button.btn.btn-primary', { hasText: 'ดำเนินการต่อ' });
     await expect(proceedButton).toBeVisible();
     await proceedButton.click();
 
-    // Click on ยืนยัน button
+    // Click on ยืนยัน
     const confirmButton = page.locator('button.btn.btn-primary', { hasText: 'ยืนยัน' });
     await expect(confirmButton).toBeVisible();
     await confirmButton.click();
