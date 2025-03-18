@@ -72,51 +72,67 @@ const Reports = () => {
   const [showBillHistory, setShowBillHistory] = useState(false); // State เพื่อควบคุมการแสดงประวัติบิล
 
   // ฟังก์ชันสำหรับตั้งค่าวันที่ตามช่วงเวลาที่เลือก
-  const handleDateRangeShortcut = (range) => {
-    const today = new Date();
-    let startDate = new Date();
-    let endDate = new Date();
+// ฟังก์ชันสำหรับตั้งค่าวันที่ตามช่วงเวลาที่เลือก
+const handleDateRangeShortcut = (range) => {
+  const today = new Date();
+  let startDate = new Date();
+  let endDate = new Date();
 
-    switch (range) {
-      case 'today':
-        startDate = new Date();
-        endDate = new Date();
-        break;
-      case 'yesterday':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - 1);
-        endDate = new Date(today);
-        endDate.setDate(today.getDate() - 1);
-        break;
-      case 'week':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - 7);
-        endDate = new Date(today);
-        break;
-      case 'month':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - 30);
-        endDate = new Date(today);
-        break;
-      default:
-        return;
-    }
+  switch (range) {
+    case 'today':
+      startDate = new Date();
+      endDate = new Date();
+      break;
+    case 'yesterday':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 1);
+      endDate = new Date(today);
+      endDate.setDate(today.getDate() - 1);
+      break;
+    case 'week':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 7);
+      endDate = new Date(today);
+      break;
+    case 'month':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 30);
+      endDate = new Date(today);
+      break;
+    default:
+      return;
+  }
 
-    setSelectedDateRange(range);
-    setDateRange({
-      start: startDate.toISOString().split('T')[0],
-      end: endDate.toISOString().split('T')[0]
-    });
-  };
+  // ตั้งค่าเวลาให้ครอบคลุมทั้งวัน
+  startDate.setHours(0, 0, 0, 0); // เริ่มต้นวันที่ 00:00:00.000
+  endDate.setHours(23, 59, 59, 999); // สิ้นสุดวันที่ 23:59:59.999
+
+  setSelectedDateRange(range);
+  setDateRange({
+    start: startDate.toISOString().split('T')[0],
+    end: endDate.toISOString().split('T')[0]
+  });
+};
 
   // จัดการเมื่อเปลี่ยนช่วงวันที่
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    setSelectedDateRange('custom');
-    setDateRange({
+    const updatedDateRange = {
       ...dateRange,
       [name]: value
-    });
+    };
+    
+    // ตรวจสอบว่าวันที่สิ้นสุดไม่น้อยกว่าวันที่เริ่มต้น
+    if (name === 'end' && new Date(value) < new Date(dateRange.start)) {
+      // ถ้าวันสิ้นสุดน้อยกว่าวันเริ่มต้น ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
+      updatedDateRange.end = dateRange.start;
+    } else if (name === 'start' && new Date(value) > new Date(dateRange.end)) {
+      // ถ้าวันเริ่มต้นมากกว่าวันสิ้นสุด ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
+      updatedDateRange.end = value;
+    }
+    
+    setSelectedDateRange('custom');
+    setDateRange(updatedDateRange);
   };
 
   // fetch ข้อมูลเมื่อคอมโพเนนต์โหลด
@@ -178,21 +194,23 @@ const Reports = () => {
   }, []);
 
   // กรองข้อมูลตามช่วงเวลาที่เลือก
-  const filteredPayments = payments.filter(payment => {
-    const paymentDate = new Date(payment.payment_date);
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
-    endDate.setHours(23, 59, 59);
-    return paymentDate >= startDate && paymentDate <= endDate;
-  });
+const filteredPayments = payments.filter(payment => {
+  const paymentDate = new Date(payment.payment_date);
+  const startDate = new Date(dateRange.start);
+  startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
+  const endDate = new Date(dateRange.end);
+  endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
+  return paymentDate >= startDate && paymentDate <= endDate;
+});
 
-  const filteredOrderDetails = orderDetails.filter(item => {
-    const itemDate = new Date(item.paymentDate);
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
-    endDate.setHours(23, 59, 59);
-    return itemDate >= startDate && itemDate <= endDate;
-  });
+const filteredOrderDetails = orderDetails.filter(item => {
+  const itemDate = new Date(item.paymentDate);
+  const startDate = new Date(dateRange.start);
+  startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
+  const endDate = new Date(dateRange.end);
+  endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
+  return itemDate >= startDate && itemDate <= endDate;
+});
 
   // คำนวณตัวเลขสำคัญ
   const totalSales = filteredPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
@@ -203,6 +221,16 @@ const Reports = () => {
   // สร้างข้อมูลสำหรับกราฟตามวัน
   const getDailySalesData = () => {
     const salesByDay = {};
+    
+    // สร้างรายการวันว่างเปล่าสำหรับทุกวันในช่วงที่เลือก
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+    for (let day = new Date(startDate); day <= endDate; day.setDate(day.getDate() + 1)) {
+      const dateStr = day.toISOString().split('T')[0];
+      salesByDay[dateStr] = 0; // เริ่มต้นที่ 0 บาทสำหรับทุกวัน
+    }
+    
+    // เพิ่มข้อมูลจริงเข้าไป
     filteredPayments.forEach(payment => {
       const date = new Date(payment.payment_date).toISOString().split('T')[0];
       if (!salesByDay[date]) {
@@ -210,7 +238,7 @@ const Reports = () => {
       }
       salesByDay[date] += Number(payment.amount);
     });
-
+  
     return Object.keys(salesByDay).map(date => ({
       day: date,
       amount: salesByDay[date]
