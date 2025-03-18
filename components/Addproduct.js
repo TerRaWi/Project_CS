@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import styles from "../styles/addproduct.module.css";
 import { addProducts, getCategories } from "../api";
+// เพิ่ม import bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css';
+// เพิ่ม useEffect เพื่อจัดการ scroll
 
 const Addproduct = ({ onClose, onAddProduct }) => {
   const [productName, setProductName] = useState("");
@@ -9,6 +11,19 @@ const Addproduct = ({ onClose, onAddProduct }) => {
   const [productImage, setProductImage] = useState(null);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
+  
+  // จัดการ scroll lock เมื่อ modal เปิด
+  useEffect(() => {
+    // เมื่อ component mount ให้ล็อค scroll
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = '15px'; // ป้องกันการกระตุก
+    
+    // เมื่อ component unmount ให้ปลดล็อค scroll
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
+  }, []);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -65,92 +80,97 @@ const Addproduct = ({ onClose, onAddProduct }) => {
   };
 
   return (
-    <div className={styles["modal-overlay"]}>
-      <div className={styles["modal-container"]}>
-        <div className={styles["modal-content"]}>
-          <h2>เพิ่มสินค้าใหม่</h2>
-          {error && <div className={styles["error-message"]}>{error}</div>}
-          
-          <form onSubmit={handleSubmit} className={styles["product-form"]}>
-            <div className={styles["form-group"]}>
-              <label>
-                ชื่อสินค้า:
-                <input
-                  type="text"
-                  value={productName}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (/^[ก-๛a-zA-Z\s]*$/.test(value)) {
-                      setProductName(value);
-                    }
-                  }}
-                  maxLength={100}
-                  required
-                />
-              </label>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.8)', zIndex: 1050 }}>
+      <div className="modal d-block" tabIndex="-1" style={{ zIndex: 1051 }}>
+        <div className="modal-dialog">
+          <div className="modal-content" style={{ boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)', border: '1px solid #666' }}>
+            <div className="modal-header">
+              <h5 className="modal-title">เพิ่มสินค้าใหม่</h5>
+              <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
             </div>
 
-            <div className={styles["form-group"]}>
-              <label>
-                ราคา:
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="999999.99"
-                  value={productPrice}
-                  onChange={(e) => setProductPrice(e.target.value)}
-                  required
-                />
-              </label>
+            <div className="modal-body">
+              {error && <div className="alert alert-danger">{error}</div>}
+              
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label htmlFor="productName" className="form-label">ชื่อสินค้า:</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="productName"
+                    value={productName}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (/^[ก-๛a-zA-Z\s]*$/.test(value)) {
+                        setProductName(value);
+                      }
+                    }}
+                    maxLength={100}
+                    required
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="productPrice" className="form-label">ราคา:</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="productPrice"
+                    step="0.01"
+                    min="0"
+                    max="999999.99"
+                    value={productPrice}
+                    onChange={(e) => setProductPrice(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="productCategory" className="form-label">หมวดหมู่:</label>
+                  <select
+                    className="form-select"
+                    id="productCategory"
+                    value={productCategory}
+                    onChange={(e) => setProductCategory(e.target.value)}
+                    required
+                  >
+                    <option value="">เลือกหมวดหมู่</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="productImage" className="form-label">รูปภาพ:</label>
+                  <input
+                    type="file"
+                    className="form-control"
+                    id="productImage"
+                    onChange={handleFileChange}
+                    accept="image/jpeg,image/png,image/gif"
+                    required
+                  />
+                </div>
+              </form>
             </div>
 
-            <div className={styles["form-group"]}>
-              <label>
-                หมวดหมู่:
-                <select
-                  value={productCategory}
-                  onChange={(e) => setProductCategory(e.target.value)}
-                  required
-                >
-                  <option value="">เลือกหมวดหมู่</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className={styles["form-group"]}>
-              <label>
-                รูปภาพ:
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  accept="image/jpeg,image/png,image/gif"
-                  required
-                />
-              </label>
-            </div>
-
-            <div className={styles["button-group"]}>
-              <button
-                type="submit"
-                className={`${styles["button"]} ${styles["submit"]}`}
-              >
-                บันทึก
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                ยกเลิก
               </button>
               <button
                 type="button"
-                onClick={onClose}
-                className={`${styles["button"]} ${styles["cancel"]}`}
+                className="btn btn-primary"
+                onClick={handleSubmit}
               >
-                ยกเลิก
+                บันทึก
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>

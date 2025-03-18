@@ -1,23 +1,26 @@
 import React from 'react';
 import Head from 'next/head';
-import styles from '../styles/category.module.css';
 import Managecategory from '../components/Managecategory';
 
 const Category = () => {
     return (
-        <div className={styles.container}>
+        <div className="container py-4">
             <Head>
                 <title>จัดการหมวดหมู่ - ระบบร้านอาหาร</title>
                 <meta name="description" content="จัดการหมวดหมู่สำหรับระบบร้านอาหาร" />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
 
-            <div className={styles.header}>
-                <h1>จัดการหมวดหมู่</h1>
+            <div className="row mb-4">
+                <div className="col">
+                    <h1 className="text-center">จัดการหมวดหมู่</h1>
+                </div>
             </div>
 
-            <div className={styles.content}>
-                <Managecategory />
+            <div className="row">
+                <div className="col">
+                    <Managecategory />
+                </div>
             </div>
         </div>
     );

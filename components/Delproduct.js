@@ -1,7 +1,7 @@
-//ฟังก์ชั่นลบสินค้า //ทำงานกับหน้าproduct.jsx
 import React, { useState } from 'react';
-import styles from "../styles/product.module.css";
 import { deleteProduct } from "../api";
+// เพิ่ม import bootstrap (ไม่จำเป็นถ้า import ไว้ใน _app.js หรือ main layout แล้ว)
+// import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Delproduct = ({ productId, onDelete }) => {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -27,11 +27,12 @@ const Delproduct = ({ productId, onDelete }) => {
       <button
         onClick={handleDelete}
         disabled={isDeleting}
-        className={styles["delete-button"]}
+        className="btn btn-danger rounded-circle d-flex justify-content-center align-items-center"
+        style={{ width: '30px', height: '30px', fontSize: '18px', padding: '0' }}
       >
-        {isDeleting ? "..." : "×"}
+        {isDeleting ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> : "×"}
       </button>
-      {error && <div className="text-red-500 text-sm">{error}</div>}
+      {error && <div className="text-danger small mt-1">{error}</div>}
     </>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import styles from "../styles/tablemanage.module.css";
 import { getTables, getOrdersByTable, cancelTable, mergeTable, moveTable } from "../api";
+// No need to import CSS module anymore
 
 const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
     const [availableTables, setAvailableTables] = useState([]);
@@ -195,142 +195,182 @@ const Tablemanage = ({ table, onClose, onSuccess, onTableUpdate }) => {
     };
 
     return (
-        <div className={styles.modal} onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className={styles.modalContent}>
-                <div className={styles.header}>
-                    <h2>จัดการโต๊ะ {table.table_number}</h2>
-                    <button className={styles.closeButton} onClick={onClose}>
-                        ×
-                    </button>
-                </div>
+        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}} onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="modal-dialog modal-dialog-centered modal-lg">
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h5 className="modal-title">จัดการโต๊ะ {table.table_number}</h5>
+                        <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
+                    </div>
 
-                <div className={styles.tabs}>
-                    <button
-                        className={`${styles.tabButton} ${activeTab === "move" ? styles.active : ""}`}
-                        onClick={() => handleTabChange("move")}
-                    >
-                        {tabIcons.move} ย้ายโต๊ะ
-                    </button>
-                    <button
-                        className={`${styles.tabButton} ${activeTab === "merge" ? styles.active : ""}`}
-                        onClick={() => handleTabChange("merge")}
-                    >
-                        {tabIcons.merge} รวมโต๊ะ
-                    </button>
-                    <button
-                        className={`${styles.tabButton} ${activeTab === "cancel" ? styles.active : ""}`}
-                        onClick={() => handleTabChange("cancel")}
-                    >
-                        {tabIcons.cancel} ยกเลิกโต๊ะ
-                    </button>
-                </div>
-
-                {isLoading && !confirmationOpen ? (
-                    <div className={styles.loading}>กำลังโหลดข้อมูล...</div>
-                ) : error ? (
-                    <div className={styles.error}>{error}</div>
-                ) : (
-                    <>
-                        {activeTab === "move" && (
-                            <div className={styles.tableList}>
-                                <h3>เลือกโต๊ะที่ต้องการย้ายไป (โต๊ะว่าง)</h3>
-                                {availableTables.length === 0 ? (
-                                    <p>ไม่พบโต๊ะว่าง</p>
-                                ) : (
-                                    <div className={styles.tables}>
-                                        {availableTables.map((t) => (
-                                            <div
-                                                key={t.id}
-                                                className={`${styles.tableItem} ${selectedTargetTable?.id === t.id ? styles.selected : ""}`}
-                                                onClick={() => handleSelectTable(t)}
-                                            >
-                                                โต๊ะ {t.table_number}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === "merge" && (
-                            <div className={styles.tableList}>
-                                <h3>เลือกโต๊ะที่ต้องการรวม (โต๊ะไม่ว่าง)</h3>
-                                {occupiedTables.length === 0 ? (
-                                    <p>ไม่พบโต๊ะที่ไม่ว่าง</p>
-                                ) : (
-                                    <div className={styles.tables}>
-                                        {occupiedTables.map((t) => (
-                                            <div
-                                                key={t.id}
-                                                className={`${styles.tableItem} ${selectedTargetTable?.id === t.id ? styles.selected : ""}`}
-                                                onClick={() => handleSelectTable(t)}
-                                            >
-                                                โต๊ะ {t.table_number}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === "cancel" && (
-                            <div className={styles.cancelForm}>
-                                <h3>ยกเลิกโต๊ะ</h3>
-                                <p>การยกเลิกโต๊ะจะทำให้รายการอาหารทั้งหมดถูกยกเลิก</p>
-                            </div>
-                        )}
-
-                        {!confirmationOpen ? (
-                            <div className={styles.actions}>
-                                <button
-                                    className={styles.confirmButton}
-                                    onClick={handleShowConfirmation}
-                                    disabled={(activeTab !== "cancel" && !selectedTargetTable) || isLoading}
+                    <div className="modal-body">
+                        <ul className="nav nav-tabs mb-4">
+                            <li className="nav-item">
+                                <button 
+                                    className={`nav-link ${activeTab === "move" ? "active" : ""}`}
+                                    onClick={() => handleTabChange("move")}
                                 >
-                                    {isLoading ? "กำลังดำเนินการ..." : "ดำเนินการต่อ"}
+                                    {tabIcons.move} ย้ายโต๊ะ
                                 </button>
-                                <button
-                                    className={styles.cancelButton}
-                                    onClick={onClose}
+                            </li>
+                            <li className="nav-item">
+                                <button 
+                                    className={`nav-link ${activeTab === "merge" ? "active" : ""}`}
+                                    onClick={() => handleTabChange("merge")}
                                 >
-                                    ยกเลิก
+                                    {tabIcons.merge} รวมโต๊ะ
                                 </button>
+                            </li>
+                            <li className="nav-item">
+                                <button 
+                                    className={`nav-link ${activeTab === "cancel" ? "active" : ""}`}
+                                    onClick={() => handleTabChange("cancel")}
+                                >
+                                    {tabIcons.cancel} ยกเลิกโต๊ะ
+                                </button>
+                            </li>
+                        </ul>
+
+                        {isLoading && !confirmationOpen ? (
+                            <div className="text-center py-4">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">กำลังโหลดข้อมูล...</span>
+                                </div>
+                                <p className="mt-2">กำลังโหลดข้อมูล...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="alert alert-danger" role="alert">
+                                {error}
                             </div>
                         ) : (
-                            <div className={styles.confirmation}>
-                                <h3>ยืนยันการดำเนินการ</h3>
-                                <div className={styles.timestamp}>
-                                    <p>เวลาปัจจุบัน: {formatDateTime()}</p>
-                                </div>
+                            <>
                                 {activeTab === "move" && (
-                                    <p>ยืนยันการย้ายจากโต๊ะ {table.table_number} ไปยังโต๊ะ {selectedTargetTable.table_number}?</p>
+                                    <div className="mb-4">
+                                        <h6 className="border-start border-4 border-primary ps-2 mb-3">เลือกโต๊ะที่ต้องการย้ายไป (โต๊ะว่าง)</h6>
+                                        {availableTables.length === 0 ? (
+                                            <p>ไม่พบโต๊ะว่าง</p>
+                                        ) : (
+                                            <div className="row row-cols-2 row-cols-md-4 g-3">
+                                                {availableTables.map((t) => (
+                                                    <div key={t.id} className="col">
+                                                        <div 
+                                                            className={`card text-center p-3 h-100 ${selectedTargetTable?.id === t.id ? "bg-primary text-white" : ""}`}
+                                                            onClick={() => handleSelectTable(t)}
+                                                            style={{ cursor: "pointer", transition: "all 0.2s" }}
+                                                        >
+                                                            <div className="card-body">
+                                                                <p className="card-text mb-0">โต๊ะ {t.table_number}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
+
                                 {activeTab === "merge" && (
-                                    <p>ยืนยันการรวมโต๊ะ {table.table_number} กับโต๊ะ {selectedTargetTable.table_number}?</p>
+                                    <div className="mb-4">
+                                        <h6 className="border-start border-4 border-primary ps-2 mb-3">เลือกโต๊ะที่ต้องการรวม (โต๊ะไม่ว่าง)</h6>
+                                        {occupiedTables.length === 0 ? (
+                                            <p>ไม่พบโต๊ะที่ไม่ว่าง</p>
+                                        ) : (
+                                            <div className="row row-cols-2 row-cols-md-4 g-3">
+                                                {occupiedTables.map((t) => (
+                                                    <div key={t.id} className="col">
+                                                        <div 
+                                                            className={`card text-center p-3 h-100 ${selectedTargetTable?.id === t.id ? "bg-primary text-white" : ""}`}
+                                                            onClick={() => handleSelectTable(t)}
+                                                            style={{ cursor: "pointer", transition: "all 0.2s" }}
+                                                        >
+                                                            <div className="card-body">
+                                                                <p className="card-text mb-0">โต๊ะ {t.table_number}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
+
                                 {activeTab === "cancel" && (
-                                    <p>ยืนยันการยกเลิกโต๊ะ {table.table_number}?</p>
+                                    <div className="mb-4">
+                                        <h6 className="border-start border-4 border-primary ps-2 mb-3">ยกเลิกโต๊ะ</h6>
+                                        <div className="alert alert-warning">
+                                            <p className="mb-0">การยกเลิกโต๊ะจะทำให้รายการอาหารทั้งหมดถูกยกเลิก</p>
+                                        </div>
+                                    </div>
                                 )}
-                                <div className={styles.actions}>
-                                    <button
-                                        className={`${styles.confirmButton} ${isLoading ? styles.loading : ""}`}
-                                        onClick={handleConfirm}
-                                        disabled={isLoading}
-                                    >
-                                        {isLoading ? "กำลังดำเนินการ..." : "ยืนยัน"}
-                                    </button>
-                                    <button
-                                        className={styles.cancelButton}
-                                        onClick={() => setConfirmationOpen(false)}
-                                        disabled={isLoading}
-                                    >
-                                        ยกเลิก
-                                    </button>
-                                </div>
-                            </div>
+
+                                {!confirmationOpen ? (
+                                    <div className="d-flex justify-content-end gap-2 mt-4">
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={onClose}
+                                        >
+                                            ยกเลิก
+                                        </button>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={handleShowConfirmation}
+                                            disabled={(activeTab !== "cancel" && !selectedTargetTable) || isLoading}
+                                        >
+                                            {isLoading ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                    กำลังดำเนินการ...
+                                                </>
+                                            ) : "ดำเนินการต่อ"}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="card border-0 bg-light mt-4">
+                                        <div className="card-body">
+                                            <h5 className="card-title text-primary mb-3">ยืนยันการดำเนินการ</h5>
+                                            
+                                            <div className="alert alert-info border-start border-4">
+                                                <p className="mb-0">เวลาปัจจุบัน: {formatDateTime()}</p>
+                                            </div>
+                                            
+                                            {activeTab === "move" && (
+                                                <p>ยืนยันการย้ายจากโต๊ะ {table.table_number} ไปยังโต๊ะ {selectedTargetTable.table_number}?</p>
+                                            )}
+                                            {activeTab === "merge" && (
+                                                <p>ยืนยันการรวมโต๊ะ {table.table_number} กับโต๊ะ {selectedTargetTable.table_number}?</p>
+                                            )}
+                                            {activeTab === "cancel" && (
+                                                <p>ยืนยันการยกเลิกโต๊ะ {table.table_number}?</p>
+                                            )}
+                                            
+                                            <div className="d-flex justify-content-end gap-2 mt-3">
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    onClick={() => setConfirmationOpen(false)}
+                                                    disabled={isLoading}
+                                                >
+                                                    ยกเลิก
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={handleConfirm}
+                                                    disabled={isLoading}
+                                                >
+                                                    {isLoading ? (
+                                                        <>
+                                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                            กำลังดำเนินการ...
+                                                        </>
+                                                    ) : "ยืนยัน"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
-                    </>
-                )}
+                    </div>
+                </div>
             </div>
         </div>
     );

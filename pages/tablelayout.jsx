@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import styles from "../styles/tablelayout.module.css";
+import { Container, Row, Col, Button } from 'react-bootstrap';
 import { getTables, deleteTable } from "../api";
 import Addtable from "../components/Addtable";
 import Deltable from "../components/Deltable";
 
 const TableLayout = () => {
   const [tables, setTables] = useState([]);
-  const [showAddCard, setShowAddCard] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
 
   const fetchTables = async () => {
@@ -27,7 +27,7 @@ const TableLayout = () => {
 
   const handleTableAdded = async () => {
     await fetchTables();
-    setShowAddCard(false);
+    setShowAddModal(false);
   };
 
   const handleDeleteTable = async (tableNumber) => {
@@ -48,29 +48,32 @@ const TableLayout = () => {
   const getTableStatusClass = (status) => {
     switch (status) {
       case "ว่าง":
-        return styles.tableAvailable;
+        return "table-available";
       case "ไม่ว่าง":
-        return styles.tableOccupied;
+        return "table-occupied";
       default:
         return "";
     }
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles["heading-background"]}>จัดการผังโต๊ะ</h1>
+    <Container className="py-4 position-relative">
+      <h1 className="bg-warning text-white p-2 rounded d-inline-block">จัดการผังโต๊ะ</h1>
 
-      <div className={styles["button-container"]}>
-        <button
+      <div className="position-absolute" style={{ right: '110px', top: '20px', zIndex: 1000 }}>
+        <Button
+          variant="link"
+          className="p-0 border-0"
           onClick={() => {
-            setShowAddCard(true);
+            setShowAddModal(true);
             setIsDeleteMode(false);
           }}
-          className={styles.imageadd}
         >
-          <img src="/images/+.png" alt="ปุ่มเพิ่มโต๊ะ" />
-        </button>
+          <img src="/images/+.png" alt="ปุ่มเพิ่มโต๊ะ" width="50" height="50" />
+        </Button>
+      </div>
 
+      <div className="position-absolute" style={{ right: '30px', top: '20px', zIndex: 1000 }}>
         <Deltable
           tables={tables}
           isDeleteMode={isDeleteMode}
@@ -79,44 +82,98 @@ const TableLayout = () => {
         />
       </div>
 
-      <div className={styles.tableGrid}>
+      <Row className="mt-5 mx-auto" style={{ maxWidth: '1000px' }}>
         {tables.map((table) => (
-          <div
-            key={table.table_number}
-            className={`${styles.table} ${getTableStatusClass(
-              table.status_name
-            )} ${isDeleteMode ? styles.deleteMode : ""}`}
-            onClick={() =>
-              isDeleteMode && handleDeleteTable(table.table_number)
-            }
-          >
-            <div className={styles.tableContent}>
-              <div className={styles.tableDrawing}>
+          <Col xs={6} sm={4} md={3} key={table.table_number} className="mb-4 d-flex justify-content-center">
+            <div
+              className={`position-relative ${getTableStatusClass(table.status_name)} ${isDeleteMode ? 'delete-mode' : ''}`}
+              style={{ width: '120px', height: '120px', cursor: isDeleteMode ? 'pointer' : 'default', margin: '30px' }}
+              onClick={() => isDeleteMode && handleDeleteTable(table.table_number)}
+            >
+              <div className="position-relative w-100 h-100">
                 {/* โต๊ะตรงกลาง */}
-                <div className={styles.tableCenter}>
-                  <span className={styles.tableNumber}>
+                <div className="position-absolute top-50 start-50 translate-middle d-flex align-items-center justify-content-center"
+                  style={{
+                    width: '80px', 
+                    height: '80px',
+                    border: `2px solid ${isDeleteMode ? '#ff4444' : table.status_name === 'ว่าง' ? '#4CAF50' : '#f44336'}`,
+                    borderRadius: '8px',
+                    backgroundColor: isDeleteMode ? '#ffebeb' : 'white'
+                  }}>
+                  <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>
                     {table.table_number}
                   </span>
                 </div>
-                {/* เก้าอี้ทั้ง 4 ด้าน */}
-                <div className={styles.chairTop}></div>
-                <div className={styles.chairBottom}></div>
-                <div className={styles.chairLeft}></div>
-                <div className={styles.chairRight}></div>
+                
+                {/* เก้าอี้บน */}
+                <div className="position-absolute start-50 translate-middle-x"
+                  style={{ 
+                    top: 0,
+                    width: '30px', 
+                    height: '20px',
+                    border: '2px solid #666',
+                    borderRadius: '10px',
+                    backgroundColor: 'white'
+                  }}></div>
+                
+                {/* เก้าอี้ล่าง */}
+                <div className="position-absolute start-50 translate-middle-x"
+                  style={{ 
+                    bottom: 0,
+                    width: '30px', 
+                    height: '20px',
+                    border: '2px solid #666',
+                    borderRadius: '10px',
+                    backgroundColor: 'white'
+                  }}></div>
+                
+                {/* เก้าอี้ซ้าย */}
+                <div className="position-absolute top-50 translate-middle-y"
+                  style={{ 
+                    left: 0,
+                    width: '20px', 
+                    height: '30px',
+                    border: '2px solid #666',
+                    borderRadius: '10px',
+                    backgroundColor: 'white'
+                  }}></div>
+                
+                {/* เก้าอี้ขวา */}
+                <div className="position-absolute top-50 translate-middle-y"
+                  style={{ 
+                    right: 0,
+                    width: '20px', 
+                    height: '30px',
+                    border: '2px solid #666',
+                    borderRadius: '10px',
+                    backgroundColor: 'white'
+                  }}></div>
+
+                {isDeleteMode && (
+                  <div className="position-absolute bg-danger text-white rounded-circle d-flex align-items-center justify-content-center"
+                    style={{ 
+                      top: '-10px', 
+                      right: '-10px',
+                      width: '24px', 
+                      height: '24px',
+                      fontSize: '18px',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                    }}>
+                    ×
+                  </div>
+                )}
               </div>
             </div>
-            {isDeleteMode && <div className={styles.deleteIcon}>×</div>}
-          </div>
+          </Col>
         ))}
-      </div>
+      </Row>
 
-      {showAddCard && (
-        <Addtable
-          onClose={() => setShowAddCard(false)}
-          onTableAdded={handleTableAdded}
-        />
-      )}
-    </div>
+      <Addtable
+        show={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onTableAdded={handleTableAdded}
+      />
+    </Container>
   );
 };
 

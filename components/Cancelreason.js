@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styles from '../styles/cancelreason.module.css';
+import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import { getCancelReasons } from '../api';
 
 const Cancelreason = ({ isOpen, onClose, onConfirm, detailId }) => {
@@ -9,20 +9,10 @@ const Cancelreason = ({ isOpen, onClose, onConfirm, detailId }) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        // ถ้า modal เปิดอยู่ ให้โหลดข้อมูลเหตุผลการยกเลิก
+        // เมื่อ modal เปิด ให้โหลดข้อมูลเหตุผลการยกเลิก
         if (isOpen) {
             fetchCancelReasons();
-            // เพิ่ม: ป้องกันการเลื่อนหน้าจอของส่วนพื้นหลัง
-            document.body.style.overflow = 'hidden';
-        } else {
-            // เพิ่ม: เมื่อ modal ปิด ให้คืนค่า overflow กลับเป็นค่าเดิม
-            document.body.style.overflow = 'auto';
         }
-
-        // เพิ่ม: Cleanup function เมื่อ component unmount
-        return () => {
-            document.body.style.overflow = 'auto';
-        };
     }, [isOpen]);
 
     const fetchCancelReasons = async () => {
@@ -56,135 +46,82 @@ const Cancelreason = ({ isOpen, onClose, onConfirm, detailId }) => {
         }
     };
 
-    // เพิ่มการจัดการปัญหา scroll ใน wheel และ touchmove events
-    const handleWheel = (e) => {
-        const modalBody = document.querySelector(`.${styles.modalBody}`);
-        const isScrollable = modalBody && modalBody.scrollHeight > modalBody.clientHeight;
-
-        // ถ้าไม่ได้อยู่ใน modalBody หรือ modalBody ไม่สามารถเลื่อนได้ ให้ป้องกันการเลื่อน
-        const isInModalBody = e.target.closest(`.${styles.modalBody}`);
-
-        if (!isInModalBody || !isScrollable) {
-            e.preventDefault();
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            onClose();
-        }
-    };
-
-    const handleOverlayClick = (e) => {
-        if (e.target === e.currentTarget) {
-            onClose();
-        }
-    };
-
-    // ถ้า modal ไม่ได้เปิดอยู่ ไม่ต้องแสดงอะไร
-    if (!isOpen) return null;
-
     return (
-        <div
-            className={styles.modalOverlay}
-            onClick={handleOverlayClick}
-            onKeyDown={handleKeyDown}
-            onWheel={handleWheel}
-            tabIndex={-1}
-            role="dialog"
+        <Modal 
+            show={isOpen} 
+            onHide={onClose}
+            centered
+            backdrop="static"
+            animation={true}
         >
-            <div className={styles.modalContent}>
-                <div className={styles.modalHeader}>
-                    <h3>เลือกเหตุผลการยกเลิก</h3>
-                    <button
-                        className={styles.closeButton}
-                        onClick={onClose}
-                        aria-label="ปิด"
-                    >
-                        ×
-                    </button>
-                </div>
+            <Modal.Header closeButton>
+                <Modal.Title>เลือกเหตุผลการยกเลิก</Modal.Title>
+            </Modal.Header>
 
-                <div className={styles.modalBody}>
-                    {loading ? (
-                        <div className={styles.loading}>
-                            <svg
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                                style={{
-                                    animation: 'spin 1s linear infinite',
-                                    marginRight: '8px'
+            <Modal.Body className="py-4">
+                {loading ? (
+                    <div className="text-center py-4">
+                        <Spinner animation="border" variant="secondary" className="me-2" />
+                        <span>กำลังโหลดข้อมูล...</span>
+                    </div>
+                ) : error ? (
+                    <div className="alert alert-danger">
+                        {error}
+                    </div>
+                ) : (
+                    <Form>
+                        {reasons.map((reason) => (
+                            <div 
+                                key={reason.id} 
+                                className="mb-3 p-3 border rounded"
+                                style={{ 
+                                    cursor: 'pointer',
+                                    backgroundColor: selectedReason === reason.id ? '#ffebee' : '',
+                                    borderColor: selectedReason === reason.id ? '#e53935' : '#dee2e6'
                                 }}
+                                onClick={() => setSelectedReason(reason.id)}
                             >
-                                <style>{`
-                  @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                  }
-                `}</style>
-                                <circle
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="#ccc"
-                                    strokeWidth="4"
-                                    fill="none"
-                                    strokeDasharray="30 10"
+                                <Form.Check
+                                    type="radio"
+                                    id={`reason-${reason.id}`}
+                                    name="cancelReason"
+                                    value={reason.id}
+                                    checked={selectedReason === reason.id}
+                                    onChange={handleReasonChange}
+                                    label={
+                                        <>
+                                            {reason.name}
+                                            {reason.description && (
+                                                <small className="d-block text-muted mt-1">
+                                                    ({reason.description})
+                                                </small>
+                                            )}
+                                        </>
+                                    }
                                 />
-                            </svg>
-                            กำลังโหลดข้อมูล...
-                        </div>
-                    ) : error ? (
-                        <div className={styles.error}>{error}</div>
-                    ) : (
-                        <div className={styles.reasonsList}>
-                            {reasons.map((reason) => (
-                                <div
-                                    key={reason.id}
-                                    className={`${styles.reasonItem} ${selectedReason === reason.id ? styles.selected : ''}`}
-                                    onClick={() => setSelectedReason(reason.id)}
-                                >
-                                    <input
-                                        type="radio"
-                                        id={`reason-${reason.id}`}
-                                        name="cancelReason"
-                                        value={reason.id}
-                                        checked={selectedReason === reason.id}
-                                        onChange={handleReasonChange}
-                                    />
-                                    <label htmlFor={`reason-${reason.id}`}>
-                                        {reason.name}
-                                        {reason.description && (
-                                            <span className={styles.reasonDescription}>
-                                                ({reason.description})
-                                            </span>
-                                        )}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        ))}
+                    </Form>
+                )}
+            </Modal.Body>
 
-                <div className={styles.modalFooter}>
-                    <button
-                        className={styles.cancelButton}
-                        onClick={handleCancel}
-                    >
-                        ยกเลิก
-                    </button>
-                    <button
-                        className={styles.confirmButton}
-                        onClick={handleConfirm}
-                        disabled={!selectedReason || loading}
-                    >
-                        ยืนยันการยกเลิกรายการ
-                    </button>
-                </div>
-            </div>
-        </div>
+            <Modal.Footer className="bg-light">
+                <Button 
+                    variant="light" 
+                    onClick={handleCancel}
+                    className="border"
+                >
+                    ยกเลิก
+                </Button>
+                <Button 
+                    variant="danger" 
+                    onClick={handleConfirm}
+                    disabled={!selectedReason || loading}
+                >
+                    ยืนยันการยกเลิกรายการ
+                </Button>
+            </Modal.Footer>
+        </Modal>
     );
 };
 

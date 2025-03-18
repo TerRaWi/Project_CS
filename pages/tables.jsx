@@ -1,9 +1,68 @@
 import React, { useEffect, useState } from 'react';
 import { getTables } from '../api';
 import Image from 'next/image';
-import styles from '../styles/table.module.css';
 import Rectable from '../components/Rectable';
 import Ordertable from '../components/Ordertable';
+
+// เพิ่ม CSS เฉพาะเพื่อแก้ปัญหากรอบโต๊ะ
+const customStyles = {
+  tableContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    margin: '0',
+    padding: '0',
+  },
+  tableWrapper: {
+    width: '25%',
+    padding: '10px',
+    boxSizing: 'border-box',
+    position: 'relative',
+  },
+  tableButton: {
+    width: '100%',
+    padding: '10px',
+    border: 'none',
+    outline: 'none',
+    boxShadow: 'none',
+    background: 'none',
+    cursor: 'pointer',
+    position: 'relative',
+    display: 'block',
+  },
+  tableContent: {
+    position: 'relative',
+    width: '100%',
+    height: 'auto',
+  },
+  tableInfo: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    textAlign: 'center',
+    zIndex: 2,
+  },
+  tableNumber: {
+    fontWeight: 'bold',
+    fontSize: '1.5rem',
+  },
+  tableStatus: {
+    fontSize: '0.8rem',
+    color: '#6c757d',
+  },
+  // พื้นหลังทำด้วย div เพื่อหลีกเลี่ยงปัญหากรอบ - แก้ไขส่วนนี้
+  tableBackground: {
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    width: '100%',
+    height: '100%',
+    zIndex: 0,
+    borderRadius: '0',
+    // ลบหรือเปลี่ยนสีพื้นหลังถ้าต้องการ
+    // backgroundColor: แก้จาก '#d4edda' ถ้าต้องการ
+  }
+};
 
 const Tables = () => {
   const [tables, setTables] = useState([]);
@@ -16,7 +75,6 @@ const Tables = () => {
     fetchTables();
   }, []);
 
-  // Effect เพื่อรีเฟรชข้อมูลหลังจากชำระเงินสำเร็จ
   useEffect(() => {
     if (isBillProcessed) {
       fetchTables();
@@ -27,7 +85,7 @@ const Tables = () => {
   const fetchTables = async () => {
     try {
       const data = await getTables();
-      console.log('Table data:', data); // ดูข้อมูลที่ได้จาก API
+      console.log('Table data:', data);
       setTables(data);
     } catch (err) {
       setError('ดึงข้อมูลโต๊ะไม่สำเร็จ');
@@ -35,7 +93,6 @@ const Tables = () => {
   };
 
   const handleButtonClick = (table) => {
-    // เช็คกับ status_id จากฐานข้อมูล
     if (table.status_id === 2) {
       setOrderTable(table);
       setSelectedTable(null);
@@ -54,24 +111,17 @@ const Tables = () => {
     fetchTables();
   };
 
-  // Handler สำหรับเมื่อชำระเงินสำเร็จ หรือมีการจัดการโต๊ะ
   const handleBillPaymentSuccess = (result) => {
     console.log("Payment or table action success:", result);
-    
-    // ปิด modal การสั่งอาหาร
     setOrderTable(null);
-    
-    // เรียกให้รีเฟรชข้อมูลโต๊ะทันที
     fetchTables();
     
-    // สำหรับกรณีชำระเงิน
     if (result && result.totalAmount) {
       setIsBillProcessed(true);
     }
   };
 
   const getTableImage = (statusId) => {
-    // ใช้ status_id จากฐานข้อมูล: 1 = ว่าง, 2 = ไม่ว่าง
     return statusId === 2 ? '/images/t2.png' : '/images/t1.png';
   };
 
@@ -80,51 +130,76 @@ const Tables = () => {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.sidebar}>
-        <h1>โต๊ะ</h1>
-        {error && <p className={styles.error}>{error}</p>}
-        <div className={styles.buttonContainer}>
-          {tables.map((table) => (
-            <button
-              key={table.id}
-              className={`${styles.button} ${table.status_id === 2 ? styles.occupied : ''}`}
-              onClick={() => handleButtonClick(table)}
-            >
-              <Image
-                src={getTableImage(table.status_id)}
-                alt={`โต๊ะ ${table.table_number} (${getTableStatus(table.status_id)})`}
-                className={styles.image}
-                width={150}
-                height={150}
-                priority
-              />
-              <div className={styles.tableNumber}>
-                {table.table_number}
-                <div style={{ fontSize: '12px', color: 'gray' }}>
-                  {getTableStatus(table.status_id)}
-                </div>
+    <div className="container-fluid">
+      <div className="row">
+        <div className="col-md-8 p-4">
+          <h1 className="mb-4">โต๊ะ</h1>
+          {error && <p className="text-danger">{error}</p>}
+          
+          {/* ใช้ div แทน grid ของ Bootstrap */}
+          <div style={customStyles.tableContainer}>
+            {tables.map((table) => (
+              <div key={table.id} style={customStyles.tableWrapper}>
+                <button
+                  type="button"
+                  onClick={() => handleButtonClick(table)}
+                  style={customStyles.tableButton}
+                >
+                  {/* พื้นหลังสำหรับโต๊ะไม่ว่าง ใช้ div แยกต่างหาก - ตรงนี้ลบกรอบสีเขียวโดยไม่แสดง div นี้ */}
+                  {/* ลบหรือคอมเมนต์บล็อก div นี้ทิ้งเพื่อเอากรอบสีเขียวออก
+                  {table.status_id === 2 && (
+                    <div 
+                      style={{
+                        ...customStyles.tableBackground,
+                        backgroundColor: '#d4edda',
+                      }}
+                    />
+                  )}
+                  */}
+                  
+                  <div style={customStyles.tableContent}>
+                    <Image
+                      src={getTableImage(table.status_id)}
+                      alt={`โต๊ะ ${table.table_number} (${getTableStatus(table.status_id)})`}
+                      width={150}
+                      height={150}
+                      style={{ width: '100%', height: 'auto', position: 'relative', zIndex: 1 }}
+                      priority
+                    />
+                    
+                    <div style={customStyles.tableInfo}>
+                      <div style={customStyles.tableNumber}>
+                        {table.table_number}
+                      </div>
+                      <div style={customStyles.tableStatus}>
+                        {getTableStatus(table.status_id)}
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
-            </button>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        <div className="col-md-4 p-4">
+          {selectedTable && (
+            <Rectable 
+              table={selectedTable} 
+              onClose={() => setSelectedTable(null)} 
+              onSave={handleSave}
+            />
+          )}
+          
+          {orderTable && (
+            <Ordertable 
+              table={orderTable} 
+              onClose={() => setOrderTable(null)}
+              onPaymentSuccess={handleBillPaymentSuccess} 
+            />
+          )}
         </div>
       </div>
-
-      {selectedTable && (
-        <Rectable 
-          table={selectedTable} 
-          onClose={() => setSelectedTable(null)} 
-          onSave={handleSave}
-        />
-      )}
-      
-      {orderTable && (
-        <Ordertable 
-          table={orderTable} 
-          onClose={() => setOrderTable(null)}
-          onPaymentSuccess={handleBillPaymentSuccess} 
-        />
-      )}
     </div>
   );
 };

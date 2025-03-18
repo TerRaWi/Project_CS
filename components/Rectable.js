@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import styles from "../styles/rectable.module.css";
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { saveCustomerData } from "../api";
 
 const Rectable = ({ table, onClose, onSave }) => {
@@ -105,82 +105,92 @@ const Rectable = ({ table, onClose, onSave }) => {
   if (!table) return null;
 
   return (
-    <div className={styles.rectableContainer}>
+    <div className="card shadow rounded-4 p-4 position-relative" style={{ width: "350px", minHeight: "450px" }}>
       <button 
-        className={styles.closeButton} 
+        className="btn btn-danger position-absolute"
+        style={{ top: "10px", right: "10px", padding: "5px 10px" }}
         onClick={onClose}
         disabled={isSubmitting}
       >
         X
       </button>
-      <h2 className={styles.rectableHeader}>โต๊ะ {table.table_number}</h2>
+      
+      <h2 className="fw-bold mb-4 mt-2">โต๊ะ {table.table_number}</h2>
 
-      <div className={styles.inputSection}>
-        <h3 
-          className={styles.rectableContent}
+      <div className="mb-4">
+        <div 
+          className="d-flex justify-content-between align-items-center mb-4"
           onClick={() => setActiveInput("smallChildren")}
         >
-          เด็ก(เล็ก)
+          <h5 className="mb-0">เด็ก(เล็ก)</h5>
           <input
             type="number"
             value={numSmallChildren}
             onChange={(e) => handleInputChange(e, "smallChildren")}
-            className={styles.inputField}
+            className="form-control text-center"
+            style={{ width: "80px" }}
             disabled={isSubmitting}
           />
-        </h3>
+        </div>
 
-        <h3 
-          className={styles.rectableContent}
+        <div 
+          className="d-flex justify-content-between align-items-center mb-4"
           onClick={() => setActiveInput("children")}
         >
-          เด็ก(โต)
+          <h5 className="mb-0">เด็ก(โต)</h5>
           <input
             type="number"
             value={numChildren}
             onChange={(e) => handleInputChange(e, "children")}
-            className={styles.inputField}
+            className="form-control text-center"
+            style={{ width: "80px" }}
             disabled={isSubmitting}
           />
-        </h3>
+        </div>
 
-        <h3 
-          className={styles.rectableContent}
+        <div 
+          className="d-flex justify-content-between align-items-center mb-4"
           onClick={() => setActiveInput("adults")}
         >
-          ผู้ใหญ่
+          <h5 className="mb-0">ผู้ใหญ่</h5>
           <input
             type="number"
             value={numAdults}
             onChange={(e) => handleInputChange(e, "adults")}
-            className={styles.inputField}
+            className="form-control text-center"
+            style={{ width: "80px" }}
             disabled={isSubmitting}
           />
-        </h3>
+        </div>
       </div>
 
-      <div className={styles.numpad}>
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
-          <button
-            key={num}
-            className={styles.numpadButton}
-            onClick={() => handleNumpadClick(num)}
-            disabled={isSubmitting}
-          >
-            {num}
-          </button>
-        ))}
+      <div className="mt-auto">
+        <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
+            <button
+              key={num}
+              className="btn btn-light border"
+              style={{ width: "50px", height: "50px", fontSize: "18px" }}
+              onClick={() => handleNumpadClick(num)}
+              disabled={isSubmitting}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
         
-        <div className={styles.actionButtons}>
+        <div className="d-flex justify-content-center gap-3">
           <button 
-            className={styles.confirmButton} 
+            className="btn btn-success"
+            style={{ width: "100px", height: "50px", fontSize: "18px" }}
             onClick={handleConfirm}
             disabled={isSubmitting}
           >
             {isSubmitting ? "กำลังบันทึก..." : "ตกลง"}
           </button>
           <button 
-            className={styles.numpadDelete} 
+            className="btn btn-danger"
+            style={{ width: "100px", height: "50px", fontSize: "18px" }}
             onClick={handleDelete}
             disabled={isSubmitting}
           >

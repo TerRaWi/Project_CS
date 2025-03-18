@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getBill, checkout, updateOrderDetailStatus, getCancelReasons } from "../api";
 import Addfooditem from "./Addfooditem";
-import styles from "../styles/billpayment.module.css";
 import QRCode from "qrcode";
 import generatePayload from "promptpay-qr";
+// นำเข้า Bootstrap (ถ้าคุณใช้ Bootstrap 5 และยังไม่ได้นำเข้าที่ไหนในแอพพลิเคชัน)
+// import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     const [bill, setBill] = useState(null);
@@ -168,27 +169,6 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         fetchBill();
     }, [orderId]);
 
-    // ตรวจสอบการเปลี่ยนแปลงสถานะของ modal และจัดการ overflow ตามความเหมาะสม
-    useEffect(() => {
-        const billContainer = document.querySelector(`.${styles.billContainer}`);
-
-        if (showAddFood || showPrintReceipt) {
-            // ถ้ามี modal ใดๆ เปิดอยู่ ให้หยุดการทำงานของ billContainer
-            if (billContainer) {
-                billContainer.style.overflow = 'hidden';
-                billContainer.style.pointerEvents = 'none';
-                billContainer.classList.add(styles.disabled);
-            }
-        } else {
-            // ถ้าไม่มี modal เปิดอยู่ ให้ใช้งาน billContainer ได้ตามปกติ
-            if (billContainer) {
-                billContainer.style.overflow = 'auto';
-                billContainer.style.pointerEvents = 'auto';
-                billContainer.classList.remove(styles.disabled);
-            }
-        }
-    }, [showAddFood, showPrintReceipt, styles.billContainer, styles.disabled]);
-
     useEffect(() => {
         const loadCancelReasons = async () => {
             try {
@@ -263,6 +243,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                 <head>
                     <meta charset="UTF-8">
                     <title>ใบเสร็จรับเงิน</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                     <style>
                         body {
                             font-family: 'Angsana New', 'TH SarabunPSK', 'Tahoma', sans-serif;
@@ -408,7 +389,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                         <p>Fast Shabu - สวรรค์ของคนรักชาบู</p>
                     </div>
                     
-                    <button id="print-button" onclick="window.print()">พิมพ์ใบเสร็จ</button>
+                    <button id="print-button" class="btn btn-success" onclick="window.print()">พิมพ์ใบเสร็จ</button>
                     
                     <script>
                         // เพิ่มฟังก์ชันพิมพ์อัตโนมัติเมื่อโหลดเสร็จ หรือให้ผู้ใช้กดปุ่มพิมพ์เอง
@@ -448,6 +429,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
             <html>
             <head>
                 <title>ใบเสร็จรับเงิน Fast Shabu</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                 <style>
                     body { 
                         font-family: sans-serif;
@@ -505,10 +487,20 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
                         text-align: center;
                         margin-top: 20px;
                     }
+                    
+                    @media print {
+                        .btn {
+                            display: none;
+                        }
+                    }
                 </style>
             </head>
             <body>
                 ${receiptContent ? receiptContent.innerHTML : '<p>ไม่พบข้อมูลใบเสร็จ</p>'}
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary" onclick="window.print()">พิมพ์</button>
+                    <button class="btn btn-secondary ms-2" onclick="window.close()">ปิด</button>
+                </div>
             </body>
             </html>
         `);
@@ -520,10 +512,7 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         printWindow.onload = function () {
             // ทำการพิมพ์
             printWindow.focus();
-            printWindow.print();
-
-            // ผู้ใช้สามารถปิดหน้าต่างได้เอง หรือจะให้ปิดอัตโนมัติหลังพิมพ์ โดยเพิ่มบรรทัดนี้:
-            // printWindow.close();
+            // printWindow.print(); // ถ้าต้องการให้พิมพ์ทันที
         };
     };
 
@@ -593,11 +582,6 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
         }
     };
 
-    // ฟังก์ชันป้องกันการ propagate ของ event
-    const handleModalClick = (e) => {
-        e.stopPropagation();
-    };
-
     // ฟังก์ชันการปิดโมดัลหลัก (Billpayment)
     const handleClose = () => {
         document.body.style.overflow = 'auto';
@@ -622,295 +606,343 @@ const Billpayment = ({ orderId, tableNumber, onClose, onSuccess }) => {
     const renderStatus = (status) => {
         switch (status) {
             case 'P':
-                return <span className={styles.statusProcessing}>กำลังทำ</span>;
+                return <span className="badge bg-warning text-dark">กำลังทำ</span>;
             case 'C':
-                return <span className={styles.statusCompleted}>เสร็จแล้ว</span>;
+                return <span className="badge bg-success">เสร็จแล้ว</span>;
             case 'V':
-                return <span className={styles.statusVoid}>ยกเลิก</span>;
+                return <span className="badge bg-danger">ยกเลิก</span>;
             default:
                 return <span>{status}</span>;
         }
     };
 
     if (isLoading && !bill) {
-        return <div className={styles.loading}>กำลังโหลด...</div>;
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{height: "300px"}}>
+                <div className="spinner-border text-warning" role="status">
+                    <span className="visually-hidden">กำลังโหลด...</span>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
-        return <div className={styles.error}>{error}</div>;
+        return (
+            <div className="alert alert-danger m-4 text-center" role="alert">
+                {error}
+            </div>
+        );
     }
 
     if (!bill) {
-        return <div className={styles.error}>ไม่พบข้อมูลบิล</div>;
+        return (
+            <div className="alert alert-warning m-4 text-center" role="alert">
+                ไม่พบข้อมูลบิล
+            </div>
+        );
     }
 
     return (
         <>
-            <div className={styles.modalOverlay} onClick={handleClose}></div>
-            <div className={styles.billContainer}>
-                <div className={styles.header}>
-                    <h2>ใบเสร็จรับเงิน</h2>
-                    <button className={styles.closeButton} onClick={handleClose}>
-                        X
-                    </button>
-                </div>
-
-                <div className={styles.billContent}>
-                    <div className={styles.billInfo}>
-                        <p>โต๊ะ: {tableNumber || bill.tableNumber}</p>
-                        <p>วันที่: {formatDateTime(bill.startTime)}</p>
-                        <p>เลขที่ใบเสร็จ: {orderId}</p>
-                    </div>
-
-                    {/* สรุปสถานะรายการ */}
-                    {bill.status !== "C" && (
-                        <div className={styles.statusSummary}>
-                            <div className={styles.statusItem}>
-                                <strong>รายการทั้งหมด:</strong> {bill.items.length} รายการ ({formatCurrency(bill.totalAmount)} บาท)
+            {/* Modal Backdrop */}
+            <div className="modal-backdrop show" onClick={handleClose}></div>
+            
+            {/* Bill Container */}
+            <div className="modal d-block" tabIndex="-1">
+                <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                    <div className="modal-content">
+                        {/* Header */}
+                        <div className="modal-header bg-warning text-white">
+                            <h5 className="modal-title w-100 text-center">ใบเสร็จรับเงิน</h5>
+                            <button type="button" className="btn-close" aria-label="Close" onClick={handleClose}></button>
+                        </div>
+                        
+                        {/* Body */}
+                        <div className="modal-body">
+                            {/* Bill Info */}
+                            <div className="card mb-4 border-start border-success border-4">
+                                <div className="card-body bg-light">
+                                    <p className="mb-1"><strong>โต๊ะ:</strong> {tableNumber || bill.tableNumber}</p>
+                                    <p className="mb-1"><strong>วันที่:</strong> {formatDateTime(bill.startTime)}</p>
+                                    <p className="mb-1"><strong>เลขที่ใบเสร็จ:</strong> {orderId}</p>
+                                </div>
                             </div>
-                            {completedItems > 0 && (
-                                <div className={styles.statusItem}>
-                                    <strong>เสร็จแล้ว:</strong> {completedItems} รายการ ({formatCurrency(completedTotal)} บาท)
-                                </div>
-                            )}
-                            {processingItems > 0 && (
-                                <div className={styles.statusItem}>
-                                    <strong>กำลังทำ:</strong> {processingItems} รายการ ({formatCurrency(processingTotal)} บาท)
-                                </div>
-                            )}
-                        </div>
-                    )}
 
-                    {/* ปุ่มเพิ่มรายการ */}
-                    {bill.status !== "C" && (
-                        <div className={styles.addItemSection}>
-                            <button
-                                className={styles.addButton}
-                                onClick={handleOpenAddFood}
-                                disabled={showAddFood}
-                            >
-                                + เพิ่มรายการ
-                            </button>
-                        </div>
-                    )}
-
-                    <div className={styles.itemsContainer}>
-                        <table className={styles.itemsTable}>
-                            <thead>
-                                <tr>
-                                    <th>รายการ</th>
-                                    <th>จำนวน</th>
-                                    <th>ราคา/หน่วย</th>
-                                    <th>รวม</th>
-                                    <th>สถานะ</th>
-                                    {bill.status !== "C" && <th>จัดการ</th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {bill.items.map((item) => (
-                                    <tr key={item.id} className={item.status === 'P' ? styles.processingRow : ''}>
-                                        <td>{item.productName}</td>
-                                        <td className={styles.textCenter}>{item.quantity}</td>
-                                        <td className={styles.textRight}>{formatCurrency(item.unitPrice)}</td>
-                                        <td className={styles.textRight}>{formatCurrency(item.amount)}</td>
-                                        <td className={styles.textCenter}>{renderStatus(item.status)}</td>
-                                        {bill.status !== "C" && (
-                                            <td className={styles.textCenter}>
-                                                <button
-                                                    className={styles.removeButton}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleRemoveItem(item.id);
-                                                    }}
-                                                    disabled={isLoading || showAddFood}
-                                                >
-                                                    ลบ
-                                                </button>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className={styles.summary}>
-                        <div className={`${styles.summaryRow} ${styles.total}`}>
-                            <span>ยอดรวมทั้งสิ้น:</span>
-                            <span>{formatCurrency(bill.totalAmount)} บาท</span>
-                        </div>
-                    </div>
-
-                    {processingItems > 0 && bill.status !== "C" && (
-                        <div className={styles.warningMessage}>
-                            <p>⚠️ มีรายการอาหารที่ยังอยู่ในสถานะ "กำลังทำ" กรุณาตรวจสอบก่อนชำระเงิน</p>
-                        </div>
-                    )}
-
-                    {bill.status !== "C" && (
-                        <div className={styles.actionButtons}>
-                            <button
-                                className={styles.payButton}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handlePrintReceipt();
-                                }}
-                                disabled={isLoading || showAddFood || showPrintReceipt}
-                            >
-                                พิมพ์ใบเสร็จ
-                            </button>
-                            <button
-                                className={styles.cancelButton}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleClose();
-                                }}
-                                disabled={showAddFood || showPrintReceipt}
-                            >
-                                ยกเลิก
-                            </button>
-                        </div>
-                    )}
-                </div>
+ {/* Status Summary */}
+{bill.status !== "C" && (
+    <div className="alert alert-secondary mb-3">
+        <div className="d-flex flex-wrap">
+            <div className="me-3">
+                <strong>รายการทั้งหมด:</strong> {bill.items.length} รายการ ({formatCurrency(bill.totalAmount)} บาท)
             </div>
+            {completedItems > 0 && (
+                <div className="me-3">
+                    <strong>เสร็จแล้ว:</strong> {completedItems} รายการ ({formatCurrency(completedTotal)} บาท)
+                </div>
+            )}
+            {processingItems > 0 && (
+                <div>
+                    <strong>กำลังทำ:</strong> {processingItems} รายการ ({formatCurrency(processingTotal)} บาท)
+                </div>
+            )}
+        </div>
+    </div>
+)}
 
-            {/* Modal ใบเสร็จรับเงิน */}
-            {showPrintReceipt && (
-                <div className={styles.qrCodeModal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.qrCodeContent} onClick={handleModalClick} style={{ maxWidth: '600px' }}>
-                        <h3>ใบเสร็จรับเงิน</h3>
+{/* Add Item Button */}
+{bill.status !== "C" && (
+    <div className="text-end mb-3">
+        <button 
+            className="btn btn-success" 
+            onClick={handleOpenAddFood}
+            disabled={showAddFood}
+        >
+            <i className="bi bi-plus-circle me-1"></i> เพิ่มรายการ
+        </button>
+    </div>
+)}
 
-                        <div className={styles.receiptContent} id="receipt-to-print">
-                            <div className={styles.receiptHeader}>
-                                <h2>ร้านอาหาร Fast Shabu</h2>
-                                <p>122/3 หมู่ 20 ต.นิคม อ.สตึก จ.บุรีรัมย์</p>
-                                <p>ร้านเปิดบริการ 11.00-21.30 น.</p>
-                                <p>โทร: 082-2502628</p>
+{/* Items Table */}
+<div className="table-responsive shadow-sm rounded mb-4">
+    <table className="table table-hover mb-0">
+        <thead className="table-warning">
+            <tr>
+                <th>รายการ</th>
+                <th className="text-center">จำนวน</th>
+                <th className="text-end">ราคา/หน่วย</th>
+                <th className="text-end">รวม</th>
+                <th className="text-center">สถานะ</th>
+                {bill.status !== "C" && <th className="text-center">จัดการ</th>}
+            </tr>
+        </thead>
+        <tbody>
+            {bill.items.map((item) => (
+                <tr key={item.id} className={item.status === 'P' ? 'table-warning bg-opacity-25' : ''}>
+                    <td>{item.productName}</td>
+                    <td className="text-center">{item.quantity}</td>
+                    <td className="text-end">{formatCurrency(item.unitPrice)}</td>
+                    <td className="text-end">{formatCurrency(item.amount)}</td>
+                    <td className="text-center">{renderStatus(item.status)}</td>
+                    {bill.status !== "C" && (
+                        <td className="text-center">
+                            <button
+                                className="btn btn-sm btn-danger"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveItem(item.id);
+                                }}
+                                disabled={isLoading || showAddFood}
+                            >
+                                <i className="bi bi-trash me-1"></i> ลบ
+                            </button>
+                        </td>
+                    )}
+                </tr>
+            ))}
+        </tbody>
+    </table>
+</div>
+
+{/* Summary */}
+<div className="card bg-light mb-4 shadow-sm">
+    <div className="card-body">
+        <div className="d-flex justify-content-between align-items-center border-top border-success border-2 pt-3 mt-2">
+            <h5 className="mb-0">ยอดรวมทั้งสิ้น:</h5>
+            <h5 className="mb-0 text-success">{formatCurrency(bill.totalAmount)} บาท</h5>
+        </div>
+    </div>
+</div>
+
+{/* Processing Warning */}
+{processingItems > 0 && bill.status !== "C" && (
+    <div className="alert alert-warning mb-4">
+        <div className="d-flex align-items-center">
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+            <p className="mb-0">มีรายการอาหารที่ยังอยู่ในสถานะ "กำลังทำ" กรุณาตรวจสอบก่อนชำระเงิน</p>
+        </div>
+    </div>
+)}
+
+{/* Action Buttons */}
+{bill.status !== "C" && (
+    <div className="d-flex justify-content-center gap-3 mt-4">
+        <button
+            className="btn btn-success px-4 py-2"
+            onClick={(e) => {
+                e.stopPropagation();
+                handlePrintReceipt();
+            }}
+            disabled={isLoading || showAddFood || showPrintReceipt}
+        >
+            <i className="bi bi-printer me-2"></i> พิมพ์ใบเสร็จ
+        </button>
+        <button
+            className="btn btn-danger px-4 py-2"
+            onClick={(e) => {
+                e.stopPropagation();
+                handleClose();
+            }}
+            disabled={showAddFood || showPrintReceipt}
+        >
+            <i className="bi bi-x-circle me-2"></i> ยกเลิก
+        </button>
+    </div>
+)}
+
+{/* Print Receipt Modal */}
+{showPrintReceipt && (
+    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+                <div className="modal-header bg-success text-white">
+                    <h5 className="modal-title">ใบเสร็จรับเงิน</h5>
+                    <button type="button" className="btn-close" onClick={handleClosePrintReceipt}></button>
+                </div>
+                <div className="modal-body">
+                    <div id="receipt-to-print">
+                        <div className="text-center mb-3">
+                            <h4>ร้านอาหาร Fast Shabu</h4>
+                            <p className="mb-1">122/3 หมู่ 20 ต.นิคม อ.สตึก จ.บุรีรัมย์</p>
+                            <p className="mb-1">ร้านเปิดบริการ 11.00-21.30 น.</p>
+                            <p className="mb-1">โทร: 082-2502628</p>
+                        </div>
+                        
+                        <hr className="border-dashed my-3" />
+                        
+                        <div className="bg-light p-3 rounded mb-3">
+                            <div className="row">
+                                <div className="col-md-4 mb-2"><strong>เลขที่ใบเสร็จ:</strong> {receiptData.receiptNumber}</div>
+                                <div className="col-md-4 mb-2"><strong>วันที่:</strong> {receiptData.orderDate}</div>
+                                <div className="col-md-4 mb-2"><strong>โต๊ะ:</strong> {tableNumber || bill.tableNumber}</div>
                             </div>
-
-                            <div className={styles.receiptInfo}>
-                                <p><strong>เลขที่ใบเสร็จ:</strong> {receiptData.receiptNumber}</p>
-                                <p><strong>วันที่:</strong> {receiptData.orderDate}</p>
-                                <p><strong>โต๊ะ:</strong> {tableNumber || bill.tableNumber}</p>
-                            </div>
-
-                            <table className={styles.receiptTable}>
-                                <thead>
+                        </div>
+                        
+                        <div className="table-responsive mb-3">
+                            <table className="table table-sm">
+                                <thead className="table-light">
                                     <tr>
                                         <th>รายการ</th>
-                                        <th>จำนวน</th>
-                                        <th>ราคา/หน่วย</th>
-                                        <th>รวม</th>
+                                        <th className="text-center">จำนวน</th>
+                                        <th className="text-end">ราคา/หน่วย</th>
+                                        <th className="text-end">รวม</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {bill.items.filter(item => item.status !== 'V').map((item) => (
                                         <tr key={item.id}>
                                             <td>{item.productName}</td>
-                                            <td className={styles.textCenter}>{item.quantity}</td>
-                                            <td className={styles.textRight}>{formatCurrency(item.unitPrice)}</td>
-                                            <td className={styles.textRight}>{formatCurrency(item.amount)}</td>
+                                            <td className="text-center">{item.quantity}</td>
+                                            <td className="text-end">{formatCurrency(item.unitPrice)}</td>
+                                            <td className="text-end">{formatCurrency(item.amount)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot>
-                                    <tr>
-                                        <th colSpan="3" className={styles.textRight}>ยอดรวมทั้งสิ้น:</th>
-                                        <th className={styles.textRight}>{formatCurrency(bill.totalAmount)} บาท</th>
+                                    <tr className="table-light">
+                                        <th colSpan="3" className="text-end">ยอดรวมทั้งสิ้น:</th>
+                                        <th className="text-end">{formatCurrency(bill.totalAmount)} บาท</th>
                                     </tr>
                                 </tfoot>
                             </table>
-
-                            <div className={styles.qrContainer}>
-                                <div className={styles.qrInfo}>
-                                    <h3>ชำระด้วย PromptPay</h3>
-                                    <p>หมายเลข: {promptPayNumber}</p>
-                                    <p>จำนวนเงิน: {formatCurrency(bill.totalAmount)} บาท</p>
+                        </div>
+                        
+                        <div className="card border-dashed mb-3">
+                            <div className="card-body">
+                                <div className="row">
+                                    <div className="col-md-6">
+                                        <h5 className="text-center mb-3">ชำระด้วย PromptPay</h5>
+                                        <p className="text-center mb-1">หมายเลข: {promptPayNumber}</p>
+                                        <p className="text-center">จำนวนเงิน: {formatCurrency(bill.totalAmount)} บาท</p>
+                                    </div>
+                                    <div className="col-md-6 text-center">
+                                        {qrCodeURL && <img src={qrCodeURL} alt="PromptPay QR Code" className="img-fluid" style={{ maxWidth: "200px" }} />}
+                                    </div>
                                 </div>
-                                <div className={styles.qrImage}>
-                                    {qrCodeURL && <img src={qrCodeURL} alt="PromptPay QR Code" width="200" />}
-                                </div>
-                            </div>
-
-                            <div className={styles.receiptFooter}>
-                                <p>ขอบคุณที่ใช้บริการ</p>
-                                <p>Fast Shabu - สวรรค์ของคนรักชาบู</p>
                             </div>
                         </div>
-
-                        <div className={styles.receiptButtons}>
-                            <button
-                                className={styles.confirmButton}
-                                onClick={handlePrint}
-                            >
-                                พิมพ์
-                            </button>
-                            <button
-                                className={styles.downloadButton}
-                                onClick={handleDownloadQRCode}
-                                disabled={!qrCodeURL}
-                            >
-                                ดาวน์โหลด QR Code
-                            </button>
-                            <button
-                                className={styles.cancelButton}
-                                onClick={handleClosePrintReceipt}
-                            >
-                                ปิด
-                            </button>
+                        
+                        <div className="text-center mt-4">
+                            <p className="mb-1">ขอบคุณที่ใช้บริการ</p>
+                            <p>Fast Shabu - สวรรค์ของคนรักชาบู</p>
                         </div>
                     </div>
                 </div>
-            )}
+                <div className="modal-footer">
+                    <button className="btn btn-primary" onClick={handlePrint}>
+                        <i className="bi bi-printer me-2"></i> พิมพ์
+                    </button>
+                    <button className="btn btn-warning" onClick={handleDownloadQRCode} disabled={!qrCodeURL}>
+                        <i className="bi bi-download me-2"></i> ดาวน์โหลด QR Code
+                    </button>
+                    <button className="btn btn-secondary" onClick={handleClosePrintReceipt}>
+                        <i className="bi bi-x-circle me-2"></i> ปิด
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
 
-            {/* เรียกใช้ Addfooditem component */}
-            {showAddFood && (
-                <Addfooditem
-                    orderId={orderId}
-                    onClose={handleCloseAddFood}
-                    onItemAdded={handleItemAdded}
-                />
-            )}
-
-            {/* Modal เลือกเหตุผลในการยกเลิกรายการ */}
-            {showCancelDialog && (
-                <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
-                    <div className={styles.confirmContent} onClick={handleModalClick}>
-                        <h3>เหตุผลในการยกเลิกรายการ</h3>
-                        <div className={styles.formGroup}>
-                            <label>กรุณาเลือกเหตุผล:</label>
-                            <select
-                                value={selectedCancelReasonId || ''}
-                                onChange={(e) => setSelectedCancelReasonId(e.target.value ? Number(e.target.value) : null)}
-                                className={styles.formControl}
-                            >
-                                <option value="">-- กรุณาเลือกเหตุผล --</option>
-                                {cancelReasons.map(reason => (
-                                    <option key={reason.id} value={reason.id}>
-                                        {reason.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={styles.confirmButtons}>
-                            <button
-                                className={styles.confirmButton}
-                                onClick={handleConfirmCancel}
-                                disabled={!selectedCancelReasonId || isLoading}
-                            >
-                                ยืนยันการยกเลิก
-                            </button>
-                            <button
-                                className={styles.cancelButton}
-                                onClick={handleCloseCancelDialog}
-                                disabled={isLoading}
-                            >
-                                ยกเลิก
-                            </button>
-                        </div>
+{/* Cancel Reason Modal */}
+{showCancelDialog && (
+    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+                <div className="modal-header bg-danger text-white">
+                    <h5 className="modal-title">เหตุผลในการยกเลิกรายการ</h5>
+                    <button type="button" className="btn-close" onClick={handleCloseCancelDialog}></button>
+                </div>
+                <div className="modal-body">
+                    <div className="mb-3">
+                        <label htmlFor="cancelReason" className="form-label">กรุณาเลือกเหตุผล:</label>
+                        <select 
+                            id="cancelReason"
+                            className="form-select" 
+                            value={selectedCancelReasonId || ''}
+                            onChange={(e) => setSelectedCancelReasonId(e.target.value ? Number(e.target.value) : null)}
+                        >
+                            <option value="">-- กรุณาเลือกเหตุผล --</option>
+                            {cancelReasons.map(reason => (
+                                <option key={reason.id} value={reason.id}>
+                                    {reason.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
-            )}
+                <div className="modal-footer">
+                    <button 
+                        className="btn btn-danger" 
+                        onClick={handleConfirmCancel}
+                        disabled={!selectedCancelReasonId || isLoading}
+                    >
+                        ยืนยันการยกเลิก
+                    </button>
+                    <button 
+                        className="btn btn-secondary" 
+                        onClick={handleCloseCancelDialog}
+                        disabled={isLoading}
+                    >
+                        ยกเลิก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
+
+{/* Add Food Item Component */}
+{showAddFood && (
+    <Addfooditem
+        orderId={orderId}
+        onClose={handleCloseAddFood}
+        onItemAdded={handleItemAdded}
+    />
+)}
+</div> {/* ปิด modal-body */}
+                    </div> {/* ปิด modal-content */}
+                </div> {/* ปิด modal-dialog */}
+            </div> {/* ปิด modal */}
         </>
     );
 };

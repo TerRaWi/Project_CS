@@ -1,9 +1,8 @@
-//ฟังก์ชั่นเพิ่มโต๊ะ //ทำงานกับหน้าtablelayout.jsx
 import React, { useState } from 'react';
-import styles from '../styles/tablelayout.module.css';
+import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { addTable } from '../api';
 
-const Addtable = ({ onClose, onTableAdded }) => {
+const Addtable = ({ show = true, onClose, onTableAdded }) => {
   const [tableNumber, setTableNumber] = useState('');
   const [error, setError] = useState(null);
 
@@ -38,21 +37,35 @@ const Addtable = ({ onClose, onTableAdded }) => {
   };
 
   return (
-    <div className={styles.card}>
-      <button className={styles.closeButton} onClick={onClose}>×</button>
-      <h2>เพิ่มโต๊ะใหม่</h2>
-      <input
-        type="number"
-        value={tableNumber}
-        onChange={handleNumberChange}
-        placeholder="เบอร์โต๊ะ"
-        className={styles.numberInput}
-        min="1"
-        max="50"
-      />
-      <button className={styles.submitButton} onClick={handleSubmit}>ตกลง</button>
-      {error && <p className={styles.error}>{error}</p>}
-    </div>
+    <Modal show={show} onHide={onClose} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>เพิ่มโต๊ะใหม่</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form>
+          <Form.Group className="mb-3">
+            <Form.Label>เบอร์โต๊ะ</Form.Label>
+            <Form.Control
+              type="number"
+              value={tableNumber}
+              onChange={handleNumberChange}
+              placeholder="เบอร์โต๊ะ"
+              min="1"
+              max="50"
+            />
+          </Form.Group>
+          {error && <Alert variant="danger">{error}</Alert>}
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          ยกเลิก
+        </Button>
+        <Button variant="success" onClick={handleSubmit}>
+          ตกลง
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 };
 

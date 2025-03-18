@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import styles from "../styles/statusorder.module.css";
 import { updateOrderDetailStatus, getOrdersByTable, getCancelReasons } from '../api';
 import Cancelreason from './Cancelreason';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
   const [orderDetails, setOrderDetails] = useState([]);
@@ -161,9 +161,9 @@ const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
   const getStatusClass = (status) => {
     switch (status) {
       case 'A': 
-      case 'P': return styles.statusActive;
-      case 'C': return styles.statusCompleted;
-      case 'V': return styles.statusVoid;
+      case 'P': return 'bg-warning text-dark';
+      case 'C': return 'bg-success text-white';
+      case 'V': return 'bg-danger text-white';
       default: return '';
     }
   };
@@ -198,106 +198,141 @@ const Statusorder = ({ orderId, tableId, tableNumber, onStatusUpdate }) => {
   };
 
   if (loading && allOrderInstances.length === 0) {
-    return <div className={styles.loading}>กำลังโหลด...</div>;
+    return (
+      <div className="d-flex justify-content-center my-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">กำลังโหลด...</span>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return (
+      <div className="alert alert-danger" role="alert">
+        {error}
+      </div>
+    );
   }
 
   if (allOrderInstances.length === 0) {
-    return <div className={styles.noItems}>ไม่พบรายการอาหาร</div>;
+    return (
+      <div className="text-center text-muted my-5 font-italic">
+        ไม่พบรายการอาหาร
+      </div>
+    );
   }
 
   return (
-    <div className={styles.statusorderContainer}>
-      <div className={styles.orderHeader}>
-        <h3 className={styles.title}>ออเดอร์ #{selectedOrderId}</h3>
-        <div className={styles.orderMeta}>
-          <p className={styles.tableInfo}>โต๊ะ: {tableNumber}</p>
-          {orderTime && <p className={styles.timeInfo}>เวลา: {formatDateTime(orderTime)}</p>}
-        </div>
-      </div>
-      
-      {allOrderInstances.length > 1 && (
-        <div className={styles.orderInstancesSelector}>
-          <label htmlFor="orderInstance">ครั้งที่สั่ง:</label>
-          <select 
-            id="orderInstance" 
-            value={selectedOrderId}
-            onChange={(e) => handleOrderInstanceChange(parseInt(e.target.value))}
-            className={styles.orderInstanceSelect}
-          >
-            {allOrderInstances.map((order, index) => (
-              <option key={order.orderId} value={order.orderId}>
-                ครั้งที่ {allOrderInstances.length - index}: {formatDateTime(new Date(order.date))}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      
-      {loading ? (
-        <div className={styles.loading}>กำลังโหลดรายการ...</div>
-      ) : (
-        <>
-          <div className={styles.orderDetails}>
-            {orderDetails.length === 0 ? (
-              <div className={styles.noItems}>ไม่พบรายการอาหารในออเดอร์นี้</div>
-            ) : (
-              orderDetails.map((item, index) => (
-                <div key={index} className={styles.orderItem}>
-                  <div className={styles.productInfo}>
-                    <span className={styles.productName}>{item.productName}</span>
-                    <span className={styles.quantity}>x{item.quantity}</span>
-                    <span className={styles.price}>{item.price.toFixed(2)} บาท</span>
-                    <span className={styles.orderTimeInfo}>เวลาสั่ง: {formatTime(item.orderTime)}</span>
-                  </div>
-                  
-                  <div className={styles.statusActions}>
-                    <div className={styles.currentStatus}>
-                      <span className={`${styles.statusBadge} ${getStatusClass(item.status || 'A')}`}>
-                        {getStatusLabel(item.status || 'A')}
-                      </span>
-                    </div>
-                    
-                    <div className={styles.actionButtons}>
-                      <button 
-                        className={`${styles.actionButton} ${styles.completeButton}`}
-                        onClick={() => handleStatusChange(item.orderDetailId, 'C')}
-                        disabled={item.status === 'C' || item.status === 'V'}
-                      >
-                        เสร็จสิ้น
-                      </button>
-                      <button 
-                        className={`${styles.actionButton} ${styles.cancelButton}`}
-                        onClick={() => handleStatusChange(item.orderDetailId, 'V')}
-                        disabled={item.status === 'C' || item.status === 'V'}
-                      >
-                        ยกเลิก
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+    <div className="card shadow-sm mb-4">
+      <div className="card-body">
+        <div className="mb-3">
+          <h3 className="card-title mb-0">ออเดอร์ #{selectedOrderId}</h3>
+          <div className="d-flex gap-3 text-muted small mt-1">
+            <p className="mb-0">โต๊ะ: {tableNumber}</p>
+            {orderTime && <p className="mb-0">เวลา: {formatDateTime(orderTime)}</p>}
           </div>
-          
-          <div className={styles.orderSummary}>
-            <div className={styles.totalAmount}>
-              รวมทั้งหมด: {orderDetails.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
+        </div>
+        
+        {allOrderInstances.length > 1 && (
+          <div className="bg-light p-3 rounded mb-3">
+            <div className="row align-items-center">
+              <label htmlFor="orderInstance" className="col-sm-3 col-form-label">ครั้งที่สั่ง:</label>
+              <div className="col-sm-9">
+                <select 
+                  id="orderInstance" 
+                  value={selectedOrderId}
+                  onChange={(e) => handleOrderInstanceChange(parseInt(e.target.value))}
+                  className="form-select"
+                >
+                  {allOrderInstances.map((order, index) => (
+                    <option key={order.orderId} value={order.orderId}>
+                      ครั้งที่ {allOrderInstances.length - index}: {formatDateTime(new Date(order.date))}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-        </>
-      )}
+        )}
+        
+        {loading ? (
+          <div className="text-center my-4">
+            <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
+              <span className="visually-hidden">กำลังโหลด...</span>
+            </div>
+            กำลังโหลดรายการ...
+          </div>
+        ) : (
+          <>
+            <div className="mb-4">
+              {orderDetails.length === 0 ? (
+                <div className="text-center text-muted my-4 font-italic">
+                  ไม่พบรายการอาหารในออเดอร์นี้
+                </div>
+              ) : (
+                <div className="list-group">
+                  {orderDetails.map((item, index) => (
+                    <div key={index} className="list-group-item py-3">
+                      <div className="row">
+                        <div className="col-md-7">
+                          <div className="d-flex flex-column">
+                            <span className="fw-medium">{item.productName}</span>
+                            <div className="d-flex gap-3 small text-muted mt-1">
+                              <span>x{item.quantity}</span>
+                              <span>{item.price.toFixed(2)} บาท</span>
+                            </div>
+                            <small className="text-muted mt-1">เวลาสั่ง: {formatTime(item.orderTime)}</small>
+                          </div>
+                        </div>
+                        
+                        <div className="col-md-5">
+                          <div className="d-flex flex-column align-items-end">
+                            <span className={`badge rounded-pill ${getStatusClass(item.status || 'A')} mb-2`}>
+                              {getStatusLabel(item.status || 'A')}
+                            </span>
+                            
+                            <div className="btn-group">
+                              <button 
+                                className="btn btn-sm btn-success me-2"
+                                onClick={() => handleStatusChange(item.orderDetailId, 'C')}
+                                disabled={item.status === 'C' || item.status === 'V'}
+                              >
+                                เสร็จสิ้น
+                              </button>
+                              <button 
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleStatusChange(item.orderDetailId, 'V')}
+                                disabled={item.status === 'C' || item.status === 'V'}
+                              >
+                                ยกเลิก
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="border-top pt-3">
+              <div className="text-end fw-bold">
+                รวมทั้งหมด: {orderDetails.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)} บาท
+              </div>
+            </div>
+          </>
+        )}
 
-      {/* Modal สำหรับเลือกเหตุผลการยกเลิก */}
-      <Cancelreason
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        onConfirm={handleCancelWithReason}
-        detailId={selectedDetailId}
-      />
+        {/* Modal สำหรับเลือกเหตุผลการยกเลิก */}
+        <Cancelreason
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleCancelWithReason}
+          detailId={selectedDetailId}
+        />
+      </div>
     </div>
   );
 };
