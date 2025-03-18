@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllPayments, getBill, getReceipt } from '../api';
 import { Modal, Button, Table, Badge, Spinner } from 'react-bootstrap';
-import { useReactToPrint } from 'react-to-print';  // แก้ไขการ import จาก ReactToPrint เป็น useReactToPrint
+import { useReactToPrint } from 'react-to-print';
+// เพิ่มการ import libraries สำหรับ QR Code
+import QRCode from 'qrcode';
+import generatePayload from 'promptpay-qr';
 
 // ฟังก์ชั่นสำหรับแปลงรูปแบบวันที่
 const formatDate = (dateString) => {
@@ -26,7 +29,7 @@ const formatCurrency = (amount) => {
 };
 
 const ReceiptForPrint = React.forwardRef((props, ref) => {
-    const { receipt } = props;
+    const { receipt, qrCodeURL } = props;
 
     if (!receipt) return null;
 
@@ -38,17 +41,17 @@ const ReceiptForPrint = React.forwardRef((props, ref) => {
                 <p className="mb-1">ร้านเปิดบริการ 11.00-21.30 น.</p>
                 <p className="mb-1">โทร: 082-2502628</p>
             </div>
-            
+
             <hr style={{ borderTop: '1px dashed #999', margin: '10px 0' }} />
-            
+
             <div className="mb-3">
                 <p className="mb-1"><strong>โต๊ะ:</strong> {receipt.tableNumber}</p>
                 <p className="mb-1"><strong>วันที่:</strong> {formatDate(receipt.payment_date)}</p>
                 <p className="mb-1"><strong>เลขที่ใบเสร็จ:</strong> #{receipt.id}</p>
             </div>
-            
+
             <hr style={{ borderTop: '1px dashed #999', margin: '10px 0' }} />
-            
+
             <table className="w-100 mb-3" style={{ borderCollapse: 'collapse' }}>
                 <thead>
                     <tr>
@@ -67,28 +70,33 @@ const ReceiptForPrint = React.forwardRef((props, ref) => {
                     ))}
                 </tbody>
             </table>
-            
+
             <hr style={{ borderTop: '1px dashed #999', margin: '10px 0' }} />
-            
+
             <div className="d-flex justify-content-between fw-bold mb-3">
                 <span>ยอดรวมทั้งสิ้น:</span>
                 <span>{formatCurrency(receipt.amount)} บาท</span>
             </div>
-            
+
             <hr style={{ borderTop: '1px dashed #999', margin: '10px 0' }} />
-            
+
             <div className="text-center mb-3">
                 <p className="mb-1">ชำระด้วย PromptPay</p>
                 <p className="mb-1">หมายเลข: 0123456789</p>
-                {/* สำหรับ QR Code จะต้องเพิ่มรูปภาพจริงหรือใช้ไลบรารีสร้าง QR Code */}
-                <div className="my-3" style={{ width: '150px', height: '150px', margin: '0 auto', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {/* ตัวอย่าง QR Code */}
-                    <span className="text-muted">QR Code</span>
+                {/* แสดง QR Code ที่สร้างขึ้น */}
+                <div className="my-3" style={{ width: '150px', height: '150px', margin: '0 auto' }}>
+                    {qrCodeURL ? (
+                        <img src={qrCodeURL} alt="QR Code" style={{ width: '100%', height: '100%' }} />
+                    ) : (
+                        <div style={{ width: '100%', height: '100%', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="text-muted">QR Code</span>
+                        </div>
+                    )}
                 </div>
             </div>
-            
+
             <hr style={{ borderTop: '1px dashed #999', margin: '10px 0' }} />
-            
+
             <div className="text-center">
                 <p className="mb-1">ขอบคุณที่ใช้บริการ</p>
             </div>
@@ -110,9 +118,41 @@ const BillHistory = () => {
         end: new Date().toISOString().split('T')[0]
     });
     const [searchTerm, setSearchTerm] = useState('');
+    // เพิ่ม state สำหรับเก็บ QR Code URL
+    const [qrCodeURL, setQrCodeURL] = useState(null);
+    // เพิ่มหมายเลข PromptPay
+    const [promptPayNumber, setPromptPayNumber] = useState("0123456789");
 
     // Ref สำหรับการพิมพ์
     const printComponentRef = useRef();
+
+    // ฟังก์ชันสร้าง QR Code
+    const generateQRCode = async (amount) => {
+        try {
+            // แปลงค่า amount ให้เป็นตัวเลขอย่างแน่นอน
+            const numericAmount = parseFloat(amount) || 0;
+
+            console.log('ยอดเงินที่จะสร้าง QR Code:', numericAmount);
+
+            // สร้าง payload สำหรับ PromptPay โดยส่งค่า amount เป็นตัวเลขที่แปลงแล้ว
+            const payload = generatePayload(promptPayNumber, { amount: numericAmount });
+
+            // สร้าง QR Code
+            const qrCodeImageUrl = await QRCode.toDataURL(payload, {
+                width: 260,
+                margin: 2,
+                errorCorrectionLevel: 'H'
+            });
+
+            setQrCodeURL(qrCodeImageUrl);
+            return qrCodeImageUrl;
+        } catch (err) {
+            console.error('เกิดข้อผิดพลาดในการสร้าง QR Code:', err);
+            console.error('รายละเอียดข้อผิดพลาด:', err.stack);
+            setError('ไม่สามารถสร้าง QR Code ได้');
+            return null;
+        }
+    };
 
     // ใช้ useReactToPrint แทน ReactToPrint พร้อมเพิ่มการแจ้งเตือน
     const handlePrint = useReactToPrint({
@@ -171,7 +211,7 @@ const BillHistory = () => {
         const paymentDate = new Date(payment.payment_date);
         const startDate = new Date(dateRange.start);
         const endDate = new Date(dateRange.end);
-        endDate.setHours(23, 59, 59);
+        endDate.setHours(23, 59, 59, 999);
         const dateMatch = paymentDate >= startDate && paymentDate <= endDate;
 
         // กรองตามคำค้นหา
@@ -239,6 +279,20 @@ const BillHistory = () => {
                 amount: payment.amount,
                 items: billData.items
             };
+
+            // สร้าง QR Code สำหรับยอดเงินนี้
+            // ตรวจสอบและแปลงค่ายอดเงินให้เป็นตัวเลขก่อนส่งไปสร้าง QR Code
+            if (payment.amount) {
+                // แน่ใจว่าเป็นตัวเลขที่ถูกต้อง
+                const numericAmount = parseFloat(payment.amount);
+                if (!isNaN(numericAmount)) {
+                    await generateQRCode(numericAmount);
+                } else {
+                    console.error('ยอดเงินไม่ถูกต้อง:', payment.amount);
+                }
+            } else {
+                console.error('ไม่พบข้อมูลยอดเงิน');
+            }
 
             setReceiptToPrint(receiptData);
             setShowPrintPreview(true);
@@ -340,25 +394,15 @@ const BillHistory = () => {
                                         </td>
                                         <td>{payment.payment_method}</td>
                                         <td>
-                                            <div className="d-flex">
-                                                <Button
-                                                    variant="outline-primary"
-                                                    size="sm"
-                                                    className="me-2"
-                                                    onClick={() => viewBillDetails(payment)}
-                                                    title="ดูรายละเอียด"
-                                                >
-                                                    <i className="bi bi-eye"></i>
-                                                </Button>
-                                                <Button
-                                                    variant="outline-success"
-                                                    size="sm"
-                                                    onClick={() => showReceiptPreview(payment)}
-                                                    title="พิมพ์ใบเสร็จ"
-                                                >
-                                                    <i className="bi bi-printer"></i>
-                                                </Button>
-                                            </div>
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={() => viewBillDetails(payment)}
+                                                title="ดูรายละเอียด"
+                                                className="w-100"
+                                            >
+                                                ดูรายละเอียด
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))
@@ -468,7 +512,7 @@ const BillHistory = () => {
                             </div>
                         ) : (
                             <div className="border p-2" style={{ minHeight: '500px' }}>
-                                <ReceiptForPrint ref={printComponentRef} receipt={receiptToPrint} />
+                                <ReceiptForPrint ref={printComponentRef} receipt={receiptToPrint} qrCodeURL={qrCodeURL} />
                             </div>
                         )}
                     </Modal.Body>
@@ -476,19 +520,13 @@ const BillHistory = () => {
                         <Button variant="secondary" onClick={handleClosePrintPreview}>
                             ปิด
                         </Button>
-                        {/* เพิ่มทางเลือกในการพิมพ์ด้วย window.print() สำหรับกรณีที่ useReactToPrint มีปัญหา */}
-                        <Button variant="success" onClick={handlePrint}>
-                            <i className="bi bi-printer me-1"></i>
-                            พิมพ์ (React-to-Print)
-                        </Button>
-                        <Button 
-                            variant="outline-success" 
-                            className="ms-2"
+                        <Button
+                            variant="success"
                             onClick={() => {
                                 // ใช้วิธีการพิมพ์แบบพื้นฐานของเบราว์เซอร์
                                 const printContent = document.createElement('div');
                                 printContent.innerHTML = printComponentRef.current.innerHTML;
-                                
+
                                 const printWindow = window.open('', '_blank');
                                 printWindow.document.write(`
                                     <html>
@@ -520,7 +558,7 @@ const BillHistory = () => {
                             }}
                         >
                             <i className="bi bi-printer me-1"></i>
-                            พิมพ์ (ทางเลือก)
+                            พิมพ์
                         </Button>
                     </Modal.Footer>
                 </Modal>

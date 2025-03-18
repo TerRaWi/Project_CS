@@ -72,56 +72,67 @@ const Reports = () => {
   const [showBillHistory, setShowBillHistory] = useState(false); // State เพื่อควบคุมการแสดงประวัติบิล
 
   // ฟังก์ชันสำหรับตั้งค่าวันที่ตามช่วงเวลาที่เลือก
-// ฟังก์ชันสำหรับตั้งค่าวันที่ตามช่วงเวลาที่เลือก
-const handleDateRangeShortcut = (range) => {
-  const today = new Date();
-  let startDate = new Date();
-  let endDate = new Date();
+  // ฟังก์ชันสำหรับตั้งค่าวันที่ตามช่วงเวลาที่เลือก
+  const handleDateRangeShortcut = (range) => {
+    const today = new Date();
+    let startDate = new Date();
+    let endDate = new Date();
 
-  switch (range) {
-    case 'today':
-      startDate = new Date();
-      endDate = new Date();
-      break;
-    case 'yesterday':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - 1);
-      endDate = new Date(today);
-      endDate.setDate(today.getDate() - 1);
-      break;
-    case 'week':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - 7);
-      endDate = new Date(today);
-      break;
-    case 'month':
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - 30);
-      endDate = new Date(today);
-      break;
-    default:
-      return;
-  }
+    switch (range) {
+      case 'today':
+        startDate = new Date();
+        endDate = new Date();
+        break;
+      case 'yesterday':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 1);
+        endDate = new Date(today);
+        endDate.setDate(today.getDate() - 1);
+        break;
+      case 'week':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        endDate = new Date(today);
+        break;
+      case 'month':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 30);
+        endDate = new Date(today);
+        break;
+      default:
+        return;
+    }
 
-  // ตั้งค่าเวลาให้ครอบคลุมทั้งวัน
-  startDate.setHours(0, 0, 0, 0); // เริ่มต้นวันที่ 00:00:00.000
-  endDate.setHours(23, 59, 59, 999); // สิ้นสุดวันที่ 23:59:59.999
+    // ตั้งค่าเวลาให้ครอบคลุมทั้งวัน
+    startDate.setHours(0, 0, 0, 0); // เริ่มต้นวันที่ 00:00:00.000
+    endDate.setHours(23, 59, 59, 999); // สิ้นสุดวันที่ 23:59:59.999
 
-  setSelectedDateRange(range);
-  setDateRange({
-    start: startDate.toISOString().split('T')[0],
-    end: endDate.toISOString().split('T')[0]
-  });
-};
+    setSelectedDateRange(range);
+    setDateRange({
+      start: startDate.toISOString().split('T')[0],
+      end: endDate.toISOString().split('T')[0]
+    });
+  };
 
   // จัดการเมื่อเปลี่ยนช่วงวันที่
   const handleDateChange = (e) => {
     const { name, value } = e.target;
+    const selectedDate = new Date(value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // รีเซ็ตเวลาเพื่อการเปรียบเทียบที่ถูกต้อง
+
+    // ตรวจสอบว่าวันที่ที่เลือกอยู่ในอนาคตหรือไม่
+    if (selectedDate > today) {
+      // แสดงข้อความแจ้งเตือน
+      alert('ไม่สามารถเลือกวันที่ในอนาคตได้');
+      return; // ไม่อัปเดตสถานะหากมีการเลือกวันที่ในอนาคต
+    }
+
     const updatedDateRange = {
       ...dateRange,
       [name]: value
     };
-    
+
     // ตรวจสอบว่าวันที่สิ้นสุดไม่น้อยกว่าวันที่เริ่มต้น
     if (name === 'end' && new Date(value) < new Date(dateRange.start)) {
       // ถ้าวันสิ้นสุดน้อยกว่าวันเริ่มต้น ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
@@ -130,7 +141,7 @@ const handleDateRangeShortcut = (range) => {
       // ถ้าวันเริ่มต้นมากกว่าวันสิ้นสุด ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
       updatedDateRange.end = value;
     }
-    
+
     setSelectedDateRange('custom');
     setDateRange(updatedDateRange);
   };
@@ -194,23 +205,23 @@ const handleDateRangeShortcut = (range) => {
   }, []);
 
   // กรองข้อมูลตามช่วงเวลาที่เลือก
-const filteredPayments = payments.filter(payment => {
-  const paymentDate = new Date(payment.payment_date);
-  const startDate = new Date(dateRange.start);
-  startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
-  const endDate = new Date(dateRange.end);
-  endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
-  return paymentDate >= startDate && paymentDate <= endDate;
-});
+  const filteredPayments = payments.filter(payment => {
+    const paymentDate = new Date(payment.payment_date);
+    const startDate = new Date(dateRange.start);
+    startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
+    const endDate = new Date(dateRange.end);
+    endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
+    return paymentDate >= startDate && paymentDate <= endDate;
+  });
 
-const filteredOrderDetails = orderDetails.filter(item => {
-  const itemDate = new Date(item.paymentDate);
-  const startDate = new Date(dateRange.start);
-  startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
-  const endDate = new Date(dateRange.end);
-  endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
-  return itemDate >= startDate && itemDate <= endDate;
-});
+  const filteredOrderDetails = orderDetails.filter(item => {
+    const itemDate = new Date(item.paymentDate);
+    const startDate = new Date(dateRange.start);
+    startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเริ่มต้นเป็น 00:00:00.000
+    const endDate = new Date(dateRange.end);
+    endDate.setHours(23, 59, 59, 999); // ตั้งเวลาสิ้นสุดเป็น 23:59:59.999
+    return itemDate >= startDate && itemDate <= endDate;
+  });
 
   // คำนวณตัวเลขสำคัญ
   const totalSales = filteredPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
@@ -221,7 +232,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
   // สร้างข้อมูลสำหรับกราฟตามวัน
   const getDailySalesData = () => {
     const salesByDay = {};
-    
+
     // สร้างรายการวันว่างเปล่าสำหรับทุกวันในช่วงที่เลือก
     const startDate = new Date(dateRange.start);
     const endDate = new Date(dateRange.end);
@@ -229,7 +240,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
       const dateStr = day.toISOString().split('T')[0];
       salesByDay[dateStr] = 0; // เริ่มต้นที่ 0 บาทสำหรับทุกวัน
     }
-    
+
     // เพิ่มข้อมูลจริงเข้าไป
     filteredPayments.forEach(payment => {
       const date = new Date(payment.payment_date).toISOString().split('T')[0];
@@ -238,7 +249,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
       }
       salesByDay[date] += Number(payment.amount);
     });
-  
+
     return Object.keys(salesByDay).map(date => ({
       day: date,
       amount: salesByDay[date]
@@ -281,7 +292,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
   // สร้างข้อมูลสำหรับสินค้าขายดี
   const getTopProductsData = () => {
     const salesByProduct = {};
-    
+
     // กำหนดรายชื่อสินค้าประเภทลูกค้าที่ต้องการกรองออก
     const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก', 'หมูเด้งทะมิส', 'หมูพม่ากุ้ม', 'หมูเด้ง', 'เบคอนสไลด์', 'สันคอสไลด์'];
 
@@ -290,7 +301,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
       if (customerProductNames.includes(item.productName)) {
         return;
       }
-      
+
       if (!salesByProduct[item.productName]) {
         salesByProduct[item.productName] = {
           quantity: 0,
@@ -362,21 +373,21 @@ const filteredOrderDetails = orderDetails.filter(item => {
   const getCustomersByDayData = () => {
     const customersByDay = {};
     const customerProductNames = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก'];
-  
+
     filteredOrderDetails.forEach(item => {
       // เลือกเฉพาะรายการที่เป็นประเภทลูกค้า
       if (customerProductNames.includes(item.productName)) {
         const date = new Date(item.paymentDate).toISOString().split('T')[0];
-        
+
         if (!customersByDay[date]) {
           customersByDay[date] = 0;
         }
-        
+
         // เพิ่มจำนวนตามจำนวนสินค้า (quantity)
         customersByDay[date] += item.quantity;
       }
     });
-  
+
     return Object.keys(customersByDay).map(date => ({
       day: date,
       customers: customersByDay[date]
@@ -467,6 +478,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
                       name="start"
                       value={dateRange.start}
                       onChange={handleDateChange}
+                      max={new Date().toISOString().split('T')[0]} // ตั้งค่าวันที่สูงสุดเป็นวันนี้
                     />
                     <label htmlFor="start-date">ตั้งแต่วันที่</label>
                   </div>
@@ -480,6 +492,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
                       name="end"
                       value={dateRange.end}
                       onChange={handleDateChange}
+                      max={new Date().toISOString().split('T')[0]} // ตั้งค่าวันที่สูงสุดเป็นวันนี้
                     />
                     <label htmlFor="end-date">ถึงวันที่</label>
                   </div>
@@ -756,7 +769,7 @@ const filteredOrderDetails = orderDetails.filter(item => {
                 </div>
               </div>
             </div>
-          </div>  
+          </div>
         </>
       )}
 
