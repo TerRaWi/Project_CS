@@ -996,7 +996,7 @@ app.get('/api/order/:orderId/bill', async (req, res) => {
 app.get('/api/payments', async (req, res) => {
   try {
     const [payments] = await db.promise().query(
-      `SELECT p.*, o.table_id, dt.table_number
+      `SELECT p.*, o.table_id, dt.table_number, o.status AS order_status
         FROM payment p
         JOIN \`order\` o ON p.order_id = o.id
         JOIN dining_table dt ON o.table_id = dt.id
@@ -1632,6 +1632,163 @@ app.patch('/api/service-requests/:id/status', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการอัพเดตสถานะคำขอบริการ'
+    });
+  }
+});
+
+// API สำหรับดึงข้อมูลบิลที่ถูกยกเลิก
+app.get('/api/canceled-orders', async (req, res) => {
+  const { startDate, endDate } = req.query;
+  
+  try {
+    let query = `
+      SELECT o.*, dt.table_number
+      FROM \`order\` o
+      JOIN dining_table dt ON o.table_id = dt.id
+      WHERE o.status = 'X'
+    `;
+    
+    const queryParams = [];
+    
+    // เพิ่มเงื่อนไขการกรองตามวันที่
+    if (startDate && endDate) {
+      query += ` AND o.end_time BETWEEN ? AND ?`;
+      queryParams.push(startDate, endDate);
+    }
+    
+    query += ` ORDER BY o.end_time DESC`;
+    
+    const [canceledOrders] = await db.promise().query(query, queryParams);
+    
+    // สำหรับแต่ละออเดอร์ที่ถูกยกเลิก ให้ดึงรายละเอียดด้วย
+    for (const order of canceledOrders) {
+      const [orderDetails] = await db.promise().query(
+        `SELECT od.*, p.name as product_name
+         FROM order_detail od
+         JOIN product p ON od.product_id = p.id
+         WHERE od.order_id = ?`,
+        [order.id]
+      );
+      
+      // คำนวณยอดรวมจากรายการทั้งหมด
+      let totalAmount = 0;
+      orderDetails.forEach(item => {
+        if (item.status !== 'V') { // นับเฉพาะรายการที่ไม่ได้ถูกยกเลิก
+          totalAmount += item.quantity * item.unit_price;
+        }
+      });
+      
+      order.items = orderDetails;
+      order.totalAmount = totalAmount;
+    }
+    
+    res.json(canceledOrders);
+    
+  } catch (error) {
+    console.error('Error fetching canceled orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลบิลที่ถูกยกเลิก'
+    });
+  }
+});
+
+/**
+ * API สำหรับดึงประวัติบิลทั้งหมด (ทั้งที่ชำระแล้วและที่ยกเลิก)
+ */
+app.get('/api/bill-history', async (req, res) => {
+  const { startDate, endDate, status } = req.query;
+
+  try {
+    // 1. ดึงข้อมูลบิลที่ชำระแล้วจากตาราง payment
+    const paymentQuery = `
+      SELECT 
+        p.id,  
+        p.order_id, 
+        p.amount, 
+        p.payment_method, 
+        p.payment_date, 
+        p.status AS payment_status,
+        o.status AS order_status,
+        o.start_time,
+        o.end_time,
+        dt.table_number
+      FROM payment p
+      JOIN \`order\` o ON p.order_id = o.id
+      JOIN dining_table dt ON o.table_id = dt.id
+    `;
+
+    let paymentParams = [];
+    
+    // เพิ่มเงื่อนไขการกรองตามวันที่สำหรับ payment
+    let paymentDateFilter = '';
+    if (startDate && endDate) {
+      paymentDateFilter = ' WHERE p.payment_date BETWEEN ? AND ?';
+      paymentParams.push(startDate, endDate);
+    }
+
+    // ดึงข้อมูลการชำระเงิน
+    const [paymentResults] = await db.promise().query(
+      paymentQuery + paymentDateFilter, 
+      paymentParams
+    );
+
+    // 2. ดึงข้อมูลบิลที่ถูกยกเลิกจากตาราง order (เฉพาะที่ไม่มีในตาราง payment)
+    const canceledQuery = `
+      SELECT 
+        o.id AS order_id,
+        NULL AS id,
+        0 AS amount,
+        'ยกเลิก' AS payment_method,
+        o.end_time AS payment_date,
+        'X' AS payment_status,
+        o.status AS order_status,
+        o.start_time,
+        o.end_time,
+        dt.table_number
+      FROM \`order\` o
+      JOIN dining_table dt ON o.table_id = dt.id
+      LEFT JOIN payment p ON o.id = p.order_id
+      WHERE o.status = 'X' AND p.id IS NULL
+    `;
+
+    let canceledParams = [];
+    
+    // เพิ่มเงื่อนไขการกรองตามวันที่สำหรับออเดอร์ที่ยกเลิก
+    let canceledDateFilter = '';
+    if (startDate && endDate) {
+      canceledDateFilter = ' AND o.end_time BETWEEN ? AND ?';
+      canceledParams.push(startDate, endDate);
+    }
+
+    // ดึงข้อมูลออเดอร์ที่ถูกยกเลิก
+    const [canceledResults] = await db.promise().query(
+      canceledQuery + canceledDateFilter,
+      canceledParams
+    );
+
+    // 3. รวมผลลัพธ์ทั้งสองชุด
+    let allBills = [...paymentResults, ...canceledResults];
+
+    // 4. กรองตามสถานะที่ต้องการ (ถ้ามีการระบุ)
+    if (status && status !== 'all') {
+      if (status === 'completed') {
+        allBills = allBills.filter(bill => bill.order_status === 'C');
+      } else if (status === 'canceled') {
+        allBills = allBills.filter(bill => bill.order_status === 'X');
+      }
+    }
+
+    // 5. เรียงลำดับตามวันที่ล่าสุด
+    allBills.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
+
+    res.json(allBills);
+
+  } catch (error) {
+    console.error('Error fetching bill history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงประวัติบิล'
     });
   }
 });
