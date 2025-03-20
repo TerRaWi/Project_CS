@@ -2,14 +2,12 @@ import React, { useState, useEffect } from "react";
 import Ordermenu from "./Ordermenu";
 import Billpayment from "./Billpayment";
 import Tablemanage from "./Tablemanage";
-import OrderQRGenerator from "./OrderQRGenerator";
 import { getOrdersByTable } from "../api";
 
 const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
   const [showOrdermenu, setShowOrdermenu] = useState(false);
   const [showBillpayment, setShowBillpayment] = useState(false);
   const [showTablemanage, setShowTablemanage] = useState(false);
-  const [showQRCode, setShowQRCode] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -132,28 +130,11 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
     zIndex: 1000
   };
 
-  // จัดการการแสดง QR Code
-  const handleQRCodeButtonClick = () => {
-    if (!activeOrder) {
-      alert("ไม่พบออเดอร์ที่เปิดอยู่ ไม่สามารถสร้าง QR Code ได้");
-      return;
-    }
-
-    // ปิด modals อื่นๆ ก่อนแสดง QR Code
-    setShowOrdermenu(false);
-    setShowBillpayment(false);
-    setShowTablemanage(false);
-
-    // เปิด QR Code modal
-    setShowQRCode(true);
-  };
-
   // ปิดทุก modal
   const closeAllModals = () => {
     setShowOrdermenu(false);
     setShowBillpayment(false);
     setShowTablemanage(false);
-    setShowQRCode(false);
   };
 
   return (
@@ -194,15 +175,6 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
             </button>
 
             <button
-              className="btn btn-info text-white"
-              onClick={handleQRCodeButtonClick}
-              disabled={!activeOrder}
-            >
-              <i className="bi bi-qr-code me-2"></i>
-              QR Code สั่งอาหาร
-            </button>
-
-            <button
               className="btn btn-warning text-white"
               onClick={() => {
                 closeAllModals();
@@ -228,40 +200,6 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
           </div>
         )}
       </div>
-
-      {/* QR Code Modal */}
-      {showQRCode && activeOrder && (
-        <div className="qr-code-modal">
-          <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ zIndex: 1050, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-            <div className="bg-white rounded-3 shadow" style={{ maxWidth: '500px', width: '90%' }}>
-              <div className="modal-header bg-primary text-white p-3 rounded-top-3">
-                <h5 className="modal-title mb-0">QR Code สำหรับลูกค้าสั่งอาหาร</h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setShowQRCode(false)}
-                  aria-label="Close"
-                ></button>
-              </div>
-              <div className="modal-body p-4">
-                <OrderQRGenerator
-                  orderId={activeOrder.orderId}
-                  tableNumber={table ? table.table_number : ""}
-                />
-              </div>
-              <div className="modal-footer bg-light p-3 rounded-bottom-3">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowQRCode(false)}
-                >
-                  ปิด
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showOrdermenu && (
         <Ordermenu
