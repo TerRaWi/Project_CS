@@ -211,23 +211,47 @@ export const getOrdersByTable = async (tableId) => {
       throw new Error('กรุณาระบุหมายเลขโต๊ะ');
     }
 
+    // Add logging to debug the request
+    console.log(`Fetching orders for table ID: ${tableId}`);
+    
     const response = await axios.get(`${API_URL}/order/${tableId}`);
     
     // เช็คว่ามีข้อมูลและเป็น array
-    if (!response.data || !Array.isArray(response.data)) {
-      console.error('Invalid response format:', response.data);
-      throw new Error('ข้อมูลไม่ถูกต้อง');
+    if (!response.data) {
+      console.error('Empty response received:', response);
+      return []; // Return empty array instead of throwing error
+    }
+    
+    if (!Array.isArray(response.data)) {
+      console.error('Response is not an array:', response.data);
+      // If data exists but is not an array, wrap it in an array
+      return Array.isArray(response.data) ? response.data : [];
     }
 
     return response.data;
   } catch (error) {
     console.error('Error fetching orders:', error);
+    
+    // More detailed error handling
     if (axios.isAxiosError(error)) {
-      if (!error.response) {
+      if (error.response) {
+        // Server responded with an error status
+        console.error('Server error response:', error.response.status, error.response.data);
+        
+        if (error.response.status === 500) {
+          // For 500 errors, return empty array instead of throwing
+          console.error('Server internal error (500). Returning empty array.');
+          return [];
+        }
+        
+        throw new Error(error.response.data?.error || `เกิดข้อผิดพลาดในการเรียกข้อมูล (${error.response.status})`);
+      } else if (error.request) {
+        // No response received
         throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
       }
-      throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการเรียกข้อมูล');
     }
+    
+    // For other errors, rethrow
     throw error;
   }
 };
