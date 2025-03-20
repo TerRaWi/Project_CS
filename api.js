@@ -404,48 +404,52 @@ export const getAllActiveOrders = async () => {
     // ดึงข้อมูลโต๊ะทั้งหมดก่อน
     const tables = await getTables();
     
-    // จัดการดึงข้อมูลออเดอร์ทุกโต๊ะพร้อมกัน
-    const orderPromises = tables.map(table => getOrdersByTable(table.id));
+    // เพิ่มการตรวจสอบ
+    if (!tables || tables.length === 0) {
+      console.log('No tables found');
+      return [];
+    }
     
-    // รอให้ทุก Promise เสร็จสิ้น
-    const ordersArrays = await Promise.all(orderPromises);
+    // เปลี่ยนจาก Promise.all เป็น Promise.allSettled
+    const ordersArrays = await Promise.allSettled(
+      tables.map(table => getOrdersByTable(table.id))
+    );
     
-    // รวมข้อมูลออเดอร์จากทุกโต๊ะและเพิ่มข้อมูลโต๊ะ
+    // รวมข้อมูลออเดอร์จากทุกโต๊ะที่สำเร็จเท่านั้น
     const allOrders = [];
     
-    ordersArrays.forEach((tableOrders, index) => {
-      const tableInfo = tables[index];
-      const ordersWithTableInfo = tableOrders.map(order => ({
-        ...order,
-        tableNumber: tableInfo.table_number,
-        tableId: tableInfo.id
-      }));
-      
-      allOrders.push(...ordersWithTableInfo);
+    // เปลี่ยนวิธีการประมวลผล Promise.allSettled
+    ordersArrays.forEach((result, index) => {
+      if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+        const tableInfo = tables[index];
+        const ordersWithTableInfo = result.value.map(order => ({
+          ...order,
+          tableNumber: tableInfo.table_number,
+          tableId: tableInfo.id
+        }));
+        
+        allOrders.push(...ordersWithTableInfo);
+      } else {
+        console.error(`Failed to get orders for table ${tables[index].id}:`, 
+          result.status === 'rejected' ? result.reason : 'Invalid response format');
+      }
     });
     
-    // กรองเฉพาะออเดอร์ที่ยังทำงานอยู่ (Active)
+    // ส่วนที่เหลือคงเดิม
     const activeOrders = allOrders.filter(order => order.status === 'A');
     
-    // เรียงออเดอร์ตามเวลาล่าสุด โดยใช้ getTime() ให้ถูกต้อง
     const sortedOrders = activeOrders.sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
-      return dateB - dateA;  // เรียงจากใหม่ไปเก่า
+      return dateB - dateA;
     });
-    
-    // เพิ่ม debugging log เพื่อตรวจสอบผลลัพธ์
-    console.log('Sorted orders from API:', sortedOrders.map(order => ({
-      tableId: order.tableId,
-      date: order.date,
-      timestamp: new Date(order.date).getTime()
-    })));
     
     return sortedOrders;
     
   } catch (error) {
     console.error('Error fetching all orders:', error);
-    handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลออเดอร์ทั้งหมด');
+    // เปลี่ยนจาก throw error เป็นคืนค่า array ว่าง
+    return [];
   }
 };
 
