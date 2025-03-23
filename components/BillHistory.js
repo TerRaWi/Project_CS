@@ -28,6 +28,14 @@ const formatCurrency = (amount) => {
     }).format(amount || 0);
 };
 
+// ฟังก์ชันสำหรับรับวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD
+const getCurrentDate = () => {
+    const today = new Date();
+    // ตั้งค่าเวลาเป็น 23:59:59 เพื่อให้แน่ใจว่าจะรวมทั้งวัน
+    today.setHours(23, 59, 59, 999);
+    return today.toISOString().split('T')[0];
+};
+
 const ReceiptForPrint = React.forwardRef((props, ref) => {
     const { receipt, qrCodeURL } = props;
 
@@ -47,7 +55,7 @@ const ReceiptForPrint = React.forwardRef((props, ref) => {
             <div className="mb-3">
                 <p className="mb-1"><strong>โต๊ะ:</strong> {receipt.tableNumber}</p>
                 <p className="mb-1"><strong>วันที่:</strong> {formatDate(receipt.payment_date)}</p>
-                <p className="mb-1"><strong>เลขที่ใบเสร็จ:</strong> #{receipt.id}</p>
+                <p className="mb-1"><strong>เลขที่ใบเสร็จ:</strong> #{receipt.order_id}</p>
             </div>
 
             <hr style={{ borderTop: '1px dashed #999', margin: '10px 0' }} />
@@ -105,6 +113,9 @@ const ReceiptForPrint = React.forwardRef((props, ref) => {
 });
 
 const BillHistory = () => {
+    // ประกาศตัวแปรสำหรับเก็บวันที่ปัจจุบัน
+    const currentDate = getCurrentDate();
+
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -115,7 +126,7 @@ const BillHistory = () => {
     const [receiptToPrint, setReceiptToPrint] = useState(null);
     const [dateRange, setDateRange] = useState({
         start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-        end: new Date().toISOString().split('T')[0]
+        end: currentDate
     });
     const [searchTerm, setSearchTerm] = useState('');
     // เพิ่ม state สำหรับเก็บ QR Code URL
@@ -205,19 +216,68 @@ const BillHistory = () => {
         fetchPayments();
     }, []);
 
+    // ฟังก์ชันสำหรับจัดการการเปลี่ยนแปลงวันที่
+    const handleDateChange = (e) => {
+        const { name, value } = e.target;
+
+        if (name === 'start') {
+            // ถ้าเปลี่ยนวันเริ่มต้น
+            // 1. ตรวจสอบว่าวันที่ไม่เกินวันปัจจุบัน
+            // 2. ตรวจสอบว่าวันที่ไม่เกินวันสิ้นสุด
+            const newStartDate = value;
+            if (newStartDate > currentDate) {
+                alert('ไม่สามารถเลือกวันในอนาคตได้');
+                return;
+            }
+
+            if (newStartDate > dateRange.end) {
+                alert('วันเริ่มต้นต้องไม่มากกว่าวันสิ้นสุด');
+                return;
+            }
+
+            setDateRange({
+                ...dateRange,
+                start: newStartDate
+            });
+        } else if (name === 'end') {
+            // ถ้าเปลี่ยนวันสิ้นสุด
+            // 1. ตรวจสอบว่าวันที่ไม่เกินวันปัจจุบัน
+            // 2. ตรวจสอบว่าวันที่ไม่น้อยกว่าวันเริ่มต้น
+            const newEndDate = value;
+            // ปรับให้สามารถเลือกวันที่ปัจจุบันได้
+            if (newEndDate > currentDate) {
+                alert('ไม่สามารถเลือกวันในอนาคตได้');
+                return;
+            }
+
+            if (newEndDate < dateRange.start) {
+                alert('วันสิ้นสุดต้องไม่น้อยกว่าวันเริ่มต้น');
+                return;
+            }
+
+            setDateRange({
+                ...dateRange,
+                end: newEndDate
+            });
+        }
+    };
+
     // กรองข้อมูลตามช่วงวันที่และคำค้นหา
     const filteredPayments = payments.filter(payment => {
         // กรองตามวันที่
         const paymentDate = new Date(payment.payment_date);
         const startDate = new Date(dateRange.start);
+        startDate.setHours(0, 0, 0, 0); // ตั้งเวลาเป็น 00:00:00
+
         const endDate = new Date(dateRange.end);
-        endDate.setHours(23, 59, 59, 999);
+        endDate.setHours(23, 59, 59, 999); // ตั้งเวลาเป็น 23:59:59.999
+
         const dateMatch = paymentDate >= startDate && paymentDate <= endDate;
 
         // กรองตามคำค้นหา
         const searchMatch =
             searchTerm === '' ||
-            String(payment.id).includes(searchTerm) ||
+            String(payment.order_id).includes(searchTerm) ||
             String(payment.table_number).includes(searchTerm);
 
         return dateMatch && searchMatch;
@@ -251,15 +311,6 @@ const BillHistory = () => {
         setShowPrintPreview(false);
     };
 
-    // จัดการการเปลี่ยนแปลงช่วงวันที่
-    const handleDateChange = (e) => {
-        const { name, value } = e.target;
-        setDateRange({
-            ...dateRange,
-            [name]: value
-        });
-    };
-
     // แสดงตัวอย่างการพิมพ์ใบเสร็จ
     const showReceiptPreview = async (payment) => {
         setLoading(true);
@@ -271,7 +322,7 @@ const BillHistory = () => {
             const billData = await getBill(payment.order_id);
 
             const receiptData = {
-                id: payment.id,
+                id: payment.order_id,
                 order_id: payment.order_id,
                 tableNumber: billData.tableNumber,
                 payment_date: payment.payment_date,
@@ -343,6 +394,7 @@ const BillHistory = () => {
                             name="start"
                             value={dateRange.start}
                             onChange={handleDateChange}
+                            max={currentDate} // เพิ่ม attribute max เพื่อจำกัดวันที่ไม่เกินวันปัจจุบัน
                         />
                     </div>
                     <div className="col-md-4">
@@ -353,10 +405,12 @@ const BillHistory = () => {
                             name="end"
                             value={dateRange.end}
                             onChange={handleDateChange}
+                            min={dateRange.start} // เพิ่ม attribute min เพื่อจำกัดวันที่ไม่น้อยกว่าวันเริ่มต้น
+                            max={currentDate} // เพิ่ม attribute max เพื่อจำกัดวันที่ไม่เกินวันปัจจุบัน
                         />
                     </div>
                     <div className="col-md-4">
-                        <label className="form-label">ค้นหา (เลขบิล/โต๊ะ)</label>
+                        <label className="form-label">ค้นหา (เลขออเดอร์/โต๊ะ)</label>
                         <input
                             type="text"
                             className="form-control"
@@ -372,7 +426,7 @@ const BillHistory = () => {
                     <Table hover className="align-middle">
                         <thead className="table-light">
                             <tr>
-                                <th>เลขบิล</th>
+                                <th>เลขออเดอร์</th>
                                 <th>โต๊ะ</th>
                                 <th>วันที่-เวลา</th>
                                 <th>จำนวนเงิน</th>
@@ -385,7 +439,7 @@ const BillHistory = () => {
                             {filteredPayments.length > 0 ? (
                                 filteredPayments.map((payment) => (
                                     <tr key={payment.id}>
-                                        <td>#{payment.id}</td>
+                                        <td>#{payment.order_id}</td>
                                         <td>{payment.table_number}</td>
                                         <td>{formatDate(payment.payment_date)}</td>
                                         <td>{formatCurrency(payment.amount)}</td>
@@ -422,7 +476,7 @@ const BillHistory = () => {
                 <Modal show={showBillModal} onHide={handleCloseBillModal} size="lg">
                     <Modal.Header closeButton>
                         <Modal.Title>
-                            รายละเอียดบิล #{selectedBill?.id}
+                            รายละเอียดบิล #{selectedBill?.order_id}
                             <span className="ms-2">
                                 <Badge bg="success">ชำระแล้ว</Badge>
                             </span>
@@ -531,7 +585,7 @@ const BillHistory = () => {
                                 printWindow.document.write(`
                                     <html>
                                         <head>
-                                            <title>พิมพ์ใบเสร็จ #${receiptToPrint?.id || ''}</title>
+                                            <title>พิมพ์ใบเสร็จ #${receiptToPrint?.order_id || ''}</title>
                                             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
                                             <style>
                                                 body { font-family: 'Sarabun', sans-serif; padding: 20px; }

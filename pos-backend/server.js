@@ -1,3 +1,5 @@
+process.env.TZ = 'Asia/Bangkok';
+
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -80,21 +82,54 @@ app.get('/api/health', (req, res) => {
 
 // นำโต๊ะมาแสดงบน Page โต๊ะ
 app.get('/api/tables', (req, res) => {
-  const query = `
-    SELECT dt.*, ts.name as status_name 
-    FROM dining_table dt 
-    JOIN table_status ts ON dt.status_id = ts.id 
-    ORDER BY CAST(table_number AS SIGNED)
-  `;
+  // ค้นหาสถานะที่ไม่ต้องการแสดง (ไม่ใช้งาน)
+  db.query(
+    'SELECT id FROM table_status WHERE name = ?',
+    ['ไม่ใช้งาน'], // หรือชื่อสถานะที่คุณเพิ่ม
+    (statusErr, statusResults) => {
+      if (statusErr) {
+        console.error('เกิดข้อผิดพลาดในการค้นหาสถานะ:', statusErr);
+        return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+      }
 
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('เกิดข้อผิดพลาดในการดึงข้อมูลโต๊ะ:', err);
-      res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-      return;
+      // ถ้าไม่พบสถานะ "ไม่ใช้งาน" ให้แสดงโต๊ะทั้งหมด
+      if (statusResults.length === 0) {
+        const query = `
+          SELECT dt.*, ts.name as status_name 
+          FROM dining_table dt 
+          JOIN table_status ts ON dt.status_id = ts.id 
+          ORDER BY CAST(table_number AS SIGNED)
+        `;
+
+        db.query(query, (err, results) => {
+          if (err) {
+            console.error('เกิดข้อผิดพลาดในการดึงข้อมูลโต๊ะ:', err);
+            return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+          }
+          res.json(results);
+        });
+        return;
+      }
+
+      // ถ้าพบสถานะ "ไม่ใช้งาน" ให้แสดงเฉพาะโต๊ะที่ไม่ได้มีสถานะนั้น
+      const inactiveStatusId = statusResults[0].id;
+      const query = `
+        SELECT dt.*, ts.name as status_name 
+        FROM dining_table dt 
+        JOIN table_status ts ON dt.status_id = ts.id 
+        WHERE dt.status_id != ?
+        ORDER BY CAST(table_number AS SIGNED)
+      `;
+
+      db.query(query, [inactiveStatusId], (err, results) => {
+        if (err) {
+          console.error('เกิดข้อผิดพลาดในการดึงข้อมูลโต๊ะ:', err);
+          return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+        }
+        res.json(results);
+      });
     }
-    res.json(results);
-  });
+  );
 });
 
 // สร้างโต๊ะ
@@ -106,35 +141,73 @@ app.post('/api/tables', (req, res) => {
   }
 
   // First check if table_number already exists
-  db.query('SELECT id FROM dining_table WHERE table_number = ?', [table_number], (err, results) => {
+  db.query('SELECT id, status_id FROM dining_table WHERE table_number = ?', [table_number], (err, results) => {
     if (err) {
       console.error('เกิดข้อผิดพลาดในการตรวจสอบเบอร์โต๊ะ:', err);
       return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
     }
 
-    if (results.length > 0) {
-      return res.status(409).json({ error: 'เบอร์โต๊ะนี้มีอยู่แล้ว' });
-    }
-
-    // If table_number doesn't exist, insert new table
+    // ดึง ID ของสถานะ "ว่าง" และ "ไม่ใช้งาน"
     db.query(
-      'INSERT INTO dining_table (table_number, status_id) VALUES (?, ?)',
-      [table_number, status_id],
-      (err, result) => {
-        if (err) {
-          console.error('เกิดข้อผิดพลาดในการเพิ่มโต๊ะ:', err);
-          res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
-          return;
+      'SELECT id, name FROM table_status WHERE name IN (?, ?)',
+      ['ว่าง', 'ไม่ใช้งาน'],
+      (statusErr, statusResults) => {
+        if (statusErr) {
+          console.error('เกิดข้อผิดพลาดในการตรวจสอบสถานะ:', statusErr);
+          return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
         }
 
-        // Return the newly created table data
-        const newTable = {
-          id: result.insertId,
-          table_number,
-          status_id
-        };
+        const availableStatusId = statusResults.find(s => s.name === 'ว่าง')?.id || 1;
+        const inactiveStatusId = statusResults.find(s => s.name === 'ไม่ใช้งาน')?.id;
 
-        res.json(newTable);
+        if (results.length > 0) {
+          // โต๊ะนี้มีอยู่แล้ว
+          const table = results[0];
+          
+          // ถ้าโต๊ะมีสถานะเป็น "ไม่ใช้งาน" ให้เปลี่ยนเป็น "ว่าง"
+          if (inactiveStatusId && table.status_id === inactiveStatusId) {
+            db.query(
+              'UPDATE dining_table SET status_id = ? WHERE id = ?',
+              [availableStatusId, table.id],
+              (updateErr, updateResult) => {
+                if (updateErr) {
+                  console.error('เกิดข้อผิดพลาดในการอัปเดตสถานะโต๊ะ:', updateErr);
+                  return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+                }
+
+                res.json({
+                  id: table.id,
+                  table_number,
+                  status_id: availableStatusId,
+                  message: 'เปิดใช้งานโต๊ะสำเร็จ'
+                });
+              }
+            );
+          } else {
+            // ถ้าไม่ใช่สถานะ "ไม่ใช้งาน" แสดงว่าโต๊ะนี้กำลังใช้งานอยู่
+            return res.status(409).json({ error: 'เบอร์โต๊ะนี้มีอยู่แล้ว' });
+          }
+        } else {
+          // ถ้าไม่มีโต๊ะนี้ ให้สร้างโต๊ะใหม่
+          db.query(
+            'INSERT INTO dining_table (table_number, status_id) VALUES (?, ?)',
+            [table_number, availableStatusId],
+            (insertErr, result) => {
+              if (insertErr) {
+                console.error('เกิดข้อผิดพลาดในการเพิ่มโต๊ะ:', insertErr);
+                return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+              }
+
+              const newTable = {
+                id: result.insertId,
+                table_number,
+                status_id: availableStatusId
+              };
+
+              res.json(newTable);
+            }
+          );
+        }
       }
     );
   });
@@ -281,17 +354,31 @@ app.delete('/api/tables/:tableNumber', (req, res) => {
             });
           }
 
-          // If table is available and has no active orders, proceed with deletion
+          // ค้นหา ID ของสถานะ "ไม่ใช้งาน" (หรือสถานะที่คุณต้องการใช้)
           db.query(
-            'DELETE FROM dining_table WHERE table_number = ?',
-            [tableNumber],
-            (err, result) => {
-              if (err) {
-                console.error('เกิดข้อผิดพลาดในการลบโต๊ะ:', err);
+            'SELECT id FROM table_status WHERE name = ?',
+            ['ไม่ใช้งาน'], // หรือชื่อสถานะที่คุณเพิ่ม
+            (err, statusResults) => {
+              if (err || statusResults.length === 0) {
+                console.error('เกิดข้อผิดพลาดในการค้นหาสถานะ:', err);
                 return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
               }
 
-              res.json({ message: 'ลบโต๊ะสำเร็จ' });
+              const inactiveStatusId = statusResults[0].id;
+
+              // อัปเดตสถานะโต๊ะเป็น "ไม่ใช้งาน" แทนการลบข้อมูล
+              db.query(
+                'UPDATE dining_table SET status_id = ? WHERE table_number = ?',
+                [inactiveStatusId, tableNumber],
+                (err, result) => {
+                  if (err) {
+                    console.error('เกิดข้อผิดพลาดในการอัปเดตสถานะโต๊ะ:', err);
+                    return res.status(500).send('ข้อผิดพลาดของเซิร์ฟเวอร์');
+                  }
+
+                  res.json({ message: 'ลบโต๊ะสำเร็จ' });
+                }
+              );
             }
           );
         }
@@ -1303,7 +1390,6 @@ app.post('/api/tables/merge', async (req, res) => {
 });
 
 // ยกเลิกโต๊ะ (ยกเลิกออเดอร์และปิดโต๊ะ)
-// ยกเลิกโต๊ะ (ยกเลิกออเดอร์และปิดโต๊ะ)
 app.post('/api/tables/cancel', async (req, res) => {
   const { tableId } = req.body;
 
@@ -1789,6 +1875,213 @@ app.get('/api/bill-history', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการดึงประวัติบิล'
+    });
+  }
+});
+
+// API สำหรับดึงประวัติการใช้งานโต๊ะทั้งหมด (รวมถึงโต๊ะที่ไม่ใช้งานแล้ว)
+app.get('/api/table-history', async (req, res) => {
+  try {
+    // ค้นหาสถานะ "ไม่ใช้งาน"
+    const [statusResults] = await db.promise().query(
+      'SELECT id, name FROM table_status WHERE name = ?',
+      ['ไม่ใช้งาน'] // หรือชื่อสถานะที่คุณเพิ่ม
+    );
+    
+    const inactiveStatusId = statusResults.length > 0 ? statusResults[0].id : -1;
+    const inactiveStatusName = statusResults.length > 0 ? statusResults[0].name : 'ไม่ใช้งาน';
+    
+    // ดึงข้อมูลออเดอร์ทั้งหมดพร้อมข้อมูลโต๊ะ
+    const query = `
+      SELECT 
+        o.id AS order_id,
+        o.start_time,
+        o.end_time,
+        o.status AS order_status,
+        dt.id AS table_id,
+        dt.table_number,
+        dt.status_id,
+        ts.name AS table_status_name,
+        p.id AS payment_id,
+        p.amount AS payment_amount,
+        p.payment_date,
+        p.status AS payment_status
+      FROM \`order\` o
+      JOIN dining_table dt ON o.table_id = dt.id
+      JOIN table_status ts ON dt.status_id = ts.id
+      LEFT JOIN payment p ON o.id = p.order_id
+      ORDER BY o.start_time DESC
+    `;
+    
+    const [results] = await db.promise().query(query);
+    
+    // จัดกลุ่มข้อมูลตามโต๊ะ
+    const tableHistory = {};
+    
+    results.forEach(row => {
+      const tableNumber = row.table_number;
+      
+      if (!tableHistory[tableNumber]) {
+        tableHistory[tableNumber] = {
+          tableId: row.table_id,
+          tableNumber: tableNumber,
+          statusId: row.status_id,
+          statusName: row.table_status_name,
+          isInactive: row.status_id === inactiveStatusId,
+          orders: []
+        };
+      }
+      
+      // ตรวจสอบว่าออเดอร์นี้มีอยู่ในรายการแล้วหรือไม่
+      const existingOrder = tableHistory[tableNumber].orders.find(o => o.orderId === row.order_id);
+      
+      if (!existingOrder) {
+        // เพิ่มข้อมูลออเดอร์
+        const order = {
+          orderId: row.order_id,
+          startTime: row.start_time,
+          endTime: row.end_time,
+          status: row.order_status
+        };
+        
+        // เพิ่มข้อมูลการชำระเงิน (ถ้ามี)
+        if (row.payment_id) {
+          order.payment = {
+            paymentId: row.payment_id,
+            amount: row.payment_amount,
+            paymentDate: row.payment_date,
+            status: row.payment_status
+          };
+        }
+        
+        tableHistory[tableNumber].orders.push(order);
+      }
+    });
+    
+    // แปลงข้อมูลจาก object เป็น array
+    const response = Object.values(tableHistory);
+    
+    res.json(response);
+    
+  } catch (error) {
+    console.error('Error fetching table history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงประวัติการใช้งานโต๊ะ'
+    });
+  }
+});
+
+// API สำหรับดึงประวัติการใช้งานของโต๊ะเฉพาะหมายเลข
+app.get('/api/table-history/:tableNumber', async (req, res) => {
+  const tableNumber = req.params.tableNumber;
+  
+  try {
+    // ดึงข้อมูลโต๊ะ
+    const [tableInfo] = await db.promise().query(
+      `SELECT dt.*, ts.name AS status_name 
+        FROM dining_table dt
+        JOIN table_status ts ON dt.status_id = ts.id
+        หWHERE dt.table_number = ?`,
+      [tableNumber]
+    );
+    
+    if (tableInfo.length === 0) {
+      // ถ้าไม่พบโต๊ะในฐานข้อมูล
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลโต๊ะที่ระบุ'
+      });
+    }
+    
+    // ดึงประวัติการใช้งานโต๊ะ (ออเดอร์และการชำระเงิน)
+    const query = `
+      SELECT 
+        o.id AS order_id,
+        o.start_time,
+        o.end_time,
+        o.status AS order_status,
+        p.id AS payment_id,
+        p.amount AS payment_amount,
+        p.payment_date,
+        p.payment_method,
+        p.status AS payment_status
+      FROM \`order\` o
+      JOIN dining_table dt ON o.table_id = dt.id
+      LEFT JOIN payment p ON o.id = p.order_id
+      WHERE dt.table_number = ?
+      ORDER BY o.start_time DESC
+    `;
+    
+    const [orderHistory] = await db.promise().query(query, [tableNumber]);
+    
+    // สร้างรายการออเดอร์พร้อมรายละเอียด
+    const orders = [];
+    const orderMap = new Map();
+    
+    for (const row of orderHistory) {
+      if (!orderMap.has(row.order_id)) {
+        const order = {
+          orderId: row.order_id,
+          startTime: row.start_time,
+          endTime: row.end_time,
+          status: row.order_status,
+          items: [] // จะเติมข้อมูลในขั้นตอนถัดไป
+        };
+        
+        // เพิ่มข้อมูลการชำระเงิน (ถ้ามี)
+        if (row.payment_id) {
+          order.payment = {
+            paymentId: row.payment_id,
+            amount: row.payment_amount,
+            paymentDate: row.payment_date,
+            paymentMethod: row.payment_method,
+            status: row.payment_status
+          };
+        }
+        
+        orderMap.set(row.order_id, order);
+        orders.push(order);
+      }
+    }
+    
+    // ดึงรายละเอียดรายการอาหารสำหรับแต่ละออเดอร์
+    for (const order of orders) {
+      const [orderItems] = await db.promise().query(
+        `SELECT od.*, p.name as product_name
+         FROM order_detail od
+         JOIN product p ON od.product_id = p.id
+         WHERE od.order_id = ?`,
+        [order.orderId]
+      );
+      
+      order.items = orderItems.map(item => ({
+        id: item.id,
+        productName: item.product_name,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        status: item.status,
+        orderTime: item.order_time
+      }));
+    }
+    
+    // สร้าง response ข้อมูลประวัติโต๊ะ
+    const tableHistory = {
+      tableNumber: tableNumber,
+      tableId: tableInfo[0].id,
+      statusId: tableInfo[0].status_id,
+      statusName: tableInfo[0].status_name,
+      isInactive: tableInfo[0].status_name === 'ไม่ใช้งาน', // หรือชื่อสถานะที่คุณเพิ่ม
+      orders: orders
+    };
+    
+    res.json(tableHistory);
+    
+  } catch (error) {
+    console.error('Error fetching table history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงประวัติการใช้งานโต๊ะ'
     });
   }
 });

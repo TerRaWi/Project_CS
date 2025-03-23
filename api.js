@@ -737,3 +737,68 @@ export const getBillHistory = async (startDate, endDate, status = 'all') => {
     handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติบิล');
   }
 };
+
+/**
+ * ดึงข้อมูลโต๊ะทั้งหมด รวมถึงโต๊ะที่ไม่ใช้งานแล้ว
+ */
+export const getAllTablesIncludeInactive = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/all-tables`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลโต๊ะทั้งหมด');
+  }
+};
+
+/**
+ * ดึงข้อมูลสถานะโต๊ะทั้งหมด
+ */
+export const getTableStatuses = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/table-statuses`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการเรียกข้อมูลสถานะโต๊ะ');
+  }
+};
+
+/**
+ * ดึงประวัติการใช้งานของโต๊ะทั้งหมด (รวมถึงโต๊ะที่ไม่ใช้งานแล้ว)
+ */
+export const getAllTableHistory = async () => {
+  try {
+    const { data } = await axios.get(`${API_URL}/table-history`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการใช้งานโต๊ะ');
+  }
+};
+
+/**
+ * ดึงประวัติการใช้งานของโต๊ะตามหมายเลขโต๊ะ
+ * @param {string} tableNumber - หมายเลขโต๊ะที่ต้องการดูประวัติ
+ */
+export const getTableHistory = async (tableNumber) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/table-history/${tableNumber}`);
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการดึงประวัติการใช้งานโต๊ะ');
+  }
+};
+
+/**
+ * อัปเดตสถานะของโต๊ะ (ใช้สำหรับเปิดใช้งาน/ระงับการใช้งานโต๊ะ)
+ * @param {number} tableId - รหัสโต๊ะ
+ * @param {number} statusId - รหัสสถานะใหม่
+ */
+export const updateTableStatus = async (tableId, statusId) => {
+  try {
+    const { data } = await axios.patch(`${API_URL}/tables/${tableId}/status`, {
+      status_id: statusId
+    });
+    return data;
+  } catch (error) {
+    handleApiError(error, 'เกิดข้อผิดพลาดในการอัปเดตสถานะโต๊ะ');
+  }
+};
