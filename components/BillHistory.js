@@ -47,7 +47,7 @@ const ReceiptForPrint = React.forwardRef((props, ref) => {
             <div className="mb-3">
                 <p className="mb-1"><strong>โต๊ะ:</strong> {receipt.tableNumber}</p>
                 <p className="mb-1"><strong>วันที่:</strong> {formatDate(receipt.payment_date)}</p>
-                <p className="mb-1"><strong>เลขที่ใบเสร็จ:</strong> #{receipt.id}</p>
+                <p className="mb-1"><strong>เลขที่ใบเสร็จ:</strong> #{receipt.order_id}</p>
             </div>
 
             <hr style={{ borderTop: '1px dashed #999', margin: '10px 0' }} />
@@ -271,7 +271,7 @@ const BillHistory = () => {
             const billData = await getBill(payment.order_id);
 
             const receiptData = {
-                id: payment.id,
+                id: payment.order_id,
                 order_id: payment.order_id,
                 tableNumber: billData.tableNumber,
                 payment_date: payment.payment_date,
@@ -385,7 +385,7 @@ const BillHistory = () => {
                             {filteredPayments.length > 0 ? (
                                 filteredPayments.map((payment) => (
                                     <tr key={payment.id}>
-                                        <td>#{payment.id}</td>
+                                        <td>#{payment.order_id}</td>
                                         <td>{payment.table_number}</td>
                                         <td>{formatDate(payment.payment_date)}</td>
                                         <td>{formatCurrency(payment.amount)}</td>
@@ -422,7 +422,7 @@ const BillHistory = () => {
                 <Modal show={showBillModal} onHide={handleCloseBillModal} size="lg">
                     <Modal.Header closeButton>
                         <Modal.Title>
-                            รายละเอียดบิล #{selectedBill?.id}
+                            รายละเอียดบิล #{selectedBill?.order_id}
                             <span className="ms-2">
                                 <Badge bg="success">ชำระแล้ว</Badge>
                             </span>
@@ -531,7 +531,7 @@ const BillHistory = () => {
                                 printWindow.document.write(`
                                     <html>
                                         <head>
-                                            <title>พิมพ์ใบเสร็จ #${receiptToPrint?.id || ''}</title>
+                                            <title>พิมพ์ใบเสร็จ #${receiptToPrint?.order_id || ''}</title>
                                             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
                                             <style>
                                                 body { font-family: 'Sarabun', sans-serif; padding: 20px; }
