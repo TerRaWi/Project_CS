@@ -1,3 +1,5 @@
+process.env.TZ = 'Asia/Bangkok';
+
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -1978,9 +1980,9 @@ app.get('/api/table-history/:tableNumber', async (req, res) => {
     // ดึงข้อมูลโต๊ะ
     const [tableInfo] = await db.promise().query(
       `SELECT dt.*, ts.name AS status_name 
-       FROM dining_table dt
-       JOIN table_status ts ON dt.status_id = ts.id
-       WHERE dt.table_number = ?`,
+        FROM dining_table dt
+        JOIN table_status ts ON dt.status_id = ts.id
+        หWHERE dt.table_number = ?`,
       [tableNumber]
     );
     

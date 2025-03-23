@@ -114,34 +114,36 @@ const Reports = () => {
     });
   };
 
-  // จัดการเมื่อเปลี่ยนช่วงวันที่
   const handleDateChange = (e) => {
     const { name, value } = e.target;
     const selectedDate = new Date(value);
+    
+    // ใช้วันที่ปัจจุบันจริงๆ จากระบบ
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // รีเซ็ตเวลาเพื่อการเปรียบเทียบที่ถูกต้อง
-
+    today.setHours(23, 59, 59, 999); // ตั้งเวลาเป็น 23:59:59.999
+    
     // ตรวจสอบว่าวันที่ที่เลือกอยู่ในอนาคตหรือไม่
     if (selectedDate > today) {
       // แสดงข้อความแจ้งเตือน
       alert('ไม่สามารถเลือกวันที่ในอนาคตได้');
       return; // ไม่อัปเดตสถานะหากมีการเลือกวันที่ในอนาคต
     }
-
+  
     const updatedDateRange = {
       ...dateRange,
       [name]: value
     };
-
+  
     // ตรวจสอบว่าวันที่สิ้นสุดไม่น้อยกว่าวันที่เริ่มต้น
     if (name === 'end' && new Date(value) < new Date(dateRange.start)) {
-      // ถ้าวันสิ้นสุดน้อยกว่าวันเริ่มต้น ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
+      // ถ้าวันสิ้นสุดน้อยกว่าวันเริ่มต้น
       updatedDateRange.end = dateRange.start;
+      alert('วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น');
     } else if (name === 'start' && new Date(value) > new Date(dateRange.end)) {
-      // ถ้าวันเริ่มต้นมากกว่าวันสิ้นสุด ให้ตั้งค่าวันสิ้นสุดเป็นวันเดียวกับวันเริ่มต้น
+      // ถ้าวันเริ่มต้นมากกว่าวันสิ้นสุด
       updatedDateRange.end = value;
     }
-
+  
     setSelectedDateRange('custom');
     setDateRange(updatedDateRange);
   };
@@ -478,7 +480,7 @@ const Reports = () => {
                       name="start"
                       value={dateRange.start}
                       onChange={handleDateChange}
-                      max={new Date().toISOString().split('T')[0]} // ตั้งค่าวันที่สูงสุดเป็นวันนี้
+                    // ลบบรรทัด max ออก
                     />
                     <label htmlFor="start-date">ตั้งแต่วันที่</label>
                   </div>
@@ -492,7 +494,7 @@ const Reports = () => {
                       name="end"
                       value={dateRange.end}
                       onChange={handleDateChange}
-                      max={new Date().toISOString().split('T')[0]} // ตั้งค่าวันที่สูงสุดเป็นวันนี้
+                    // ลบบรรทัด max ออก
                     />
                     <label htmlFor="end-date">ถึงวันที่</label>
                   </div>
