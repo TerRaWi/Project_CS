@@ -1,8 +1,8 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: localhost    Database: posdb
+-- Host: 203.159.93.245    Database: posdb
 -- ------------------------------------------------------
--- Server version	8.0.41
+-- Server version	5.7.44
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,12 +23,12 @@ DROP TABLE IF EXISTS `category`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `category` (
-  `id` int NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(70) NOT NULL COMMENT 'ชื่อหมวดหมู่',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='ตารางเก็บหมวดหมู่สินค้า';
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COMMENT='ตารางเก็บหมวดหมู่สินค้า';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -37,7 +37,7 @@ CREATE TABLE `category` (
 
 LOCK TABLES `category` WRITE;
 /*!40000 ALTER TABLE `category` DISABLE KEYS */;
-INSERT INTO `category` VALUES (6,'เนื้อหมู','2025-02-13 21:24:54','2025-03-13 01:51:06'),(7,'ประเภทลูกค้า','2025-02-16 10:46:18','2025-02-16 10:46:40');
+INSERT INTO `category` VALUES (6,'เนื้อหมู','2025-02-13 21:24:54','2025-03-13 01:51:06'),(7,'ประเภทลูกค้า','2025-02-16 10:46:18','2025-02-16 10:46:40'),(13,'เนื้อวัว','2025-03-20 20:18:52','2025-03-20 20:18:52'),(14,'เนื้อไก่','2025-03-20 20:19:04','2025-03-20 20:19:04'),(15,'ทะเล','2025-03-20 20:19:06','2025-03-20 20:19:06'),(16,'ลูกชิ้น','2025-03-20 20:19:23','2025-03-20 20:19:23'),(17,'ผัก','2025-03-20 20:19:26','2025-03-20 20:19:26'),(18,'เครื่องดื่ม','2025-03-20 20:19:39','2025-03-20 20:19:39'),(19,'อื่น ๆ','2025-03-20 20:19:42','2025-03-20 20:19:42');
 /*!40000 ALTER TABLE `category` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -50,4 +50,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-15  2:05:04
+-- Dump completed on 2025-03-24  3:19:00
