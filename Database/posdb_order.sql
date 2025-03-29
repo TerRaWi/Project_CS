@@ -1,8 +1,8 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: localhost    Database: posdb
+-- Host: 203.159.93.245    Database: posdb
 -- ------------------------------------------------------
--- Server version	8.0.41
+-- Server version	5.7.44
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,17 +23,17 @@ DROP TABLE IF EXISTS `order`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `order` (
-  `id` int NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'เวลาเริ่มใช้โต๊ะ',
   `end_time` timestamp NULL DEFAULT NULL COMMENT 'เวลาสิ้นสุดการใช้โต๊ะ',
   `status` char(1) NOT NULL DEFAULT 'A' COMMENT 'สถานะ: A=Active, C=Completed, V=Void',
-  `table_id` int NOT NULL COMMENT 'รหัสโต๊ะ',
+  `table_id` int(11) NOT NULL COMMENT 'รหัสโต๊ะ',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_order_table_idx` (`table_id`),
-  CONSTRAINT `fk_order_table` FOREIGN KEY (`table_id`) REFERENCES `dining_table` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=197 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='ตารางเก็บข้อมูลการสั่งอาหาร';
+  CONSTRAINT `fk_order_table` FOREIGN KEY (`table_id`) REFERENCES `dining_table` (`id`) ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=208 DEFAULT CHARSET=utf8mb4 COMMENT='ตารางเก็บข้อมูลการสั่งอาหาร';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -42,7 +42,7 @@ CREATE TABLE `order` (
 
 LOCK TABLES `order` WRITE;
 /*!40000 ALTER TABLE `order` DISABLE KEYS */;
-INSERT INTO `order` VALUES (195,'2025-03-14 18:58:14',NULL,'A',34,'2025-03-14 18:58:14','2025-03-14 18:58:14'),(196,'2025-03-14 18:58:45',NULL,'A',36,'2025-03-14 18:58:45','2025-03-14 18:58:45');
+INSERT INTO `order` VALUES (200,'2025-03-23 19:40:32','2025-03-23 19:40:59','C',34,'2025-03-23 19:40:32','2025-03-23 19:40:59'),(201,'2025-03-23 19:51:42','2025-03-23 19:51:56','C',34,'2025-03-23 19:51:42','2025-03-23 19:51:56'),(202,'2025-03-23 19:54:15','2025-03-23 19:54:19','C',36,'2025-03-23 19:54:15','2025-03-23 19:54:19'),(203,'2025-03-23 20:00:12','2025-03-23 20:00:36','C',36,'2025-03-23 20:00:12','2025-03-23 20:00:36'),(204,'2025-03-23 20:04:50','2025-03-23 20:07:08','C',36,'2025-03-23 20:04:50','2025-03-23 20:07:08'),(205,'2025-03-23 20:05:34','2025-03-23 20:05:37','C',36,'2025-03-23 20:05:34','2025-03-23 20:05:37'),(206,'2025-03-23 20:07:09','2025-03-23 20:13:58','X',34,'2025-03-23 20:07:09','2025-03-23 20:13:58'),(207,'2025-03-23 20:14:10','2025-03-23 20:15:14','C',34,'2025-03-23 20:14:10','2025-03-23 20:15:14');
 /*!40000 ALTER TABLE `order` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -55,4 +55,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-15  2:05:04
+-- Dump completed on 2025-03-24  3:18:55
