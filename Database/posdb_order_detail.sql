@@ -1,8 +1,8 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: 203.159.93.245    Database: posdb
+-- Host: localhost    Database: posdb
 -- ------------------------------------------------------
--- Server version	5.7.44
+-- Server version	8.0.41
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,14 +23,14 @@ DROP TABLE IF EXISTS `order_detail`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `order_detail` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `quantity` int(11) NOT NULL COMMENT 'จำนวนที่สั่ง',
+  `id` int NOT NULL AUTO_INCREMENT,
+  `quantity` int NOT NULL COMMENT 'จำนวนที่สั่ง',
   `unit_price` decimal(10,2) NOT NULL COMMENT 'ราคาต่อหน่วย',
   `status` char(1) NOT NULL DEFAULT 'P' COMMENT 'สถานะ: P=Processing, C=Completed, V=Void',
   `order_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'เวลาที่สั่งอาหารแต่ละรายการ',
-  `order_id` int(11) NOT NULL COMMENT 'รหัสออเดอร์',
-  `product_id` int(11) NOT NULL COMMENT 'รหัสสินค้า',
-  `cancel_reason_id` int(11) DEFAULT NULL,
+  `order_id` int NOT NULL COMMENT 'รหัสออเดอร์',
+  `product_id` int NOT NULL COMMENT 'รหัสสินค้า',
+  `cancel_reason_id` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -40,7 +40,7 @@ CREATE TABLE `order_detail` (
   CONSTRAINT `fk_detail_cancel_reason` FOREIGN KEY (`cancel_reason_id`) REFERENCES `cancel_reason` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_detail_order` FOREIGN KEY (`order_id`) REFERENCES `order` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_detail_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=673 DEFAULT CHARSET=utf8mb4 COMMENT='ตารางเก็บรายละเอียดการสั่งอาหาร';
+) ENGINE=InnoDB AUTO_INCREMENT=673 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ตารางเก็บรายละเอียดการสั่งอาหาร';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -62,4 +62,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-24  3:19:03
+-- Dump completed on 2025-04-10  0:30:23

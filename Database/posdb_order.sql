@@ -1,8 +1,8 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: 203.159.93.245    Database: posdb
+-- Host: localhost    Database: posdb
 -- ------------------------------------------------------
--- Server version	5.7.44
+-- Server version	8.0.41
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,17 +23,17 @@ DROP TABLE IF EXISTS `order`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `order` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'เวลาเริ่มใช้โต๊ะ',
   `end_time` timestamp NULL DEFAULT NULL COMMENT 'เวลาสิ้นสุดการใช้โต๊ะ',
   `status` char(1) NOT NULL DEFAULT 'A' COMMENT 'สถานะ: A=Active, C=Completed, V=Void',
-  `table_id` int(11) NOT NULL COMMENT 'รหัสโต๊ะ',
+  `table_id` int NOT NULL COMMENT 'รหัสโต๊ะ',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_order_table_idx` (`table_id`),
   CONSTRAINT `fk_order_table` FOREIGN KEY (`table_id`) REFERENCES `dining_table` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=208 DEFAULT CHARSET=utf8mb4 COMMENT='ตารางเก็บข้อมูลการสั่งอาหาร';
+) ENGINE=InnoDB AUTO_INCREMENT=208 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ตารางเก็บข้อมูลการสั่งอาหาร';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -55,4 +55,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-24  3:18:55
+-- Dump completed on 2025-04-10  0:30:22

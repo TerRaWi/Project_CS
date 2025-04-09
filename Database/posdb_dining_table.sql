@@ -1,8 +1,8 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: 203.159.93.245    Database: posdb
+-- Host: localhost    Database: posdb
 -- ------------------------------------------------------
--- Server version	5.7.44
+-- Server version	8.0.41
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,16 +23,16 @@ DROP TABLE IF EXISTS `dining_table`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `dining_table` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `table_number` varchar(10) NOT NULL COMMENT 'หมายเลขโต๊ะ',
-  `status_id` int(11) NOT NULL COMMENT 'รหัสสถานะโต๊ะ',
+  `status_id` int NOT NULL COMMENT 'รหัสสถานะโต๊ะ',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `table_number_UNIQUE` (`table_number`),
   KEY `fk_table_status_idx` (`status_id`),
   CONSTRAINT `fk_table_status` FOREIGN KEY (`status_id`) REFERENCES `table_status` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COMMENT='ตารางเก็บข้อมูลโต๊ะอาหาร';
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='ตารางเก็บข้อมูลโต๊ะอาหาร';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -41,7 +41,7 @@ CREATE TABLE `dining_table` (
 
 LOCK TABLES `dining_table` WRITE;
 /*!40000 ALTER TABLE `dining_table` DISABLE KEYS */;
-INSERT INTO `dining_table` VALUES (34,'1',1,'2025-02-14 13:54:59','2025-03-23 20:15:14'),(36,'2',1,'2025-02-14 13:56:58','2025-03-23 20:05:37'),(39,'4',1,'2025-02-14 14:19:51','2025-03-14 13:22:53'),(40,'6',1,'2025-02-14 14:20:02','2025-03-14 13:22:53'),(42,'5',1,'2025-02-14 14:35:09','2025-02-14 14:35:09'),(44,'7',1,'2025-02-15 15:54:30','2025-02-17 17:27:22'),(45,'3',1,'2025-02-22 04:00:32','2025-03-20 19:49:32'),(46,'8',1,'2025-02-24 19:30:44','2025-03-20 19:51:13');
+INSERT INTO `dining_table` VALUES (34,'1',1,'2025-02-14 13:54:59','2025-03-23 20:15:14'),(36,'2',1,'2025-02-14 13:56:58','2025-03-23 20:05:37'),(39,'4',1,'2025-02-14 14:19:51','2025-03-14 13:22:53'),(40,'6',1,'2025-02-14 14:20:02','2025-03-14 13:22:53'),(42,'5',1,'2025-02-14 14:35:09','2025-02-14 14:35:09'),(44,'7',1,'2025-02-15 15:54:30','2025-02-17 17:27:22'),(45,'3',1,'2025-02-22 04:00:32','2025-03-20 19:49:32'),(46,'8',1,'2025-02-24 19:30:44','2025-03-20 19:51:13'),(56,'44',1,'2025-04-09 17:26:06','2025-04-09 17:26:06'),(57,'45',1,'2025-04-09 17:26:10','2025-04-09 17:26:10'),(58,'46',3,'2025-04-09 17:26:14','2025-04-09 17:27:12'),(59,'42',1,'2025-04-09 17:27:02','2025-04-09 17:27:02'),(60,'43',1,'2025-04-09 17:27:08','2025-04-09 17:27:08');
 /*!40000 ALTER TABLE `dining_table` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -54,4 +54,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-24  3:18:56
+-- Dump completed on 2025-04-10  0:30:22

@@ -1,8 +1,8 @@
 -- MySQL dump 10.13  Distrib 8.0.41, for Win64 (x86_64)
 --
--- Host: 203.159.93.245    Database: posdb
+-- Host: localhost    Database: posdb
 -- ------------------------------------------------------
--- Server version	5.7.44
+-- Server version	8.0.41
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,19 +23,19 @@ DROP TABLE IF EXISTS `payment`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `payment` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL AUTO_INCREMENT,
   `amount` decimal(10,2) NOT NULL COMMENT 'ยอดเงินรวม',
   `payment_method` varchar(20) NOT NULL,
   `payment_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'วันที่และเวลาชำระเงิน',
   `status` char(1) NOT NULL DEFAULT 'S' COMMENT 'สถานะ: S=Success, F=Failed, P=Pending',
   `reference` varchar(50) DEFAULT NULL COMMENT 'เลขอ้างอิงการชำระเงิน (ถ้ามี)',
-  `order_id` int(11) NOT NULL COMMENT 'รหัสออเดอร์',
+  `order_id` int NOT NULL COMMENT 'รหัสออเดอร์',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_payment_order_idx` (`order_id`),
   CONSTRAINT `fk_payment_order` FOREIGN KEY (`order_id`) REFERENCES `order` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -57,4 +57,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-24  3:18:58
+-- Dump completed on 2025-04-10  0:30:22
