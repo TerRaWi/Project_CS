@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3001/api';
-// const API_URL = "http://203.159.93.245:3001/api" // Server
+// ตั้งค่าใน .env.local (ดูตัวอย่างใน .env.example) ถ้าไม่ได้ตั้งจะใช้ backend บนเครื่องตัวเอง
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 
 /**

@@ -7,6 +7,14 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
+// โหลดค่าตั้งค่าจากไฟล์ .env (ใช้ความสามารถของ Node 20.12+ ไม่ต้องติดตั้ง dotenv)
+// ค่าที่ตั้งไว้ใน environment อยู่แล้ว (เช่นจาก docker-compose) จะไม่ถูกทับ
+try {
+  process.loadEnvFile(path.join(__dirname, '.env'));
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err;
+}
+
 /**
  * ============================
  * การตั้งค่าเริ่มต้น (Configuration)
@@ -31,36 +39,31 @@ const upload = multer({ storage: storage });
 
 // สร้าง Express app และกำหนดพอร์ต
 const app = express();
-const PORT = 3001;
-// const PORT = 4000; //server
+const PORT = Number(process.env.PORT) || 3001;
 
 // กำหนด middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// // เชื่อมต่อฐานข้อมูล MySQL //server
-// const db = mysql.createConnection({
-//   host: 'mysql-db',
-//   user: 'root',
-//   port: '3306',
-//   password: 'root',
-//   database: 'posdb'
-// });
-
-// เชื่อมต่อฐานข้อมูล MySQL
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '6101',
-  database: 'posdb'
+// เชื่อมต่อฐานข้อมูล MySQL แบบ connection pool
+// คำขอทั่วไปใช้ db.query() ได้เหมือนเดิม ส่วน transaction ต้องยืม connection ของตัวเองด้วย getConnection()
+const db = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'posdb',
+  waitForConnections: true,
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10
 });
 
-db.connect((err) => {
+db.getConnection((err, conn) => {
   if (err) {
     console.error('เชื่อมต่อ MySQL ไม่สำเร็จ:', err);
     return;
   }
+  conn.release();
   console.log('เชื่อมต่อฐานข้อมูล MySQL สำเร็จ');
 });
 
@@ -217,12 +220,14 @@ app.post('/api/tables', (req, res) => {
 app.post('/api/saveCustomer', async (req, res) => {
   const { tableId, adultCount, oldChildCount, childCount } = req.body;
 
+  let conn;
   try {
-    // เริ่ม transaction
-    await db.promise().query('START TRANSACTION');
+    // ยืม connection ของตัวเองจาก pool เพื่อไม่ให้ transaction ปนกับคำขออื่น
+    conn = await db.promise().getConnection();
+    await conn.beginTransaction();
 
     // 1. สร้าง order ใหม่
-    const [orderResult] = await db.promise().query(
+    const [orderResult] = await conn.query(
       `INSERT INTO \`order\` (table_id, status) 
         VALUES (?, 'A')`,
       [tableId]
@@ -231,7 +236,7 @@ app.post('/api/saveCustomer', async (req, res) => {
     const orderId = orderResult.insertId;
 
     // 2. ดึงข้อมูล product จากชื่อ
-    const [products] = await db.promise().query(
+    const [products] = await conn.query(
       `SELECT id, price, name 
         FROM product 
         WHERE name IN ('ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก')
@@ -248,7 +253,7 @@ app.post('/api/saveCustomer', async (req, res) => {
     // 4. ตรวจสอบว่ามีลูกค้าอย่างน้อย 1 คน
     const totalCustomers = adultCount + oldChildCount + childCount;
     if (totalCustomers === 0) {
-      await db.promise().query('ROLLBACK');
+      await conn.rollback();
       return res.status(400).json({
         success: false,
         message: 'กรุณาระบุจำนวนลูกค้าอย่างน้อย 1 คน'
@@ -257,7 +262,7 @@ app.post('/api/saveCustomer', async (req, res) => {
 
     // 5. ตรวจสอบว่ามี product ครบทุกประเภท
     if (products.length !== 3) {
-      await db.promise().query('ROLLBACK');
+      await conn.rollback();
       return res.status(400).json({
         success: false,
         message: 'ไม่พบข้อมูลประเภทลูกค้าในระบบ'
@@ -269,7 +274,7 @@ app.post('/api/saveCustomer', async (req, res) => {
       if (type.count > 0) {
         const product = products.find(p => p.name === type.name);
         if (product) {
-          await db.promise().query(
+          await conn.query(
             `INSERT INTO order_detail (
               order_id, 
               product_id, 
@@ -285,13 +290,13 @@ app.post('/api/saveCustomer', async (req, res) => {
     }
 
     // 7. อัพเดทสถานะโต๊ะเป็นไม่ว่าง (status_id = 2)
-    await db.promise().query(
+    await conn.query(
       'UPDATE dining_table SET status_id = 2 WHERE id = ?',
       [tableId]
     );
 
     // 8. บันทึก transaction
-    await db.promise().query('COMMIT');
+    await conn.commit();
 
     // 9. ส่งผลลัพธ์กลับ
     res.json({
@@ -302,12 +307,14 @@ app.post('/api/saveCustomer', async (req, res) => {
 
   } catch (error) {
     // กรณีเกิดข้อผิดพลาด
-    await db.promise().query('ROLLBACK');
+    if (conn) await conn.rollback();
     console.error('Error saving customer data:', error);
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'
     });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -929,12 +936,14 @@ app.post('/api/checkout/:orderId', async (req, res) => {
   const orderId = req.params.orderId;
   const { paymentMethod } = req.body; // เราจะยังคงรับ parameter นี้ไว้ แต่ไม่จำเป็นต้องส่งมา
 
+  let conn;
   try {
-    // เริ่ม transaction
-    await db.promise().query('START TRANSACTION');
+    // ยืม connection ของตัวเองจาก pool เพื่อไม่ให้ transaction ปนกับคำขออื่น
+    conn = await db.promise().getConnection();
+    await conn.beginTransaction();
 
     // 1. ดึงข้อมูลออเดอร์และโต๊ะ
-    const [orderData] = await db.promise().query(
+    const [orderData] = await conn.query(
       `SELECT o.*, dt.id AS table_id 
         FROM \`order\` o
         JOIN dining_table dt ON o.table_id = dt.id
@@ -943,7 +952,7 @@ app.post('/api/checkout/:orderId', async (req, res) => {
     );
 
     if (orderData.length === 0) {
-      await db.promise().query('ROLLBACK');
+      await conn.rollback();
       return res.status(404).json({
         success: false,
         message: 'ไม่พบออเดอร์ที่ต้องการชำระเงิน หรือออเดอร์ถูกชำระแล้ว'
@@ -953,7 +962,7 @@ app.post('/api/checkout/:orderId', async (req, res) => {
     const tableId = orderData[0].table_id;
 
     // 2. ดึงรายการอาหารทั้งหมดในออเดอร์
-    const [orderItems] = await db.promise().query(
+    const [orderItems] = await conn.query(
       `SELECT od.*, p.name as product_name
         FROM order_detail od
         JOIN product p ON od.product_id = p.id
@@ -968,7 +977,7 @@ app.post('/api/checkout/:orderId', async (req, res) => {
     }
 
     // 4. อัพเดทสถานะออเดอร์เป็นเสร็จสิ้น
-    await db.promise().query(
+    await conn.query(
       `UPDATE \`order\` 
         SET status = 'C', end_time = CURRENT_TIMESTAMP 
         WHERE id = ?`,
@@ -976,13 +985,13 @@ app.post('/api/checkout/:orderId', async (req, res) => {
     );
 
     // 5. อัพเดทสถานะโต๊ะเป็นว่าง
-    await db.promise().query(
+    await conn.query(
       'UPDATE dining_table SET status_id = 1 WHERE id = ?',
       [tableId]
     );
 
     // 6. บันทึกข้อมูลการชำระเงิน (กำหนดสถานะเป็น Success เสมอ)
-    await db.promise().query(
+    await conn.query(
       `INSERT INTO payment 
         (order_id, amount, payment_method, payment_date, status) 
         VALUES (?, ?, 'ชำระแล้ว', CURRENT_TIMESTAMP, 'S')`,
@@ -990,7 +999,7 @@ app.post('/api/checkout/:orderId', async (req, res) => {
     );
 
     // 7. บันทึก transaction
-    await db.promise().query('COMMIT');
+    await conn.commit();
 
     // 8. ส่งผลลัพธ์กลับ
     res.json({
@@ -1004,12 +1013,14 @@ app.post('/api/checkout/:orderId', async (req, res) => {
 
   } catch (error) {
     // กรณีเกิดข้อผิดพลาด
-    await db.promise().query('ROLLBACK');
+    if (conn) await conn.rollback();
     console.error('Error during checkout:', error);
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการชำระเงิน'
     });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -1228,18 +1239,20 @@ app.post('/api/tables/move', async (req, res) => {
     });
   }
 
+  let conn;
   try {
-    // เริ่ม transaction
-    await db.promise().query('START TRANSACTION');
+    // ยืม connection ของตัวเองจาก pool เพื่อไม่ให้ transaction ปนกับคำขออื่น
+    conn = await db.promise().getConnection();
+    await conn.beginTransaction();
 
     // 1. ตรวจสอบว่าโต๊ะปลายทางว่างอยู่หรือไม่
-    const [targetTable] = await db.promise().query(
+    const [targetTable] = await conn.query(
       'SELECT * FROM dining_table WHERE id = ? AND status_id = 1',
       [targetTableId]
     );
 
     if (targetTable.length === 0) {
-      await db.promise().query('ROLLBACK');
+      await conn.rollback();
       return res.status(400).json({
         success: false,
         message: 'โต๊ะปลายทางไม่ว่าง ไม่สามารถย้ายได้'
@@ -1247,13 +1260,13 @@ app.post('/api/tables/move', async (req, res) => {
     }
 
     // 2. ดึงออเดอร์ที่เปิดอยู่ของโต๊ะต้นทาง
-    const [activeOrders] = await db.promise().query(
+    const [activeOrders] = await conn.query(
       'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
       [sourceTableId]
     );
 
     if (activeOrders.length === 0) {
-      await db.promise().query('ROLLBACK');
+      await conn.rollback();
       return res.status(400).json({
         success: false,
         message: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะต้นทาง'
@@ -1263,25 +1276,25 @@ app.post('/api/tables/move', async (req, res) => {
     const orderId = activeOrders[0].id;
 
     // 3. อัพเดทออเดอร์ไปยังโต๊ะใหม่
-    await db.promise().query(
+    await conn.query(
       'UPDATE `order` SET table_id = ? WHERE id = ?',
       [targetTableId, orderId]
     );
 
     // 4. อัพเดทสถานะโต๊ะต้นทางเป็นว่าง
-    await db.promise().query(
+    await conn.query(
       'UPDATE dining_table SET status_id = 1 WHERE id = ?',
       [sourceTableId]
     );
 
     // 5. อัพเดทสถานะโต๊ะปลายทางเป็นไม่ว่าง
-    await db.promise().query(
+    await conn.query(
       'UPDATE dining_table SET status_id = 2 WHERE id = ?',
       [targetTableId]
     );
 
     // บันทึก transaction
-    await db.promise().query('COMMIT');
+    await conn.commit();
 
     res.json({
       success: true,
@@ -1292,12 +1305,14 @@ app.post('/api/tables/move', async (req, res) => {
     });
 
   } catch (error) {
-    await db.promise().query('ROLLBACK');
+    if (conn) await conn.rollback();
     console.error('Error moving table:', error);
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการย้ายโต๊ะ'
     });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -1312,23 +1327,25 @@ app.post('/api/tables/merge', async (req, res) => {
     });
   }
 
+  let conn;
   try {
-    // เริ่ม transaction
-    await db.promise().query('START TRANSACTION');
+    // ยืม connection ของตัวเองจาก pool เพื่อไม่ให้ transaction ปนกับคำขออื่น
+    conn = await db.promise().getConnection();
+    await conn.beginTransaction();
 
     // 1. ตรวจสอบว่าทั้งสองโต๊ะมีออเดอร์ที่เปิดอยู่
-    const [sourceOrders] = await db.promise().query(
+    const [sourceOrders] = await conn.query(
       'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
       [sourceTableId]
     );
 
-    const [targetOrders] = await db.promise().query(
+    const [targetOrders] = await conn.query(
       'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
       [targetTableId]
     );
 
     if (sourceOrders.length === 0 || targetOrders.length === 0) {
-      await db.promise().query('ROLLBACK');
+      await conn.rollback();
       return res.status(400).json({
         success: false,
         message: 'ทั้งสองโต๊ะต้องมีออเดอร์ที่เปิดอยู่'
@@ -1339,20 +1356,20 @@ app.post('/api/tables/merge', async (req, res) => {
     const targetOrderId = targetOrders[0].id;
 
     // 2. ย้ายรายการอาหารทั้งหมดจากต้นทางไปปลายทาง
-    await db.promise().query(
+    await conn.query(
       'UPDATE order_detail SET order_id = ? WHERE order_id = ?',
       [targetOrderId, sourceOrderId]
     );
 
     // 3. ปิดออเดอร์ของโต๊ะต้นทาง (แต่ไม่ชำระเงิน)
-    await db.promise().query(
+    await conn.query(
       'UPDATE `order` SET status = "M", end_time = CURRENT_TIMESTAMP WHERE id = ?',
       [sourceOrderId]
     );
 
     // 4. เพิ่มบันทึกการรวมโต๊ะ (สร้างตาราง merge_log ก่อนใช้งาน)
     try {
-      await db.promise().query(
+      await conn.query(
         'INSERT INTO merge_log (source_order_id, target_order_id, merge_time) VALUES (?, ?, CURRENT_TIMESTAMP)',
         [sourceOrderId, targetOrderId]
       );
@@ -1362,13 +1379,13 @@ app.post('/api/tables/merge', async (req, res) => {
     }
 
     // 5. อัพเดทสถานะโต๊ะต้นทางเป็นว่าง
-    await db.promise().query(
+    await conn.query(
       'UPDATE dining_table SET status_id = 1 WHERE id = ?',
       [sourceTableId]
     );
 
     // บันทึก transaction
-    await db.promise().query('COMMIT');
+    await conn.commit();
 
     res.json({
       success: true,
@@ -1380,12 +1397,14 @@ app.post('/api/tables/merge', async (req, res) => {
     });
 
   } catch (error) {
-    await db.promise().query('ROLLBACK');
+    if (conn) await conn.rollback();
     console.error('Error merging tables:', error);
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการรวมโต๊ะ'
     });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -1400,18 +1419,20 @@ app.post('/api/tables/cancel', async (req, res) => {
     });
   }
 
+  let conn;
   try {
-    // เริ่ม transaction
-    await db.promise().query('START TRANSACTION');
+    // ยืม connection ของตัวเองจาก pool เพื่อไม่ให้ transaction ปนกับคำขออื่น
+    conn = await db.promise().getConnection();
+    await conn.beginTransaction();
 
     // 1. ตรวจสอบว่าโต๊ะมีออเดอร์ที่เปิดอยู่
-    const [activeOrders] = await db.promise().query(
+    const [activeOrders] = await conn.query(
       'SELECT * FROM `order` WHERE table_id = ? AND status = "A"',
       [tableId]
     );
 
     if (activeOrders.length === 0) {
-      await db.promise().query('ROLLBACK');
+      await conn.rollback();
       return res.status(400).json({
         success: false,
         message: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้'
@@ -1421,25 +1442,25 @@ app.post('/api/tables/cancel', async (req, res) => {
     const orderId = activeOrders[0].id;
 
     // 2. ยกเลิกรายการอาหารที่ยังไม่เสร็จทั้งหมด
-    await db.promise().query(
+    await conn.query(
       'UPDATE order_detail SET status = "V" WHERE order_id = ? AND status IN ("A", "P")',
       [orderId]
     );
 
     // 3. อัพเดทสถานะออเดอร์เป็นยกเลิก
-    await db.promise().query(
+    await conn.query(
       'UPDATE `order` SET status = "X", end_time = CURRENT_TIMESTAMP WHERE id = ?',
       [orderId]
     );
 
     // 4. อัพเดทสถานะโต๊ะเป็นว่าง
-    await db.promise().query(
+    await conn.query(
       'UPDATE dining_table SET status_id = 1 WHERE id = ?',
       [tableId]
     );
 
     // บันทึก transaction
-    await db.promise().query('COMMIT');
+    await conn.commit();
 
     res.json({
       success: true,
@@ -1449,12 +1470,14 @@ app.post('/api/tables/cancel', async (req, res) => {
     });
 
   } catch (error) {
-    await db.promise().query('ROLLBACK');
+    if (conn) await conn.rollback();
     console.error('Error canceling table:', error);
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการยกเลิกโต๊ะ'
     });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -1982,7 +2005,7 @@ app.get('/api/table-history/:tableNumber', async (req, res) => {
       `SELECT dt.*, ts.name AS status_name 
         FROM dining_table dt
         JOIN table_status ts ON dt.status_id = ts.id
-        หWHERE dt.table_number = ?`,
+        WHERE dt.table_number = ?`,
       [tableNumber]
     );
     

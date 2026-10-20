@@ -28,12 +28,14 @@ const formatCurrency = (amount) => {
     }).format(amount || 0);
 };
 
+// แปลงวันที่เป็นรูปแบบ YYYY-MM-DD ตามเวลาเครื่อง (ไม่ใช้ toISOString เพราะเป็นเวลา UTC ทำให้วันที่เลื่อน)
+const toLocalDateString = (date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
 // ฟังก์ชันสำหรับรับวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD
 const getCurrentDate = () => {
-    const today = new Date();
-    // ตั้งค่าเวลาเป็น 23:59:59 เพื่อให้แน่ใจว่าจะรวมทั้งวัน
-    today.setHours(23, 59, 59, 999);
-    return today.toISOString().split('T')[0];
+    return toLocalDateString(new Date());
 };
 
 const ReceiptForPrint = React.forwardRef((props, ref) => {
@@ -125,7 +127,7 @@ const BillHistory = () => {
     const [showPrintPreview, setShowPrintPreview] = useState(false);
     const [receiptToPrint, setReceiptToPrint] = useState(null);
     const [dateRange, setDateRange] = useState({
-        start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+        start: toLocalDateString(new Date(new Date().setDate(new Date().getDate() - 30))),
         end: currentDate
     });
     const [searchTerm, setSearchTerm] = useState('');

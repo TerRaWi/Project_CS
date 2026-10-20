@@ -57,8 +57,8 @@ const formatDate = (dateString) => {
 const Reports = () => {
   // State สำหรับเก็บข้อมูล
   const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: formatDate(new Date(new Date().setDate(new Date().getDate() - 7))),
+    end: formatDate(new Date())
   });
   const [selectedDateRange, setSelectedDateRange] = useState('week');
   const [reportType, setReportType] = useState('sales');
@@ -109,8 +109,8 @@ const Reports = () => {
 
     setSelectedDateRange(range);
     setDateRange({
-      start: startDate.toISOString().split('T')[0],
-      end: endDate.toISOString().split('T')[0]
+      start: formatDate(startDate),
+      end: formatDate(endDate)
     });
   };
 
@@ -239,13 +239,13 @@ const Reports = () => {
     const startDate = new Date(dateRange.start);
     const endDate = new Date(dateRange.end);
     for (let day = new Date(startDate); day <= endDate; day.setDate(day.getDate() + 1)) {
-      const dateStr = day.toISOString().split('T')[0];
+      const dateStr = formatDate(day);
       salesByDay[dateStr] = 0; // เริ่มต้นที่ 0 บาทสำหรับทุกวัน
     }
 
     // เพิ่มข้อมูลจริงเข้าไป
     filteredPayments.forEach(payment => {
-      const date = new Date(payment.payment_date).toISOString().split('T')[0];
+      const date = formatDate(new Date(payment.payment_date));
       if (!salesByDay[date]) {
         salesByDay[date] = 0;
       }
@@ -379,7 +379,7 @@ const Reports = () => {
     filteredOrderDetails.forEach(item => {
       // เลือกเฉพาะรายการที่เป็นประเภทลูกค้า
       if (customerProductNames.includes(item.productName)) {
-        const date = new Date(item.paymentDate).toISOString().split('T')[0];
+        const date = formatDate(new Date(item.paymentDate));
 
         if (!customersByDay[date]) {
           customersByDay[date] = 0;

@@ -13,6 +13,12 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=production
+      - PORT=4000
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=posdb
     command: ["sh", "-c", "sleep 10 && node server.js"]
     depends_on:
       - mysql-db
