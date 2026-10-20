@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { getCustomerOrder } from '../../api';
+import { getCustomerOrder, requestServiceByToken, getCustomerServiceRequests } from '../../api';
+import ServiceRequestStatusBadge from '../../components/ServiceRequestStatusBadge';
+
+// ดึงสถานะคำขอใหม่ทุก ๆ 10 วินาที ให้ลูกค้าเห็นว่าพนักงานรับเรื่องแล้วหรือยัง
+const REQUEST_REFRESH_INTERVAL = 10000;
 
 export default function CustomerMainPage() {
     const router = useRouter();
@@ -12,6 +16,8 @@ export default function CustomerMainPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [notification, setNotification] = useState(null);
+    const [serviceRequests, setServiceRequests] = useState([]);
+    const [sendingService, setSendingService] = useState(null);
 
     useEffect(() => {
         const fetchOrderAndTable = async () => {
@@ -36,21 +42,53 @@ export default function CustomerMainPage() {
         fetchOrderAndTable();
     }, [token]);
 
-    // ฟังก์ชันจำลองการส่งคำขอบริการไปยังเซิร์ฟเวอร์
-    const requestService = (serviceType) => {
-        // ในอนาคตควรส่งคำขอไปยังเซิร์ฟเวอร์ด้วย API
-        console.log(`Requesting service: ${serviceType} for table ${table?.table_number}, order ${order?.orderId}`);
-        
-        // แสดง notification
-        setNotification({
-            type: 'success',
-            message: `ส่งคำขอ${serviceType}แล้ว กรุณารอสักครู่`
-        });
-        
-        // ซ่อน notification หลังจาก 3 วินาที
+    // โหลดสถานะคำขอบริการของโต๊ะนี้
+    const fetchServiceRequests = async () => {
+        try {
+            const data = await getCustomerServiceRequests(token);
+            setServiceRequests(data.requests);
+        } catch (err) {
+            // ถ้า QR หมดอายุระหว่างเปิดหน้า (คิดเงินแล้ว) ให้แสดงหน้าแจ้งเตือนแทน
+            console.error('Error fetching service requests:', err);
+            setError(err.message);
+        }
+    };
+
+    useEffect(() => {
+        if (!token || !order) return;
+
+        fetchServiceRequests();
+        const interval = setInterval(fetchServiceRequests, REQUEST_REFRESH_INTERVAL);
+        return () => clearInterval(interval);
+    }, [token, order]);
+
+    // แสดง notification แล้วซ่อนหลังจาก 3 วินาที
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
         setTimeout(() => {
             setNotification(null);
         }, 3000);
+    };
+
+    // ส่งคำขอบริการไปยังพนักงาน (แสดงในหน้าแจ้งเตือนของพนักงาน)
+    const requestService = async (serviceType) => {
+        if (sendingService) return;
+
+        try {
+            setSendingService(serviceType);
+            const result = await requestServiceByToken(token, serviceType);
+            showNotification('success', result.message);
+            await fetchServiceRequests();
+        } catch (err) {
+            console.error('Error requesting service:', err);
+            showNotification('error', err.message);
+        } finally {
+            setSendingService(null);
+        }
+    };
+
+    const formatRequestTime = (dateString) => {
+        return new Date(dateString).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     };
 
     if (loading) {
@@ -134,7 +172,7 @@ export default function CustomerMainPage() {
                     <div className="row g-3 mb-4">
                         <div className="col-6">
                             <div 
-                                className="card h-100 shadow-sm service-card"
+                                className={`card h-100 shadow-sm service-card ${sendingService ? 'opacity-50' : ''}`}
                                 onClick={() => requestService("เรียกพนักงาน")}
                             >
                                 <div className="card-body text-center p-3">
@@ -148,7 +186,7 @@ export default function CustomerMainPage() {
 
                         <div className="col-6">
                             <div 
-                                className="card h-100 shadow-sm service-card"
+                                className={`card h-100 shadow-sm service-card ${sendingService ? 'opacity-50' : ''}`}
                                 onClick={() => requestService("เติมน้ำซุป/น้ำจิ้ม")}
                             >
                                 <div className="card-body text-center p-3">
@@ -162,7 +200,7 @@ export default function CustomerMainPage() {
 
                         <div className="col-6">
                             <div 
-                                className="card h-100 shadow-sm service-card"
+                                className={`card h-100 shadow-sm service-card ${sendingService ? 'opacity-50' : ''}`}
                                 onClick={() => requestService("ขอช้อนส้อมเพิ่ม")}
                             >
                                 <div className="card-body text-center p-3">
@@ -176,7 +214,7 @@ export default function CustomerMainPage() {
 
                         <div className="col-6">
                             <div 
-                                className="card h-100 shadow-sm service-card"
+                                className={`card h-100 shadow-sm service-card ${sendingService ? 'opacity-50' : ''}`}
                                 onClick={() => requestService("เรียกชำระเงิน")}
                             >
                                 <div className="card-body text-center p-3">
@@ -188,6 +226,27 @@ export default function CustomerMainPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* สถานะคำขอของโต๊ะนี้ */}
+                    {serviceRequests.length > 0 && (
+                        <div className="card shadow-sm mb-4">
+                            <div className="card-header bg-white fw-bold">
+                                <i className="bi bi-clock-history me-2"></i>
+                                คำขอของคุณ
+                            </div>
+                            <ul className="list-group list-group-flush">
+                                {serviceRequests.map(request => (
+                                    <li key={request.id} className="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div>{request.service_type}</div>
+                                            <small className="text-muted">{formatRequestTime(request.request_time)} น.</small>
+                                        </div>
+                                        <ServiceRequestStatusBadge status={request.status} />
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </main>
 
                 {/* Footer */}

@@ -1,10 +1,62 @@
 // Sidebar หน้าต่างหลักด้านซ้าย
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { FaHome, FaClipboardList, FaBell, FaChartLine, FaCog } from 'react-icons/fa';
 import { MdOutlineTableRestaurant } from "react-icons/md";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { getServiceRequests } from '../api';
+
+// ตรวจคำขอบริการใหม่จากลูกค้าทุก ๆ 5 วินาที
+const SERVICE_REQUEST_CHECK_INTERVAL = 5000;
+
+// เสียงเตือนสั้น ๆ เมื่อมีคำขอใหม่ (เบราว์เซอร์อาจไม่ให้เล่นเสียงจนกว่าจะคลิกหน้าเว็บสักครั้ง)
+const playNotificationSound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const context = new AudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.2;
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.3);
+    oscillator.onended = () => context.close();
+  } catch (err) {
+    console.error('ไม่สามารถเล่นเสียงแจ้งเตือนได้:', err);
+  }
+};
 
 const Sidebar = () => {
+  const [pendingCount, setPendingCount] = useState(0);
+  const previousCountRef = useRef(null);
+
+  useEffect(() => {
+    const checkServiceRequests = async () => {
+      try {
+        const requests = await getServiceRequests(['pending']);
+        const count = requests.length;
+
+        // มีคำขอใหม่เพิ่มขึ้นจากรอบก่อน (ไม่เล่นเสียงตอนเปิดหน้าครั้งแรก)
+        if (previousCountRef.current !== null && count > previousCountRef.current) {
+          playNotificationSound();
+        }
+
+        previousCountRef.current = count;
+        setPendingCount(count);
+      } catch (err) {
+        console.error('Error checking service requests:', err);
+      }
+    };
+
+    checkServiceRequests();
+    const interval = setInterval(checkServiceRequests, SERVICE_REQUEST_CHECK_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       <style jsx global>{`
@@ -83,7 +135,19 @@ const Sidebar = () => {
         </Link>
         <Link href="/notifications" legacyBehavior>
           <a>
-            <FaBell /> แจ้งเตือน
+            {/* จำนวนคำขอที่รอรับเรื่อง แสดงที่มุมไอคอนกระดิ่ง */}
+            <span className="position-relative d-inline-flex">
+              <FaBell />
+              {pendingCount > 0 && (
+                <span
+                  className="position-absolute badge rounded-pill bg-danger"
+                  style={{ top: '-9px', left: '8px', fontSize: '0.6rem' }}
+                >
+                  {pendingCount}
+                </span>
+              )}
+            </span>
+            แจ้งเตือน
           </a>
         </Link>
         <Link href="/reports" legacyBehavior>

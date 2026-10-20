@@ -696,6 +696,25 @@ export const getServiceRequestsByTable = async (tableId) => {
  * @param {string} note - บันทึกเพิ่มเติม (ถ้ามี)
  * @returns {Promise<object>} - ข้อมูลคำขอบริการที่อัพเดต
  */
+/**
+ * ดึงคำขอบริการทั้งหมด (ใช้ในหน้าแจ้งเตือนของพนักงาน)
+ * @param {string[]} statuses - สถานะที่ต้องการ เช่น ['pending', 'in-progress']
+ * @param {number} limit - จำนวนสูงสุด (ไม่ใส่ = ทั้งหมด)
+ */
+export const getServiceRequests = async (statuses = [], limit) => {
+  try {
+    const params = {};
+    if (statuses.length > 0) params.status = statuses.join(',');
+    if (limit) params.limit = limit;
+
+    const { data } = await axios.get(`${API_URL}/service-requests`, { params });
+    return data;
+  } catch (err) {
+    console.error('Error fetching service requests:', err);
+    handleApiError(err, 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอบริการ');
+  }
+};
+
 export const updateServiceRequestStatus = async (requestId, status, note = '') => {
   try {
     const response = await axios.patch(`${API_URL}/service-requests/${requestId}/status`, {
@@ -871,5 +890,28 @@ export const createCustomerOrder = async (token, items) => {
     return data;
   } catch (error) {
     throw toCustomerError(error, 'สั่งอาหารไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+  }
+};
+
+// ลูกค้าส่งคำขอบริการ เช่น เรียกพนักงาน (ถ้ามีคำขอเดียวกันค้างอยู่ จะไม่สร้างซ้ำ)
+export const requestServiceByToken = async (token, serviceType, note = '') => {
+  try {
+    const { data } = await axios.post(`${API_URL}/customer/${token}/service-requests`, {
+      serviceType,
+      note
+    });
+    return data;
+  } catch (error) {
+    throw toCustomerError(error, 'ส่งคำขอไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+  }
+};
+
+// คำขอบริการของโต๊ะนี้ คืนค่า { requests }
+export const getCustomerServiceRequests = async (token) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/customer/${token}/service-requests`);
+    return data;
+  } catch (error) {
+    throw toCustomerError(error, 'ไม่สามารถโหลดสถานะคำขอได้');
   }
 };

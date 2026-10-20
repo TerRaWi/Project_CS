@@ -1033,6 +1033,13 @@ app.post('/api/checkout/:orderId', async (req, res) => {
       [orderId]
     );
 
+    // ปิดคำขอบริการที่ยังค้างของออเดอร์นี้ (เช่น เรียกชำระเงิน)
+    await conn.query(
+      `UPDATE service_requests SET status = 'completed', complete_time = CURRENT_TIMESTAMP
+        WHERE order_id = ? AND status IN ('pending', 'in-progress')`,
+      [orderId]
+    );
+
     // 5. อัพเดทสถานะโต๊ะเป็นว่าง
     await conn.query(
       'UPDATE dining_table SET status_id = 1 WHERE id = ?',
@@ -1332,6 +1339,13 @@ app.post('/api/tables/move', async (req, res) => {
       [targetTableId, orderId]
     );
 
+    // คำขอบริการที่ยังค้างย้ายไปโต๊ะใหม่ด้วย พนักงานจะได้ไปถูกโต๊ะ
+    await conn.query(
+      `UPDATE service_requests SET table_id = ?
+        WHERE order_id = ? AND status IN ('pending', 'in-progress')`,
+      [targetTableId, orderId]
+    );
+
     // 4. อัพเดทสถานะโต๊ะต้นทางเป็นว่าง
     await conn.query(
       'UPDATE dining_table SET status_id = 1 WHERE id = ?',
@@ -1410,6 +1424,13 @@ app.post('/api/tables/merge', async (req, res) => {
     await conn.query(
       'UPDATE order_detail SET order_id = ? WHERE order_id = ?',
       [targetOrderId, sourceOrderId]
+    );
+
+    // คำขอบริการที่ยังค้างของโต๊ะต้นทางย้ายไปอยู่กับออเดอร์และโต๊ะปลายทาง
+    await conn.query(
+      `UPDATE service_requests SET order_id = ?, table_id = ?
+        WHERE order_id = ? AND status IN ('pending', 'in-progress')`,
+      [targetOrderId, targetTableId, sourceOrderId]
     );
 
     // 3. ปิดออเดอร์ของโต๊ะต้นทาง (แต่ไม่ชำระเงิน)
@@ -1501,6 +1522,13 @@ app.post('/api/tables/cancel', async (req, res) => {
     // 3. อัพเดทสถานะออเดอร์เป็นยกเลิก
     await conn.query(
       'UPDATE `order` SET status = "X", end_time = CURRENT_TIMESTAMP WHERE id = ?',
+      [orderId]
+    );
+
+    // ยกเลิกคำขอบริการที่ยังค้างของออเดอร์นี้
+    await conn.query(
+      `UPDATE service_requests SET status = 'canceled', complete_time = CURRENT_TIMESTAMP
+        WHERE order_id = ? AND status IN ('pending', 'in-progress')`,
       [orderId]
     );
 
@@ -1684,9 +1712,10 @@ app.post('/api/service-requests', async (req, res) => {
   }
 });
 
-// ดึงข้อมูลคำขอบริการตามโต๊ะ
+// ดึงข้อมูลคำขอบริการ กรองตามโต๊ะ/สถานะได้
+// status ใส่หลายค่าคั่นด้วยจุลภาคได้ เช่น ?status=pending,in-progress และจำกัดจำนวนด้วย ?limit=20
 app.get('/api/service-requests', async (req, res) => {
-  const { tableId, status } = req.query;
+  const { tableId, status, limit } = req.query;
 
   try {
     let query = `
@@ -1695,24 +1724,32 @@ app.get('/api/service-requests', async (req, res) => {
       JOIN dining_table dt ON sr.table_id = dt.id
     `;
 
+    const conditions = [];
     const queryParams = [];
 
     // เพิ่มเงื่อนไขการค้นหา
     if (tableId) {
-      query += ' WHERE sr.table_id = ?';
+      conditions.push('sr.table_id = ?');
       queryParams.push(tableId);
-      
-      if (status) {
-        query += ' AND sr.status = ?';
-        queryParams.push(status);
-      }
-    } else if (status) {
-      query += ' WHERE sr.status = ?';
-      queryParams.push(status);
+    }
+
+    if (status) {
+      conditions.push('sr.status IN (?)');
+      queryParams.push(String(status).split(','));
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
     }
 
     // เรียงลำดับตามเวลาล่าสุด
-    query += ' ORDER BY sr.request_time DESC';
+    query += ' ORDER BY sr.request_time DESC, sr.id DESC';
+
+    const limitNumber = parseInt(limit, 10);
+    if (limitNumber > 0) {
+      query += ' LIMIT ?';
+      queryParams.push(Math.min(limitNumber, 200));
+    }
 
     const [results] = await db.promise().query(query, queryParams);
 
@@ -1749,15 +1786,18 @@ app.patch('/api/service-requests/:id/status', async (req, res) => {
   }
 
   try {
-    // อัพเดตสถานะ
-    const updateData = {
-      status,
-      note: note || null
-    };
+    // อัพเดตสถานะ (แก้ note เฉพาะเมื่อส่งมา เพื่อไม่ให้ข้อความของลูกค้าหายตอนพนักงานเปลี่ยนสถานะ)
+    const updateData = { status };
 
-    // เพิ่มเวลาเสร็จสิ้นถ้าสถานะเป็น completed
-    if (status === 'completed') {
+    if (note) {
+      updateData.note = note;
+    }
+
+    // บันทึกเวลาปิดคำขอเมื่อเสร็จหรือยกเลิก
+    if (status === 'completed' || status === 'canceled') {
       updateData.complete_time = new Date();
+    } else {
+      updateData.complete_time = null;
     }
 
     const query = `
@@ -2388,6 +2428,108 @@ app.post('/api/customer/:token/order', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการสั่งอาหาร'
+    });
+  }
+});
+
+// ประเภทคำขอบริการที่ลูกค้ากดได้จากหน้า QR
+const CUSTOMER_SERVICE_TYPES = ['เรียกพนักงาน', 'เติมน้ำซุป/น้ำจิ้ม', 'ขอช้อนส้อมเพิ่ม', 'เรียกชำระเงิน'];
+
+// ลูกค้าส่งคำขอบริการ (เรียกพนักงาน ฯลฯ)
+// ถ้ามีคำขอประเภทเดียวกันที่พนักงานยังไม่ปิด จะไม่สร้างซ้ำ กันลูกค้ากดรัว
+app.post('/api/customer/:token/service-requests', async (req, res) => {
+  const { serviceType } = req.body;
+  const note = typeof req.body.note === 'string' ? req.body.note.trim().slice(0, 255) : '';
+
+  if (!CUSTOMER_SERVICE_TYPES.includes(serviceType)) {
+    return res.status(400).json({
+      success: false,
+      message: 'ประเภทคำขอไม่ถูกต้อง'
+    });
+  }
+
+  try {
+    const order = await findActiveOrderByToken(req.params.token);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: QR_EXPIRED_MESSAGE
+      });
+    }
+
+    const [openRequests] = await db.promise().query(
+      `SELECT id, status FROM service_requests
+        WHERE order_id = ? AND service_type = ? AND status IN ('pending', 'in-progress')
+        ORDER BY id DESC LIMIT 1`,
+      [order.id, serviceType]
+    );
+
+    if (openRequests.length > 0) {
+      return res.json({
+        success: true,
+        duplicate: true,
+        id: openRequests[0].id,
+        status: openRequests[0].status,
+        message: `แจ้ง${serviceType}ไว้แล้ว พนักงานกำลังดำเนินการ`
+      });
+    }
+
+    const [result] = await db.promise().query(
+      `INSERT INTO service_requests
+        (table_id, order_id, service_type, note, request_time)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [order.table_id, order.id, serviceType, note || null]
+    );
+
+    res.status(201).json({
+      success: true,
+      duplicate: false,
+      id: result.insertId,
+      status: 'pending',
+      message: `ส่งคำขอ${serviceType}แล้ว กรุณารอสักครู่`
+    });
+
+  } catch (error) {
+    console.error('Error creating customer service request:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการส่งคำขอ กรุณาลองใหม่อีกครั้ง'
+    });
+  }
+});
+
+// คำขอบริการของโต๊ะนี้ (ให้ลูกค้าเห็นว่าพนักงานรับเรื่องแล้วหรือยัง)
+app.get('/api/customer/:token/service-requests', async (req, res) => {
+  try {
+    const order = await findActiveOrderByToken(req.params.token);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: QR_EXPIRED_MESSAGE
+      });
+    }
+
+    const [requests] = await db.promise().query(
+      `SELECT id, service_type, note, status, request_time, complete_time
+        FROM service_requests
+        WHERE order_id = ?
+        ORDER BY request_time DESC, id DESC
+        LIMIT 10`,
+      [order.id]
+    );
+
+    res.json({
+      success: true,
+      requests
+    });
+
+  } catch (error) {
+    console.error('Error fetching customer service requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอ'
     });
   }
 });
