@@ -88,6 +88,7 @@ const Rectable = ({ table, onClose, onSave }) => {
         onSave({
           ...table,
           orderId: response.orderId,
+          accessToken: response.accessToken,
           status_id: 2 // Assuming 2 is the status for occupied tables
         });
         onClose();

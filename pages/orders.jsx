@@ -442,7 +442,12 @@ const Orders = () => {
                                               key={item.orderDetailId}
                                               className={item.status === 'P' ? 'table-warning' : ''}
                                             >
-                                              <td>{item.productName}</td>
+                                              <td>
+                                                {item.productName}
+                                                {item.source === 'C' && (
+                                                  <span className="badge bg-info ms-2">ลูกค้าสั่ง</span>
+                                                )}
+                                              </td>
                                               <td className="text-center">{item.quantity}</td>
                                               <td className="text-end">{item.price.toFixed(2)} บาท</td>
                                               <td className="text-center">{formatTime(item.orderTime)}</td>
@@ -539,7 +544,12 @@ const Orders = () => {
                                               key={item.orderDetailId}
                                               className={item.status === 'P' ? 'table-warning' : ''}
                                             >
-                                              <td>{item.productName}</td>
+                                              <td>
+                                                {item.productName}
+                                                {item.source === 'C' && (
+                                                  <span className="badge bg-info ms-2">ลูกค้าสั่ง</span>
+                                                )}
+                                              </td>
                                               <td className="text-center">{item.quantity}</td>
                                               <td className="text-end">{item.price.toFixed(2)} บาท</td>
                                               <td className="text-center">{formatTime(item.orderTime)}</td>

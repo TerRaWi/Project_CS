@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getOrdersByTable } from '../api';
+import { getOrdersByTable, getCustomerItems } from '../api';
 import { Clock } from 'lucide-react';
 
-const Orderview = ({ tableId }) => {
+// customerToken: ส่งมาเมื่อเปิดจากหน้าลูกค้า จะดึงเฉพาะรายการของออเดอร์ใน QR นั้น
+const Orderview = ({ tableId, customerToken }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -10,17 +11,24 @@ const Orderview = ({ tableId }) => {
 
     useEffect(() => {
         fetchOrders();
-    }, [tableId]);
+    }, [tableId, customerToken]);
 
     const fetchOrders = async () => {
         setLoading(true);
         setError(null);
         try {
-            if (!tableId) {
-                setOrders([]);
-                return;
+            let data;
+            if (customerToken) {
+                // แปลงให้อยู่ในรูปแบบเดียวกับข้อมูลของพนักงาน
+                const customerData = await getCustomerItems(customerToken);
+                data = [{ orderId: customerData.orderId, status: 'A', items: customerData.items }];
+            } else {
+                if (!tableId) {
+                    setOrders([]);
+                    return;
+                }
+                data = await getOrdersByTable(tableId);
             }
-            const data = await getOrdersByTable(tableId);
 
             // กรองเฉพาะออเดอร์ที่มีสถานะ 'A' (กำลังใช้งาน)
             const activeOrders = data.filter(order => order.status === 'A');
@@ -175,6 +183,9 @@ const Orderview = ({ tableId }) => {
                                                         <tr key={idx} className={item.status === 'V' ? 'text-muted' : ''}>
                                                             <td className={item.status === 'V' ? 'text-decoration-line-through' : ''}>
                                                                 {item.productName}
+                                                                {!customerToken && item.source === 'C' && (
+                                                                    <span className="badge bg-info ms-2">ลูกค้าสั่ง</span>
+                                                                )}
                                                             </td>
                                                             <td className={`text-end ${item.status === 'V' ? 'text-decoration-line-through' : ''}`}>
                                                                 {item.quantity}

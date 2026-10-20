@@ -3,6 +3,7 @@ import { getTables } from '../api';
 import Image from 'next/image';
 import Rectable from '../components/Rectable';
 import Ordertable from '../components/Ordertable';
+import OrderQRModal from '../components/OrderQRModal';
 
 // เพิ่ม CSS เฉพาะเพื่อแก้ปัญหากรอบโต๊ะ
 const customStyles = {
@@ -70,6 +71,8 @@ const Tables = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [orderTable, setOrderTable] = useState(null);
   const [isBillProcessed, setIsBillProcessed] = useState(false);
+  // QR Code ของโต๊ะที่เพิ่งเปิด ให้พนักงานพิมพ์ให้ลูกค้าได้ทันที
+  const [newTableQR, setNewTableQR] = useState(null);
 
   useEffect(() => {
     fetchTables();
@@ -109,6 +112,13 @@ const Tables = () => {
       )
     );
     fetchTables();
+
+    if (updatedTable.accessToken) {
+      setNewTableQR({
+        accessToken: updatedTable.accessToken,
+        tableNumber: updatedTable.table_number
+      });
+    }
   };
 
   const handleBillPaymentSuccess = (result) => {
@@ -195,11 +205,21 @@ const Tables = () => {
             <Ordertable 
               table={orderTable} 
               onClose={() => setOrderTable(null)}
-              onPaymentSuccess={handleBillPaymentSuccess} 
+              onPaymentSuccess={handleBillPaymentSuccess}
             />
           )}
         </div>
       </div>
+
+      {newTableQR && (
+        <OrderQRModal
+          accessToken={newTableQR.accessToken}
+          tableNumber={newTableQR.tableNumber}
+          title={`เปิดโต๊ะ ${newTableQR.tableNumber} เรียบร้อย`}
+          message="พิมพ์ QR Code ให้ลูกค้าสแกนสั่งอาหารเองได้"
+          onClose={() => setNewTableQR(null)}
+        />
+      )}
     </div>
   );
 };

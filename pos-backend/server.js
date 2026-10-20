@@ -6,6 +6,7 @@ const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // โหลดค่าตั้งค่าจากไฟล์ .env (ใช้ความสามารถของ Node 20.12+ ไม่ต้องติดตั้ง dotenv)
 // ค่าที่ตั้งไว้ใน environment อยู่แล้ว (เช่นจาก docker-compose) จะไม่ถูกทับ
@@ -66,6 +67,66 @@ db.getConnection((err, conn) => {
   conn.release();
   console.log('เชื่อมต่อฐานข้อมูล MySQL สำเร็จ');
 });
+
+// ชื่อสินค้าที่ใช้เก็บค่าหัวตอนเปิดโต๊ะ (ลูกค้าสั่งเพิ่มเองผ่าน QR ไม่ได้)
+const CUSTOMER_TYPE_PRODUCTS = ['ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก'];
+
+// จำนวนสูงสุดต่อรายการในการสั่งหนึ่งครั้ง
+const MAX_ITEM_QUANTITY = 50;
+
+// สร้างรหัสสุ่มสำหรับ QR ของลูกค้า (32 ตัวอักษร) เดายากกว่าเลข order ที่เรียงกัน
+const generateAccessToken = () => crypto.randomBytes(16).toString('hex');
+
+// บันทึกรายการอาหารลง order โดยใช้ราคาจากฐานข้อมูลเสมอ (ไม่เชื่อราคาที่ส่งมาจากหน้าเว็บ)
+// source: 'S' = พนักงานสั่ง, 'C' = ลูกค้าสั่งผ่าน QR
+// คืนค่า { error } ถ้าข้อมูลไม่ถูกต้อง หรือ { insertId, count } ถ้าบันทึกสำเร็จ
+const insertOrderItems = async (orderId, items, source) => {
+  const quantities = new Map();
+  for (const item of items) {
+    const productId = Number(item.id);
+    const quantity = Number(item.quantity);
+    if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1) {
+      return { error: 'ข้อมูลรายการอาหารไม่ถูกต้อง' };
+    }
+    quantities.set(productId, (quantities.get(productId) || 0) + quantity);
+  }
+
+  if ([...quantities.values()].some(quantity => quantity > MAX_ITEM_QUANTITY)) {
+    return { error: `สั่งได้ไม่เกิน ${MAX_ITEM_QUANTITY} ชิ้นต่อรายการ` };
+  }
+
+  const productIds = [...quantities.keys()];
+  const [products] = await db.promise().query(
+    `SELECT id, name, price FROM product WHERE id IN (?) AND status = 'A'`,
+    [productIds]
+  );
+
+  if (products.length !== productIds.length) {
+    return { error: 'บางรายการไม่พร้อมจำหน่ายแล้ว กรุณาเลือกใหม่อีกครั้ง' };
+  }
+
+  if (source === 'C' && products.some(product => CUSTOMER_TYPE_PRODUCTS.includes(product.name))) {
+    return { error: 'ไม่สามารถสั่งรายการนี้ได้ กรุณาติดต่อพนักงาน' };
+  }
+
+  const rows = products.map(product => [
+    quantities.get(product.id),
+    product.price,
+    'P',
+    orderId,
+    product.id,
+    source
+  ]);
+
+  const [result] = await db.promise().query(
+    `INSERT INTO order_detail
+      (quantity, unit_price, status, order_id, product_id, source)
+      VALUES ?`,
+    [rows]
+  );
+
+  return { insertId: result.insertId, count: rows.length };
+};
 
 /**
  * ============================
@@ -226,21 +287,23 @@ app.post('/api/saveCustomer', async (req, res) => {
     conn = await db.promise().getConnection();
     await conn.beginTransaction();
 
-    // 1. สร้าง order ใหม่
+    // 1. สร้าง order ใหม่ พร้อมรหัสสำหรับ QR ของลูกค้า
+    const accessToken = generateAccessToken();
     const [orderResult] = await conn.query(
-      `INSERT INTO \`order\` (table_id, status) 
-        VALUES (?, 'A')`,
-      [tableId]
+      `INSERT INTO \`order\` (table_id, status, access_token)
+        VALUES (?, 'A', ?)`,
+      [tableId, accessToken]
     );
 
     const orderId = orderResult.insertId;
 
     // 2. ดึงข้อมูล product จากชื่อ
     const [products] = await conn.query(
-      `SELECT id, price, name 
-        FROM product 
-        WHERE name IN ('ผู้ใหญ่', 'เด็กโต', 'เด็กเล็ก')
-       AND status = 'A'`  // เพิ่มเงื่อนไขเช็คสถานะ product ว่ายังใช้งานอยู่
+      `SELECT id, price, name
+        FROM product
+        WHERE name IN (?)
+       AND status = 'A'`,  // เพิ่มเงื่อนไขเช็คสถานะ product ว่ายังใช้งานอยู่
+      [CUSTOMER_TYPE_PRODUCTS]
     );
 
     // 3. จับคู่จำนวนลูกค้ากับ product
@@ -302,6 +365,7 @@ app.post('/api/saveCustomer', async (req, res) => {
     res.json({
       success: true,
       orderId,
+      accessToken,
       message: 'บันทึกข้อมูลสำเร็จ'
     });
 
@@ -573,7 +637,7 @@ app.patch('/api/product/:id/status', (req, res) => {
  */
 
 // สร้างออเดอร์
-app.post('/api/order', (req, res) => {
+app.post('/api/order', async (req, res) => {
   const { tableId, items } = req.body;
 
   if (!tableId || !items || !Array.isArray(items) || items.length === 0) {
@@ -582,55 +646,38 @@ app.post('/api/order', (req, res) => {
     });
   }
 
-  db.query(
-    'SELECT id FROM `order` WHERE table_id = ? AND status = "A" ORDER BY id DESC LIMIT 1',
-    [tableId],
-    (err, orders) => {
-      if (err) {
-        return res.status(500).json({
-          error: 'เกิดข้อผิดพลาดในการค้นหาออเดอร์'
-        });
-      }
+  try {
+    const [orders] = await db.promise().query(
+      'SELECT id FROM `order` WHERE table_id = ? AND status = "A" ORDER BY id DESC LIMIT 1',
+      [tableId]
+    );
 
-      if (!orders || orders.length === 0) {
-        return res.status(404).json({
-          error: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้'
-        });
-      }
-
-      const orderId = orders[0].id;
-
-      // แก้ไข query ให้ตรงกับลำดับ columns ในตาราง
-      const detailQuery = `
-        INSERT INTO order_detail 
-        (quantity, unit_price, status, order_id, product_id) 
-        VALUES ?
-      `;
-
-      const orderDetails = items.map(item => [
-        item.quantity,
-        Number(item.price),
-        'P',
-        orderId,
-        item.id
-      ]);
-
-      db.query(detailQuery, [orderDetails], (detailErr) => {
-        if (detailErr) {
-          console.error('Error inserting order details:', detailErr);
-          return res.status(500).json({
-            error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร'
-          });
-        }
-
-        res.status(201).json({
-          success: true,
-          orderId,
-          message: 'สั่งอาหารสำเร็จ'
-        });
+    if (orders.length === 0) {
+      return res.status(404).json({
+        error: 'ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้'
       });
     }
-  );
+
+    const orderId = orders[0].id;
+
+    // ราคาดึงจากฐานข้อมูล ไม่ใช้ราคาที่ส่งมาจากหน้าเว็บ
+    const result = await insertOrderItems(orderId, items, 'S');
+    if (result.error) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    res.status(201).json({
+      success: true,
+      orderId,
+      message: 'สั่งอาหารสำเร็จ'
+    });
+
+  } catch (error) {
+    console.error('Error inserting order details:', error);
+    res.status(500).json({
+      error: 'เกิดข้อผิดพลาดในการบันทึกรายการอาหาร'
+    });
+  }
 });
 
 // ประวัติการสั่งอาหาร
@@ -647,6 +694,7 @@ app.get('/api/order/:tableId', (req, res) => {
       od.unit_price as price,
       od.status as itemStatus,
       od.order_time,
+      od.source,
       p.name as productName
     FROM \`order\` o
     JOIN order_detail od ON o.id = od.order_id
@@ -688,7 +736,8 @@ app.get('/api/order/:tableId', (req, res) => {
         quantity: row.quantity,
         price: parseFloat(row.price),
         orderTime: row.order_time,
-        status: row.itemStatus
+        status: row.itemStatus,
+        source: row.source
       });
     });
 
@@ -1163,9 +1212,10 @@ app.get('/api/receipt/:paymentId', async (req, res) => {
 });
 
 app.post('/api/order-detail', async (req, res) => {
-  const { order_id, product_id, quantity, unit_price } = req.body;
+  // unit_price ที่ส่งมาจะไม่ถูกใช้ ราคาดึงจากฐานข้อมูลเสมอ
+  const { order_id, product_id, quantity } = req.body;
 
-  if (!order_id || !product_id || !quantity || !unit_price) {
+  if (!order_id || !product_id || !quantity) {
     return res.status(400).json({
       success: false,
       message: 'กรุณาระบุข้อมูลให้ครบถ้วน'
@@ -1187,12 +1237,13 @@ app.post('/api/order-detail', async (req, res) => {
     }
 
     // เพิ่มรายการใหม่
-    const [result] = await db.promise().query(
-      `INSERT INTO order_detail 
-        (order_id, product_id, quantity, unit_price, status, order_time) 
-        VALUES (?, ?, ?, ?, 'P', CURRENT_TIMESTAMP)`,
-      [order_id, product_id, quantity, unit_price]
-    );
+    const result = await insertOrderItems(order_id, [{ id: product_id, quantity }], 'S');
+    if (result.error) {
+      return res.status(400).json({
+        success: false,
+        message: result.error
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -2105,6 +2156,238 @@ app.get('/api/table-history/:tableNumber', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการดึงประวัติการใช้งานโต๊ะ'
+    });
+  }
+});
+
+/**
+ * ============================
+ * API สำหรับลูกค้า (สแกน QR สั่งอาหารเอง)
+ * ใช้ได้เฉพาะ order ที่ยังเปิดอยู่ (status = 'A') เมื่อคิดเงินหรือยกเลิกโต๊ะแล้ว QR จะใช้ไม่ได้ทันที
+ * ============================
+ */
+
+const QR_EXPIRED_MESSAGE = 'QR Code นี้หมดอายุแล้ว หรือโต๊ะถูกปิดไปแล้ว กรุณาติดต่อพนักงาน';
+
+// หา order ที่ยังเปิดอยู่จากรหัสใน QR
+const findActiveOrderByToken = async (token) => {
+  if (!/^[0-9a-f]{32}$/.test(token)) {
+    return null;
+  }
+
+  const [rows] = await db.promise().query(
+    `SELECT o.id, o.start_time, dt.id AS table_id, dt.table_number
+      FROM \`order\` o
+      JOIN dining_table dt ON o.table_id = dt.id
+      WHERE o.access_token = ? AND o.status = 'A'`,
+    [token]
+  );
+
+  return rows[0] || null;
+};
+
+// ขอรหัส QR ของ order (สำหรับพนักงาน) ถ้า order ที่เปิดไว้ก่อนอัปเกรดยังไม่มีรหัส จะสร้างให้ตอนนี้
+app.post('/api/order/:orderId/access-token', async (req, res) => {
+  const orderId = req.params.orderId;
+
+  try {
+    const [orders] = await db.promise().query(
+      'SELECT id, access_token FROM `order` WHERE id = ? AND status = "A"',
+      [orderId]
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบออเดอร์ที่เปิดอยู่'
+      });
+    }
+
+    let accessToken = orders[0].access_token;
+
+    if (!accessToken) {
+      await db.promise().query(
+        'UPDATE `order` SET access_token = ? WHERE id = ? AND access_token IS NULL',
+        [generateAccessToken(), orderId]
+      );
+
+      // อ่านใหม่อีกครั้ง เผื่อมีอีกเครื่องสร้างรหัสให้ order นี้ไปพร้อมกัน
+      const [updated] = await db.promise().query(
+        'SELECT access_token FROM `order` WHERE id = ?',
+        [orderId]
+      );
+      accessToken = updated[0].access_token;
+    }
+
+    res.json({
+      success: true,
+      orderId: Number(orderId),
+      accessToken
+    });
+
+  } catch (error) {
+    console.error('Error creating access token:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการสร้าง QR Code'
+    });
+  }
+});
+
+// ข้อมูลโต๊ะและออเดอร์ของลูกค้า
+app.get('/api/customer/:token', async (req, res) => {
+  try {
+    const order = await findActiveOrderByToken(req.params.token);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: QR_EXPIRED_MESSAGE
+      });
+    }
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      tableId: order.table_id,
+      tableNumber: order.table_number,
+      startTime: order.start_time
+    });
+
+  } catch (error) {
+    console.error('Error fetching customer order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลโต๊ะ'
+    });
+  }
+});
+
+// เมนูที่ลูกค้าสั่งได้ (เฉพาะที่เปิดขาย และไม่รวมรายการค่าหัว)
+app.get('/api/customer/:token/menu', async (req, res) => {
+  try {
+    const order = await findActiveOrderByToken(req.params.token);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: QR_EXPIRED_MESSAGE
+      });
+    }
+
+    const [products] = await db.promise().query(
+      `SELECT id, name, price, category_id, image_url, status
+        FROM product
+        WHERE status = 'A' AND name NOT IN (?)
+        ORDER BY id DESC`,
+      [CUSTOMER_TYPE_PRODUCTS]
+    );
+
+    // แสดงเฉพาะหมวดหมู่ที่มีเมนูให้สั่ง
+    const [categories] = await db.promise().query(
+      'SELECT id, name FROM category ORDER BY id DESC'
+    );
+    const usedCategoryIds = new Set(products.map(product => product.category_id));
+
+    res.json({
+      success: true,
+      products,
+      categories: categories.filter(category => usedCategoryIds.has(category.id))
+    });
+
+  } catch (error) {
+    console.error('Error fetching customer menu:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลเมนู'
+    });
+  }
+});
+
+// รายการที่โต๊ะนี้สั่งไปแล้ว (รูปแบบเดียวกับ items ของ GET /api/order/:tableId)
+app.get('/api/customer/:token/items', async (req, res) => {
+  try {
+    const order = await findActiveOrderByToken(req.params.token);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: QR_EXPIRED_MESSAGE
+      });
+    }
+
+    const [rows] = await db.promise().query(
+      `SELECT od.id, od.quantity, od.unit_price, od.status, od.order_time, od.source, p.name AS product_name
+        FROM order_detail od
+        JOIN product p ON od.product_id = p.id
+        WHERE od.order_id = ?
+        ORDER BY od.order_time ASC`,
+      [order.id]
+    );
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      items: rows.map(row => ({
+        orderDetailId: row.id,
+        productName: row.product_name,
+        quantity: row.quantity,
+        price: parseFloat(row.unit_price),
+        orderTime: row.order_time,
+        status: row.status,
+        source: row.source
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fetching customer items:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงประวัติการสั่ง'
+    });
+  }
+});
+
+// ลูกค้าสั่งอาหาร (ส่งมาแค่รหัสเมนูและจำนวน ราคาดึงจากฐานข้อมูล)
+app.post('/api/customer/:token/order', async (req, res) => {
+  const { items } = req.body;
+
+  if (!Array.isArray(items) || items.length === 0 || items.length > 30) {
+    return res.status(400).json({
+      success: false,
+      message: 'ข้อมูลรายการอาหารไม่ถูกต้อง'
+    });
+  }
+
+  try {
+    const order = await findActiveOrderByToken(req.params.token);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: QR_EXPIRED_MESSAGE
+      });
+    }
+
+    const result = await insertOrderItems(order.id, items, 'C');
+    if (result.error) {
+      return res.status(400).json({
+        success: false,
+        message: result.error
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      orderId: order.id,
+      message: 'สั่งอาหารสำเร็จ'
+    });
+
+  } catch (error) {
+    console.error('Error creating customer order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการสั่งอาหาร'
     });
   }
 });

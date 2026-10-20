@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getProduct, getCategories, createOrder, getImageUrl } from '../api';
+import { getProduct, getCategories, createOrder, getImageUrl, getCustomerMenu, createCustomerOrder } from '../api';
 import Orderview from './Orderview';
 
 // เปลี่ยนจาก CSS Module เป็น Bootstrap
-const Ordermenu = ({ table, onClose }) => {
+// customerToken: ส่งมาเมื่อเปิดจากหน้าลูกค้าที่สแกน QR (แสดงเต็มหน้าจอ และสั่งผ่าน API ของลูกค้า)
+const Ordermenu = ({ table, onClose, customerToken }) => {
+    const isCustomer = Boolean(customerToken);
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
@@ -18,10 +20,21 @@ const Ordermenu = ({ table, onClose }) => {
 
     const fetchInitialData = async () => {
         try {
-            const [productsData, categoriesData] = await Promise.all([
-                getProduct(),
-                getCategories()
-            ]);
+            let productsData;
+            let categoriesData;
+
+            if (isCustomer) {
+                // เมนูของลูกค้า: เฉพาะที่เปิดขาย ไม่รวมรายการค่าหัว
+                const menu = await getCustomerMenu(customerToken);
+                productsData = menu.products;
+                categoriesData = menu.categories;
+            } else {
+                [productsData, categoriesData] = await Promise.all([
+                    getProduct(),
+                    getCategories()
+                ]);
+            }
+
             setProducts(productsData);
             setCategories([
                 { id: 'all', name: 'ทั้งหมด' },
@@ -29,7 +42,7 @@ const Ordermenu = ({ table, onClose }) => {
             ]);
             setError('');
         } catch (err) {
-            setError('ไม่สามารถดึงข้อมูลได้');
+            setError(isCustomer ? err.message : 'ไม่สามารถดึงข้อมูลได้');
         } finally {
             setIsLoading(false);
         }
@@ -95,10 +108,9 @@ const Ordermenu = ({ table, onClose }) => {
                 name: item.name
             }));
 
-            const response = await createOrder(
-                table.id,
-                orderItems
-            );
+            const response = isCustomer
+                ? await createCustomerOrder(customerToken, orderItems)
+                : await createOrder(table.id, orderItems);
 
             if (response && response.orderId) {
                 alert('สั่งอาหารสำเร็จ');
@@ -109,7 +121,7 @@ const Ordermenu = ({ table, onClose }) => {
             }
         } catch (error) {
             console.error('เกิดข้อผิดพลาดในการสั่งอาหาร:', error);
-            const errorMessage = error.response?.data?.error ||
+            const errorMessage = error.response?.data?.error || error.message ||
                 'เกิดข้อผิดพลาดในการเชื่อมต่อกับระบบ กรุณาลองใหม่อีกครั้ง';
             alert(errorMessage);
         }
@@ -124,9 +136,18 @@ const Ordermenu = ({ table, onClose }) => {
         return filteredProducts.filter(product => product.category_id === selectedCategory);
     };
 
+    // พนักงาน: แสดงเป็นหน้าต่างซ้อนบนหน้าโต๊ะ / ลูกค้า: แสดงเต็มหน้าจอมือถือ
+    const overlayClassName = isCustomer
+        ? 'min-vh-100 bg-light'
+        : 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50';
+    const overlayStyle = isCustomer ? undefined : {zIndex: 1050};
+    const panelClassName = isCustomer
+        ? 'bg-white min-vh-100 position-relative'
+        : 'bg-white rounded shadow w-100 h-100 h-md-auto w-md-75 m-3 overflow-auto position-relative';
+
     if (isLoading) {
         return (
-            <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50" style={{zIndex: 1050}}>
+            <div className={isCustomer ? 'min-vh-100 d-flex align-items-center justify-content-center bg-light' : overlayClassName} style={overlayStyle}>
                 <div className="bg-white p-4 rounded shadow">
                     <div className="d-flex align-items-center">
                         <div className="spinner-border text-primary me-3" role="status">
@@ -140,8 +161,8 @@ const Ordermenu = ({ table, onClose }) => {
     }
 
     return (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50" style={{zIndex: 1050}}>
-            <div className="bg-white rounded shadow w-100 h-100 h-md-auto w-md-75 m-3 overflow-auto position-relative">
+        <div className={overlayClassName} style={overlayStyle}>
+            <div className={panelClassName}>
                 {/* Header */}
                 <div className="d-flex justify-content-between align-items-center p-3 border-bottom">
                     <h5 className="m-0 fw-bold">สั่งอาหาร - โต๊ะ {table.table_number}</h5>
@@ -167,6 +188,12 @@ const Ordermenu = ({ table, onClose }) => {
                         </button>
                     </li>
                 </ul>
+
+                {error && (
+                    <div className="alert alert-danger mx-3 mt-3 mb-0" role="alert">
+                        {error}
+                    </div>
+                )}
 
                 {/* Content */}
                 <div className="p-3">
@@ -235,7 +262,7 @@ const Ordermenu = ({ table, onClose }) => {
                             </div>
 
                             {/* Order Section - Right Column */}
-                            <div className="col-md-4">
+                            <div className="col-md-4" id="order-cart">
                                 <div className="card h-100 d-flex flex-column">
                                     <div className="card-header bg-light">
                                         <h5 className="card-title mb-0">รายการที่สั่ง</h5>
@@ -293,9 +320,33 @@ const Ordermenu = ({ table, onClose }) => {
                             </div>
                         </div>
                     ) : (
-                        <Orderview tableId={table.id} />
+                        <Orderview tableId={table.id} customerToken={customerToken} />
                     )}
                 </div>
+
+                {/* แถบยืนยันติดขอบล่างสำหรับลูกค้าบนมือถือ (รายการที่สั่งอยู่ท้ายหน้า) */}
+                {isCustomer && activeTab === 'order' && selectedItems.length > 0 && (
+                    <div className="d-md-none position-sticky bottom-0 bg-white border-top shadow p-3">
+                        <div className="d-flex justify-content-between align-items-center gap-2">
+                            <button
+                                type="button"
+                                className="btn btn-link p-0 text-start text-decoration-none"
+                                onClick={() => document.getElementById('order-cart')?.scrollIntoView({ behavior: 'smooth' })}
+                            >
+                                <div className="fw-bold text-dark">
+                                    {selectedItems.reduce((sum, item) => sum + item.quantity, 0)} รายการ · ฿{formatPrice(calculateTotal())}
+                                </div>
+                                <small>ดู/แก้ไขรายการ</small>
+                            </button>
+                            <button
+                                className="btn btn-success"
+                                onClick={handleConfirmOrder}
+                            >
+                                ยืนยันการสั่ง
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

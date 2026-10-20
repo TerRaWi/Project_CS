@@ -99,12 +99,14 @@ CREATE TABLE IF NOT EXISTS `posdb`.`order` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `start_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'เวลาเริ่มใช้โต๊ะ',
   `end_time` TIMESTAMP NULL DEFAULT NULL COMMENT 'เวลาสิ้นสุดการใช้โต๊ะ',
-  `status` CHAR(1) NOT NULL DEFAULT 'A' COMMENT 'สถานะ: A=Active, C=Completed, V=Void',
+  `status` CHAR(1) NOT NULL DEFAULT 'A' COMMENT 'สถานะ: A=Active, C=Completed, M=Merged, X=Canceled',
   `table_id` INT NOT NULL COMMENT 'รหัสโต๊ะ',
+  `access_token` CHAR(32) NULL DEFAULT NULL COMMENT 'รหัสสุ่มใน QR ให้ลูกค้าสั่งอาหารเอง',
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `fk_order_table_idx` (`table_id` ASC) VISIBLE,
+  UNIQUE INDEX `access_token_UNIQUE` (`access_token` ASC) VISIBLE,
   CONSTRAINT `fk_order_table`
     FOREIGN KEY (`table_id`)
     REFERENCES `posdb`.`dining_table` (`id`)
@@ -153,6 +155,7 @@ CREATE TABLE IF NOT EXISTS `posdb`.`order_detail` (
   `order_id` INT NOT NULL COMMENT 'รหัสออเดอร์',
   `product_id` INT NOT NULL COMMENT 'รหัสสินค้า',
   `cancel_reason_id` INT NULL DEFAULT NULL,
+  `source` CHAR(1) NOT NULL DEFAULT 'S' COMMENT 'ผู้สั่ง: S=Staff, C=Customer (QR)',
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// ตั้งค่าใน .env.local (ดูตัวอย่างใน .env.example) ถ้าไม่ได้ตั้งจะใช้ backend บนเครื่องตัวเอง
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// ค่าเริ่มต้น '/api' จะผ่าน rewrites ใน next.config.mjs ไปที่ backend (ตั้งค่าใน .env.local ดูตัวอย่างใน .env.example)
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 
 /**
@@ -338,7 +338,7 @@ export const addOrderItem = async (orderId, productId, quantity, unitPrice) => {
     
     if (axios.isAxiosError(error)) {
       if (error.response) {
-        throw new Error(error.response.data?.error || 'เกิดข้อผิดพลาดในการเพิ่มรายการ');
+        throw new Error(error.response.data?.error || error.response.data?.message || 'เกิดข้อผิดพลาดในการเพิ่มรายการ');
       } else if (error.request) {
         throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
       }
@@ -800,5 +800,76 @@ export const updateTableStatus = async (tableId, statusId) => {
     return data;
   } catch (error) {
     handleApiError(error, 'เกิดข้อผิดพลาดในการอัปเดตสถานะโต๊ะ');
+  }
+};
+
+/**
+ * ============================
+ * API สำหรับลูกค้า (สแกน QR สั่งอาหาร)
+ * ============================
+ */
+
+// แปลง error จาก API ของลูกค้าเป็นข้อความที่แสดงให้ลูกค้าเห็นได้
+const toCustomerError = (error, fallbackMessage) => {
+  if (axios.isAxiosError(error)) {
+    if (error.response) {
+      return new Error(error.response.data?.message || fallbackMessage);
+    }
+    if (error.request) {
+      return new Error('ไม่สามารถเชื่อมต่อกับร้านได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง');
+    }
+  }
+  return new Error(fallbackMessage);
+};
+
+// ขอรหัส QR ของออเดอร์ (ใช้ฝั่งพนักงาน)
+export const getOrderAccessToken = async (orderId) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/order/${orderId}/access-token`);
+    return data.accessToken;
+  } catch (error) {
+    throw toCustomerError(error, 'ไม่สามารถสร้าง QR Code ได้');
+  }
+};
+
+// ข้อมูลโต๊ะและออเดอร์จากรหัสใน QR
+export const getCustomerOrder = async (token) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/customer/${token}`);
+    return data;
+  } catch (error) {
+    throw toCustomerError(error, 'ไม่สามารถโหลดข้อมูลโต๊ะได้');
+  }
+};
+
+// เมนูที่ลูกค้าสั่งได้ คืนค่า { products, categories }
+export const getCustomerMenu = async (token) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/customer/${token}/menu`);
+    return data;
+  } catch (error) {
+    throw toCustomerError(error, 'ไม่สามารถโหลดเมนูได้');
+  }
+};
+
+// รายการที่โต๊ะนี้สั่งไปแล้ว คืนค่า { orderId, items }
+export const getCustomerItems = async (token) => {
+  try {
+    const { data } = await axios.get(`${API_URL}/customer/${token}/items`);
+    return data;
+  } catch (error) {
+    throw toCustomerError(error, 'ไม่สามารถโหลดประวัติการสั่งได้');
+  }
+};
+
+// ลูกค้าสั่งอาหาร ส่งไปแค่รหัสเมนูและจำนวน (ราคาคิดที่ backend)
+export const createCustomerOrder = async (token, items) => {
+  try {
+    const { data } = await axios.post(`${API_URL}/customer/${token}/order`, {
+      items: items.map(item => ({ id: item.id, quantity: item.quantity }))
+    });
+    return data;
+  } catch (error) {
+    throw toCustomerError(error, 'สั่งอาหารไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
   }
 };

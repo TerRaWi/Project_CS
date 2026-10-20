@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import Ordermenu from "./Ordermenu";
 import Billpayment from "./Billpayment";
 import Tablemanage from "./Tablemanage";
-import { getOrdersByTable } from "../api";
+import OrderQRModal from "./OrderQRModal";
+import { getOrdersByTable, getOrderAccessToken } from "../api";
 
 const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
   const [showOrdermenu, setShowOrdermenu] = useState(false);
   const [showBillpayment, setShowBillpayment] = useState(false);
   const [showTablemanage, setShowTablemanage] = useState(false);
+  const [qrAccessToken, setQrAccessToken] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -135,6 +137,23 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
     setShowOrdermenu(false);
     setShowBillpayment(false);
     setShowTablemanage(false);
+    setQrAccessToken(null);
+  };
+
+  // จัดการการแสดง QR Code ให้ลูกค้าสแกนสั่งอาหาร
+  const handleQRCodeButtonClick = async () => {
+    if (!activeOrder) {
+      alert("ไม่พบออเดอร์ที่เปิดอยู่ ไม่สามารถสร้าง QR Code ได้");
+      return;
+    }
+
+    try {
+      const accessToken = await getOrderAccessToken(activeOrder.orderId);
+      setQrAccessToken(accessToken);
+    } catch (err) {
+      console.error("Error getting QR access token:", err);
+      alert(err.message);
+    }
   };
 
   return (
@@ -175,6 +194,18 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
             </button>
 
             <button
+              className="btn btn-info text-white"
+              onClick={() => {
+                closeAllModals();
+                handleQRCodeButtonClick();
+              }}
+              disabled={!activeOrder}
+            >
+              <i className="bi bi-qr-code me-2"></i>
+              QR Code สั่งอาหาร
+            </button>
+
+            <button
               className="btn btn-warning text-white"
               onClick={() => {
                 closeAllModals();
@@ -200,6 +231,14 @@ const Ordertable = ({ table, onClose, onPaymentSuccess }) => {
           </div>
         )}
       </div>
+
+      {qrAccessToken && (
+        <OrderQRModal
+          accessToken={qrAccessToken}
+          tableNumber={table ? table.table_number : ""}
+          onClose={() => setQrAccessToken(null)}
+        />
+      )}
 
       {showOrdermenu && (
         <Ordermenu
